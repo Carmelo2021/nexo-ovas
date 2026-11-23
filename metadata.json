@@ -1,0 +1,6 @@
+{
+  "name": "NexoOVA Studio — Autoría de OVAs y Lienzo de Conocimiento SENA",
+  "description": "Plataforma para instructores y aprendices del SENA que integra un lienzo de mapas mentales en grafo estilo Obsidian, construcción progresiva de Objetos Virtuales de Aprendizaje (OVAs), recordatorios de evidencias, seguimiento individual y exportación de guías de estudio en PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
