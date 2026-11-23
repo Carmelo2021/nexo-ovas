@@ -1,9 +1,18 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import { defineConfig } from 'vite';
+
+const RENDER_ALLOWED_HOSTS = [
+  'nexo-ovas.onrender.com',
+  '.onrender.com',
+  'localhost',
+  '127.0.0.1',
+];
 
 export default defineConfig(() => {
+  const port = Number(process.env.PORT) || 3000;
+
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
@@ -15,13 +24,19 @@ export default defineConfig(() => {
       chunkSizeWarningLimit: 800,
     },
     server: {
+      host: '0.0.0.0',
+      port,
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
-    
-    allowedHosts: ["app"],
-  }
+      allowedHosts: RENDER_ALLOWED_HOSTS,
+    },
+    preview: {
+      host: '0.0.0.0',
+      port,
+      allowedHosts: RENDER_ALLOWED_HOSTS,
+    },
   };
 });
