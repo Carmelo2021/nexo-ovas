@@ -410,9 +410,12 @@ export default function App() {
           submissions: {},
           lastAccessedAt: '2026-11-09 08:50',
         };
-        const nextCompleted = Array.from(
-          new Set([...currentProg.completedLessonIds, lessonId])
-        );
+        const nextCompleted =
+          scorePct >= 70
+            ? Array.from(
+                new Set([...currentProg.completedLessonIds, lessonId])
+              )
+            : currentProg.completedLessonIds;
 
         return {
           ...learner,
@@ -779,13 +782,27 @@ export default function App() {
 
       {/* Mobile Navigation Bar */}
       <div className="no-print md:hidden bg-white border-b border-slate-200 px-4 py-2 flex items-center gap-2 overflow-x-auto text-xs font-medium">
+        <button
+          type="button"
+          onClick={() => setShowLandingPage(true)}
+          className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
+            showLandingPage
+              ? 'bg-stone-900 text-white'
+              : 'text-slate-600 bg-slate-100'
+          }`}
+        >
+          Portada
+        </button>
         {effectiveMode === 'instructor' ? (
           <>
             <button
               type="button"
-              onClick={() => setInstructorTab('graph')}
+              onClick={() => {
+                setShowLandingPage(false);
+                setInstructorTab('graph');
+              }}
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-                instructorTab === 'graph'
+                !showLandingPage && instructorTab === 'graph'
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 bg-slate-100'
               }`}
@@ -794,9 +811,12 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={() => setInstructorTab('ovas')}
+              onClick={() => {
+                setShowLandingPage(false);
+                setInstructorTab('ovas');
+              }}
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-                instructorTab === 'ovas'
+                !showLandingPage && instructorTab === 'ovas'
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 bg-slate-100'
               }`}
@@ -805,9 +825,12 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={() => setInstructorTab('learners')}
+              onClick={() => {
+                setShowLandingPage(false);
+                setInstructorTab('learners');
+              }}
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-                instructorTab === 'learners'
+                !showLandingPage && instructorTab === 'learners'
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 bg-slate-100'
               }`}
@@ -816,9 +839,12 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={() => setInstructorTab('reminders')}
+              onClick={() => {
+                setShowLandingPage(false);
+                setInstructorTab('reminders');
+              }}
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-                instructorTab === 'reminders'
+                !showLandingPage && instructorTab === 'reminders'
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 bg-slate-100'
               }`}
@@ -830,9 +856,12 @@ export default function App() {
           <>
             <button
               type="button"
-              onClick={() => setPublicSection('catalog')}
+              onClick={() => {
+                setShowLandingPage(false);
+                setPublicSection('catalog');
+              }}
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-                publicSection === 'catalog'
+                !showLandingPage && publicSection === 'catalog'
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 bg-slate-100'
               }`}
@@ -841,9 +870,12 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={() => setPublicSection('evidences')}
+              onClick={() => {
+                setShowLandingPage(false);
+                setPublicSection('evidences');
+              }}
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-                publicSection === 'evidences'
+                !showLandingPage && publicSection === 'evidences'
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 bg-slate-100'
               }`}
@@ -852,9 +884,12 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={() => setPublicSection('progress')}
+              onClick={() => {
+                setShowLandingPage(false);
+                setPublicSection('progress');
+              }}
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-                publicSection === 'progress'
+                !showLandingPage && publicSection === 'progress'
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 bg-slate-100'
               }`}

@@ -329,6 +329,16 @@ export const HoverPreviewTrigger: React.FC<{
           href={url}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => {
+            if (
+              typeof window !== 'undefined' &&
+              window.matchMedia('(hover: none)').matches &&
+              !isOpen
+            ) {
+              e.preventDefault();
+              setIsOpen(true);
+            }
+          }}
           className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold border transition-all ${
             kind === 'video'
               ? 'bg-rose-50/90 text-rose-800 border-rose-200 hover:bg-rose-100 hover:border-rose-300'
@@ -456,10 +466,10 @@ export const HoverPreviewTrigger: React.FC<{
         </div>
       )}
 
-      {/* Floating Notion-Style Hover Preview Card */}
+      {/* Floating Notion-Style Hover Preview Card (Adaptive Bottom-Sheet on Mobile, Floating Popover on Desktop) */}
       {isOpen && (
         <div
-          className="absolute left-0 bottom-full mb-2 w-80 sm:w-96 z-50 pointer-events-auto animate-in fade-in duration-150"
+          className="fixed inset-x-4 bottom-4 sm:absolute sm:inset-x-auto sm:left-0 sm:bottom-full sm:mb-2 sm:w-96 z-50 pointer-events-auto animate-in fade-in duration-150"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="bg-slate-900 text-slate-100 rounded-xl shadow-2xl border border-slate-700 overflow-hidden">

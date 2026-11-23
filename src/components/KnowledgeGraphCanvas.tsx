@@ -849,7 +849,7 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
-          className={`flex-1 relative overflow-hidden select-none cursor-grab active:cursor-grabbing ${
+          className={`flex-1 relative overflow-hidden select-none touch-none cursor-grab active:cursor-grabbing ${
             canvasDark ? 'canvas-dot-grid-dark text-slate-100' : 'canvas-dot-grid-light text-slate-900'
           }`}
         >
