@@ -7,6 +7,7 @@ import {
   X,
 } from 'lucide-react';
 import { GraphEdge, GraphNode, InstructorCredentials, OVA } from '../types/ova';
+import { LessonBlocksRenderer } from './NotionLessonBlocks';
 
 interface PrintableStudyGuideModalProps {
   ova: OVA;
@@ -352,19 +353,7 @@ export const PrintableStudyGuideModal: React.FC<
                   {lesson.summary}
                 </p>
 
-                <div className="text-xs text-slate-800 whitespace-pre-line leading-relaxed">
-                  {lesson.contentMarkdown}
-                </div>
-
-                {lesson.mediaUrl && (
-                  <div className="text-xs text-slate-700 pt-1">
-                    <strong>Recurso de profundización:</strong>{' '}
-                    {lesson.mediaTitle ?? 'Enlace'} —{' '}
-                    <span className="font-mono underline">
-                      {lesson.mediaUrl}
-                    </span>
-                  </div>
-                )}
+                <LessonBlocksRenderer lesson={lesson} />
 
                 {lesson.quiz.length > 0 && (
                   <div className="pt-3 border-t border-slate-200 space-y-2">

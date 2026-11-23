@@ -11,7 +11,13 @@ import {
 import { InstructorLoginModal } from './components/InstructorLoginModal';
 import { KnowledgeGraphCanvas } from './components/KnowledgeGraphCanvas';
 import { LearnerProgressAndReminders } from './components/LearnerProgressAndReminders';
+import { MinimalLandingPage } from './components/MinimalLandingPage';
 import { OvaBuilderView } from './components/OvaBuilderView';
+import {
+  blocksToMarkdown,
+  ensureLessonBlocks,
+  ensureNodeBlocks,
+} from './components/NotionLessonBlocks';
 import { PrintableStudyGuideModal } from './components/PrintableStudyGuideModal';
 import { PublicLearnerPortal } from './components/PublicLearnerPortal';
 import {
@@ -73,19 +79,63 @@ export default function App() {
   const [instructorTab, setInstructorTab] = useState<InstructorTab>('graph');
   const [publicSection, setPublicSection] = useState<PublicSection>('catalog');
 
+  // Temporary Minimalist Landing Page state & deep-linking
+  const [showLandingPage, setShowLandingPage] = useState<boolean>(true);
+  const [deepLinkOvaId, setDeepLinkOvaId] = useState<string | null>(null);
+  const [deepLinkLessonId, setDeepLinkLessonId] = useState<string | null>(null);
+
   // Core Reactive Persistent State
-  const [nodes, setNodes] = useState<GraphNode[]>(() =>
-    loadFromStorage(STORAGE_KEYS.NODES, INITIAL_NODES)
-  );
+  const [nodes, setNodes] = useState<GraphNode[]>(() => {
+    const loaded = loadFromStorage(STORAGE_KEYS.NODES, INITIAL_NODES);
+    return loaded.map((node) => {
+      if (node.blocks && node.blocks.length > 0) return node;
+      const seedNode = INITIAL_NODES.find((sn) => sn.id === node.id);
+      if (seedNode?.blocks && seedNode.blocks.length > 0) {
+        return {
+          ...node,
+          type: seedNode.type,
+          codeLanguage: node.codeLanguage ?? seedNode.codeLanguage,
+          mediaComment: node.mediaComment ?? seedNode.mediaComment,
+          blocks: seedNode.blocks,
+        };
+      }
+      return {
+        ...node,
+        blocks: ensureNodeBlocks(node),
+      };
+    });
+  });
   const [edges, setEdges] = useState<GraphEdge[]>(() =>
     loadFromStorage(STORAGE_KEYS.EDGES, INITIAL_EDGES)
   );
   const [regions, setRegions] = useState<GraphRegion[]>(() =>
     loadFromStorage(STORAGE_KEYS.REGIONS, INITIAL_REGIONS)
   );
-  const [ovas, setOvas] = useState<OVA[]>(() =>
-    loadFromStorage(STORAGE_KEYS.OVAS, INITIAL_OVAS)
-  );
+  const [ovas, setOvas] = useState<OVA[]>(() => {
+    const loaded = loadFromStorage(STORAGE_KEYS.OVAS, INITIAL_OVAS);
+    // Hydrate any stored lessons that predate Notion blocks with seed blocks or auto-parsed blocks
+    return loaded.map((ova) => {
+      const seedOva = INITIAL_OVAS.find((s) => s.id === ova.id);
+      return {
+        ...ova,
+        lessons: ova.lessons.map((lesson) => {
+          if (lesson.blocks && lesson.blocks.length > 0) return lesson;
+          const seedLesson = seedOva?.lessons.find((sl) => sl.id === lesson.id);
+          if (seedLesson?.blocks && seedLesson.blocks.length > 0) {
+            return {
+              ...lesson,
+              blocks: seedLesson.blocks,
+              mediaComment: lesson.mediaComment ?? seedLesson.mediaComment,
+            };
+          }
+          return {
+            ...lesson,
+            blocks: ensureLessonBlocks(lesson),
+          };
+        }),
+      };
+    });
+  });
   const [learners, setLearners] = useState<Learner[]>(() =>
     loadFromStorage(STORAGE_KEYS.LEARNERS, INITIAL_LEARNERS)
   );
@@ -162,16 +212,18 @@ export default function App() {
 
   const effectiveMode = isInstructorAuth ? workspaceMode : 'public_learner';
 
-  // Handler: Promote a Node from the Obsidian Graph Canvas into an OVA Lesson
+  // Handler: Promote or Sync a Node from the Obsidian Graph Canvas into an OVA Lesson
   const handlePromoteNodeToOva = (
     nodeId: string,
     ovaId: string,
-    mode: 'new_lesson' | 'append_first'
+    mode: 'new_lesson' | 'append_first' | 'sync_lesson',
+    targetSpecificLessonId?: string
   ) => {
     const node = nodes.find((n) => n.id === nodeId);
     if (!node) return;
 
-    let targetLessonId = '';
+    const nodeBlocks = ensureNodeBlocks(node);
+    let resolvedLessonId = targetSpecificLessonId || '';
 
     setOvas((prev) =>
       prev.map((ova) => {
@@ -180,17 +232,18 @@ export default function App() {
         if (mode === 'new_lesson' || ova.lessons.length === 0) {
           const newOrder = ova.lessons.length + 1;
           const newLessonId = `les-${Date.now()}`;
-          targetLessonId = newLessonId;
+          resolvedLessonId = newLessonId;
           const createdLesson: Lesson = {
             id: newLessonId,
             order: newOrder,
             title: node.title,
             durationMinutes: 45,
-            summary: `Lección generada desde el nodo de investigación (${node.tags.join(', ')}).`,
-            contentMarkdown: node.content,
+            summary: `Lección construida desde el Lienzo en Grafo (${node.tags.join(', ')}).`,
+            contentMarkdown: blocksToMarkdown(nodeBlocks),
+            blocks: nodeBlocks,
             mediaUrl: node.mediaUrl,
-            mediaTitle:
-              node.type === 'media' ? node.title : undefined,
+            mediaTitle: node.type === 'media' ? node.title : undefined,
+            mediaComment: node.mediaComment ?? node.content,
             linkedNodeIds: [node.id],
             quiz: node.quizQuestions ? [...node.quizQuestions] : [],
             activity:
@@ -212,25 +265,81 @@ export default function App() {
             updatedAt: '2026-11-09',
             lessons: [...ova.lessons, createdLesson],
           };
-        } else {
-          const first = ova.lessons[0];
-          targetLessonId = first.id;
-          const updatedFirst: Lesson = {
-            ...first,
-            contentMarkdown: `${first.contentMarkdown}\n\n### ${node.title}\n${node.content}`,
-            linkedNodeIds: Array.from(
-              new Set([...first.linkedNodeIds, node.id])
-            ),
-            quiz: node.quizQuestions
-              ? [...first.quiz, ...node.quizQuestions]
-              : first.quiz,
-          };
-          return {
-            ...ova,
-            updatedAt: '2026-11-09',
-            lessons: [updatedFirst, ...ova.lessons.slice(1)],
-          };
         }
+
+        // Sync or Append into a specific target lesson (or first lesson if not specified)
+        const targetLesson =
+          ova.lessons.find((l) => l.id === targetSpecificLessonId) ??
+          ova.lessons[0];
+        resolvedLessonId = targetLesson.id;
+
+        const existingBlocks = ensureLessonBlocks(targetLesson);
+        const hasBlocksFromThisNode = existingBlocks.some(
+          (b) => b.sourceNodeId === node.id
+        );
+
+        let nextBlocks;
+        if (mode === 'sync_lesson' && hasBlocksFromThisNode) {
+          // Replace the blocks that belong to this node in place
+          const firstIdx = existingBlocks.findIndex(
+            (b) => b.sourceNodeId === node.id
+          );
+          const withoutThisNode = existingBlocks.filter(
+            (b) => b.sourceNodeId !== node.id
+          );
+          nextBlocks = [...withoutThisNode];
+          nextBlocks.splice(firstIdx, 0, ...nodeBlocks);
+        } else if (
+          mode === 'sync_lesson' &&
+          targetLesson.linkedNodeIds.length === 1 &&
+          targetLesson.linkedNodeIds[0] === node.id
+        ) {
+          // Lesson is exclusively backed by this node
+          nextBlocks = [...nodeBlocks];
+        } else {
+          // Append heading + node blocks
+          const withoutOldFromNode = existingBlocks.filter(
+            (b) => b.sourceNodeId !== node.id
+          );
+          nextBlocks = [
+            ...withoutOldFromNode,
+            {
+              id: `blk-prom-h-${node.id}`,
+              type: 'heading' as const,
+              title: node.title,
+              content: '',
+              sourceNodeId: node.id,
+            },
+            ...nodeBlocks,
+          ];
+        }
+
+        const updatedLesson: Lesson = {
+          ...targetLesson,
+          blocks: nextBlocks,
+          contentMarkdown: blocksToMarkdown(nextBlocks),
+          linkedNodeIds: Array.from(
+            new Set([...targetLesson.linkedNodeIds, node.id])
+          ),
+          quiz: node.quizQuestions
+            ? Array.from(
+                new Map(
+                  [...targetLesson.quiz, ...node.quizQuestions].map((q) => [
+                    q.id,
+                    q,
+                  ])
+                ).values()
+              )
+            : targetLesson.quiz,
+        };
+
+        return {
+          ...ova,
+          updatedAt: '2026-11-09',
+          lessons: ova.lessons.map((l) =>
+            l.id === targetLesson.id ? updatedLesson : l
+          ),
+        };
       })
     );
 
@@ -241,7 +350,7 @@ export default function App() {
               ...n,
               researchStatus: 'in_ova',
               linkedOvaId: ovaId,
-              linkedLessonId: targetLessonId,
+              linkedLessonId: resolvedLessonId,
               updatedAt: '2026-11-09',
             }
           : n
@@ -387,11 +496,7 @@ export default function App() {
           href="#top"
           onClick={(e) => {
             e.preventDefault();
-            if (effectiveMode === 'instructor') {
-              setInstructorTab('graph');
-            } else {
-              setPublicSection('catalog');
-            }
+            setShowLandingPage(true);
           }}
           className="text-lg font-bold tracking-tight text-slate-900 font-display whitespace-nowrap shrink-0"
         >
@@ -399,16 +504,27 @@ export default function App() {
         </a>
 
         {/* Zone 2: 4–5 concise single-line text navigation links */}
-        {effectiveMode === 'instructor' ? (
+        {effectiveMode === 'instructor' && !showLandingPage ? (
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+            <a
+              href="#portada"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowLandingPage(true);
+              }}
+              className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0"
+            >
+              Portada
+            </a>
             <a
               href="#lienzo-grafo"
               onClick={(e) => {
                 e.preventDefault();
+                setShowLandingPage(false);
                 setInstructorTab('graph');
               }}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
-                instructorTab === 'graph'
+                !showLandingPage && instructorTab === 'graph'
                   ? 'text-indigo-600 underline underline-offset-8 decoration-2'
                   : ''
               }`}
@@ -419,10 +535,11 @@ export default function App() {
               href="#gestion-ovas"
               onClick={(e) => {
                 e.preventDefault();
+                setShowLandingPage(false);
                 setInstructorTab('ovas');
               }}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
-                instructorTab === 'ovas'
+                !showLandingPage && instructorTab === 'ovas'
                   ? 'text-indigo-600 underline underline-offset-8 decoration-2'
                   : ''
               }`}
@@ -433,10 +550,11 @@ export default function App() {
               href="#aprendices-fichas"
               onClick={(e) => {
                 e.preventDefault();
+                setShowLandingPage(false);
                 setInstructorTab('learners');
               }}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
-                instructorTab === 'learners'
+                !showLandingPage && instructorTab === 'learners'
                   ? 'text-indigo-600 underline underline-offset-8 decoration-2'
                   : ''
               }`}
@@ -447,10 +565,11 @@ export default function App() {
               href="#recordatorios"
               onClick={(e) => {
                 e.preventDefault();
+                setShowLandingPage(false);
                 setInstructorTab('reminders');
               }}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
-                instructorTab === 'reminders'
+                !showLandingPage && instructorTab === 'reminders'
                   ? 'text-indigo-600 underline underline-offset-8 decoration-2'
                   : ''
               }`}
@@ -461,13 +580,29 @@ export default function App() {
         ) : (
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
             <a
+              href="#portada"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowLandingPage(true);
+              }}
+              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
+                showLandingPage
+                  ? 'text-[#d94e34] font-semibold underline underline-offset-8 decoration-2'
+                  : ''
+              }`}
+            >
+              Portada
+            </a>
+            <a
               href="#catalogo-ovas"
               onClick={(e) => {
                 e.preventDefault();
+                setWorkspaceMode('public_learner');
                 setPublicSection('catalog');
+                setShowLandingPage(false);
               }}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
-                publicSection === 'catalog'
+                !showLandingPage && publicSection === 'catalog'
                   ? 'text-indigo-600 underline underline-offset-8 decoration-2'
                   : ''
               }`}
@@ -478,10 +613,12 @@ export default function App() {
               href="#mis-evidencias"
               onClick={(e) => {
                 e.preventDefault();
+                setWorkspaceMode('public_learner');
                 setPublicSection('evidences');
+                setShowLandingPage(false);
               }}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
-                publicSection === 'evidences'
+                !showLandingPage && publicSection === 'evidences'
                   ? 'text-indigo-600 underline underline-offset-8 decoration-2'
                   : ''
               }`}
@@ -492,10 +629,12 @@ export default function App() {
               href="#mi-progreso"
               onClick={(e) => {
                 e.preventDefault();
+                setWorkspaceMode('public_learner');
                 setPublicSection('progress');
+                setShowLandingPage(false);
               }}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
-                publicSection === 'progress'
+                !showLandingPage && publicSection === 'progress'
                   ? 'text-indigo-600 underline underline-offset-8 decoration-2'
                   : ''
               }`}
@@ -558,9 +697,23 @@ export default function App() {
               <div className="flex items-center gap-1 p-1 bg-white border border-slate-200 rounded-lg">
                 <button
                   type="button"
-                  onClick={() => setWorkspaceMode('instructor')}
+                  onClick={() => setShowLandingPage(true)}
                   className={`px-2.5 py-1 text-xs font-semibold rounded transition-colors whitespace-nowrap ${
-                    workspaceMode === 'instructor'
+                    showLandingPage
+                      ? 'bg-stone-900 text-white'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Portada Minimalista
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLandingPage(false);
+                    setWorkspaceMode('instructor');
+                  }}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded transition-colors whitespace-nowrap ${
+                    !showLandingPage && workspaceMode === 'instructor'
                       ? 'bg-indigo-600 text-white'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
@@ -569,9 +722,12 @@ export default function App() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setWorkspaceMode('public_learner')}
+                  onClick={() => {
+                    setShowLandingPage(false);
+                    setWorkspaceMode('public_learner');
+                  }}
                   className={`px-2.5 py-1 text-xs font-semibold rounded transition-colors whitespace-nowrap ${
-                    workspaceMode === 'public_learner'
+                    !showLandingPage && workspaceMode === 'public_learner'
                       ? 'bg-emerald-600 text-white'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
@@ -711,7 +867,35 @@ export default function App() {
 
       {/* Main Workspace Viewport */}
       <main className="no-print flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6">
-        {effectiveMode === 'instructor' ? (
+        {showLandingPage ? (
+          <MinimalLandingPage
+            ovas={ovas}
+            nodes={nodes}
+            learners={learners}
+            isInstructorAuth={isInstructorAuth}
+            onEnterOvaLesson={(ovaId, lessonId) => {
+              setDeepLinkOvaId(ovaId);
+              setDeepLinkLessonId(lessonId ?? null);
+              setWorkspaceMode('public_learner');
+              setPublicSection('catalog');
+              setShowLandingPage(false);
+            }}
+            onEnterEvidencesSchedule={() => {
+              setWorkspaceMode('public_learner');
+              setPublicSection('evidences');
+              setShowLandingPage(false);
+            }}
+            onEnterInstructorStudio={() => {
+              if (isInstructorAuth) {
+                setWorkspaceMode('instructor');
+                setShowLandingPage(false);
+              } else {
+                setShowLoginModal(true);
+              }
+            }}
+            onOpenPrintGuide={(id) => setPrintGuideOvaId(id)}
+          />
+        ) : effectiveMode === 'instructor' ? (
           <>
             {instructorTab === 'graph' && (
               <KnowledgeGraphCanvas
@@ -722,7 +906,9 @@ export default function App() {
                 onUpdateNodes={setNodes}
                 onUpdateEdges={setEdges}
                 onUpdateRegions={setRegions}
+                onUpdateOvas={setOvas}
                 onPromoteNodeToOva={handlePromoteNodeToOva}
+                onNavigateToOva={() => setInstructorTab('ovas')}
               />
             )}
 
@@ -731,7 +917,9 @@ export default function App() {
                 ovas={ovas}
                 nodes={nodes}
                 onUpdateOvas={setOvas}
+                onUpdateNodes={setNodes}
                 onOpenPrintGuide={(id) => setPrintGuideOvaId(id)}
+                onNavigateToGraph={() => setInstructorTab('graph')}
               />
             )}
 
@@ -751,6 +939,7 @@ export default function App() {
                   setActiveLearnerId(learnerId);
                   setWorkspaceMode('public_learner');
                   setPublicSection('catalog');
+                  setShowLandingPage(false);
                 }}
               />
             )}
@@ -768,6 +957,8 @@ export default function App() {
             onOpenPrintGuide={(id) => setPrintGuideOvaId(id)}
             publicSection={publicSection}
             onChangePublicSection={setPublicSection}
+            initialOvaId={deepLinkOvaId}
+            initialLessonId={deepLinkLessonId}
           />
         )}
       </main>
@@ -808,6 +999,7 @@ export default function App() {
           onSuccessLogin={() => {
             setIsInstructorAuth(true);
             setWorkspaceMode('instructor');
+            setShowLandingPage(false);
             setShowLoginModal(false);
           }}
           onClose={() => setShowLoginModal(false)}

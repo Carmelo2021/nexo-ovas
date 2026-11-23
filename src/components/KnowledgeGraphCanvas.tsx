@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import {
   BookOpen,
   CheckCircle2,
+  Code2,
   Compass,
   ExternalLink,
   FileText,
@@ -12,6 +13,7 @@ import {
   Maximize2,
   Move,
   Plus,
+  RefreshCw,
   Search,
   Send,
   Sparkles,
@@ -24,10 +26,19 @@ import {
   GraphEdge,
   GraphNode,
   GraphRegion,
+  Lesson,
+  LessonBlock,
   NodeType,
   OVA,
   ResearchStatus,
 } from '../types/ova';
+import {
+  blocksToMarkdown,
+  ensureLessonBlocks,
+  ensureNodeBlocks,
+  HoverPreviewTrigger,
+  NotionNodeBlockEditor,
+} from './NotionLessonBlocks';
 
 interface KnowledgeGraphCanvasProps {
   nodes: GraphNode[];
@@ -37,7 +48,14 @@ interface KnowledgeGraphCanvasProps {
   onUpdateNodes: React.Dispatch<React.SetStateAction<GraphNode[]>>;
   onUpdateEdges: React.Dispatch<React.SetStateAction<GraphEdge[]>>;
   onUpdateRegions: React.Dispatch<React.SetStateAction<GraphRegion[]>>;
-  onPromoteNodeToOva: (nodeId: string, ovaId: string, mode: 'new_lesson' | 'append_first') => void;
+  onUpdateOvas: React.Dispatch<React.SetStateAction<OVA[]>>;
+  onPromoteNodeToOva: (
+    nodeId: string,
+    ovaId: string,
+    mode: 'new_lesson' | 'append_first' | 'sync_lesson',
+    targetSpecificLessonId?: string
+  ) => void;
+  onNavigateToOva?: () => void;
 }
 
 const STATUS_LABELS: Record<ResearchStatus, string> = {
@@ -48,8 +66,9 @@ const STATUS_LABELS: Record<ResearchStatus, string> = {
 };
 
 const TYPE_LABELS: Record<NodeType, string> = {
-  markdown: 'Nota Markdown',
-  media: 'Video / Recurso',
+  markdown: 'Nota / Bloques',
+  media: 'Enlace / Video',
+  code: 'Código Fuente',
   quiz: 'Cuestionario',
   activity: 'Evidencia RAP',
 };
@@ -96,7 +115,9 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
   onUpdateNodes,
   onUpdateEdges,
   onUpdateRegions,
+  onUpdateOvas,
   onPromoteNodeToOva,
+  onNavigateToOva,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -114,6 +135,15 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
   const [typeFilter, setTypeFilter] = useState<NodeType | 'all'>('all');
 
   const [targetOvaId, setTargetOvaId] = useState<string>(ovas[0]?.id ?? '');
+  const [targetLessonId, setTargetLessonId] = useState<string>(
+    ovas[0]?.lessons[0]?.id ?? ''
+  );
+  const [showCreateOvaInline, setShowCreateOvaInline] = useState<boolean>(false);
+  const [newOvaTitle, setNewOvaTitle] = useState<string>('');
+  const [newOvaFicha, setNewOvaFicha] = useState<string>('2874512');
+  const [newOvaRap, setNewOvaRap] = useState<string>(
+    'RAP 01 · Construir componentes de software cumpliendo especificaciones técnicas'
+  );
   const [promoteFeedback, setPromoteFeedback] = useState<string | null>(null);
 
   // Dragging state for nodes, regions, or canvas pan
@@ -237,14 +267,107 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
     }
   };
 
-  const handleCreateNode = (type: NodeType) => {
+  const handleCreateNode = (
+    type: NodeType,
+    presetKind?: 'link' | 'video' | 'code'
+  ) => {
     const newId = `node-${Date.now()}`;
     const offset = (nodes.length % 5) * 35;
+
+    let starterBlocks: LessonBlock[];
+    if (presetKind === 'link') {
+      starterBlocks = [
+        {
+          id: `${newId}-blk-1`,
+          type: 'text',
+          content:
+            'Contexto conceptual del recurso web investigado en el lienzo.',
+          sourceNodeId: newId,
+        },
+        {
+          id: `${newId}-blk-2`,
+          type: 'link',
+          title: 'Documentación Oficial / Estándar Técnico de Referencia',
+          url: 'https://developer.mozilla.org/es/docs/Web/HTTP',
+          domainOrSource: 'MDN Web Docs',
+          content: 'Guía técnica de referencia para la lección del OVA.',
+          relevanceComment:
+            'Este enlace es clave porque detalla el contrato técnico que el aprendiz debe aplicar en su evidencia de proyecto.',
+          sourceNodeId: newId,
+        },
+      ];
+    } else if (presetKind === 'video' || (type === 'media' && !presetKind)) {
+      starterBlocks = [
+        {
+          id: `${newId}-blk-1`,
+          type: 'text',
+          content:
+            'Síntesis de los puntos clave demostrados en la cápsula en video.',
+          sourceNodeId: newId,
+        },
+        {
+          id: `${newId}-blk-2`,
+          type: 'video',
+          title: 'Video Explicativo: Implementación Técnica Paso a Paso',
+          url: 'https://www.youtube.com/watch?v=7YcW25PHnAA',
+          domainOrSource: 'YouTube · Cápsula Técnica SENA',
+          videoTimestamp: 'Min 02:15 - 09:40',
+          content: 'Demostración práctica del patrón arquitectónico.',
+          relevanceComment:
+            'Presta especial atención a partir del minuto 02:15 donde se explica la validación y estructura del componente.',
+          sourceNodeId: newId,
+        },
+      ];
+    } else if (type === 'code' || presetKind === 'code') {
+      starterBlocks = [
+        {
+          id: `${newId}-blk-1`,
+          type: 'text',
+          content:
+            'Explicación del patrón de implementación y su integración en el proyecto formativo.',
+          sourceNodeId: newId,
+        },
+        {
+          id: `${newId}-blk-2`,
+          type: 'code',
+          codeLanguage: 'typescript',
+          title: 'src/services/moduloOva.service.ts',
+          content: `export async function procesarEvidenciaAprendiz(fichaCode: string, payload: unknown) {\n  if (!fichaCode) throw new Error('Código de ficha SENA requerido');\n  return { ok: true, fichaCode, timestamp: new Date().toISOString() };\n}`,
+          relevanceComment:
+            'Segmento de código fuente listo para copiar y adaptar en la capa de servicios del proyecto.',
+          sourceNodeId: newId,
+        },
+      ];
+    } else {
+      starterBlocks = [
+        {
+          id: `${newId}-blk-1`,
+          type: 'heading',
+          title: '1. Concepto y Fundamento Técnico',
+          content: '',
+          sourceNodeId: newId,
+        },
+        {
+          id: `${newId}-blk-2`,
+          type: 'text',
+          content:
+            'Documenta aquí tus hallazgos en el lienzo. Puedes agregar bloques de enlaces con previsualización, videos comentados o segmentos de código fuente que se sincronizarán directamente con el OVA.',
+          sourceNodeId: newId,
+        },
+      ];
+    }
+
     const newNode: GraphNode = {
       id: newId,
       title:
-        type === 'markdown'
-          ? 'Nuevo Concepto de Investigación'
+        presetKind === 'link'
+          ? 'Nuevo Enlace Técnico con Previsualización'
+          : presetKind === 'video'
+          ? 'Nuevo Video Educativo con Previsualización'
+          : type === 'code'
+          ? 'Nuevo Segmento de Código Fuente'
+          : type === 'markdown'
+          ? 'Nuevo Concepto Modular (Bloques Notion)'
           : type === 'media'
           ? 'Nuevo Recurso Multimedia / Video'
           : type === 'quiz'
@@ -255,16 +378,24 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
       x: Math.round((180 - pan.x) / zoom + offset),
       y: Math.round((140 - pan.y) / zoom + offset),
       regionId: regions[0]?.id,
-      content:
-        type === 'markdown'
-          ? '### Apuntes de Investigación\nDocumenta aquí los hallazgos clave, fórmulas o fragmentos técnicos que luego convertirás en lección del OVA.'
-          : type === 'media'
-          ? 'Descripción del video, repositorio o documentación oficial de referencia para el aprendiz.'
-          : type === 'quiz'
-          ? 'Preguntas de autoevaluación para comprobar la apropiación del concepto.'
-          : 'Especificación de la evidencia de conocimiento, desempeño o producto requerida por el RAP.',
-      mediaUrl: type === 'media' ? 'https://developer.mozilla.org/es/' : undefined,
-      mediaKind: type === 'media' ? 'video' : undefined,
+      content: blocksToMarkdown(starterBlocks),
+      blocks: starterBlocks,
+      mediaUrl:
+        presetKind === 'link'
+          ? 'https://developer.mozilla.org/es/docs/Web/HTTP'
+          : presetKind === 'video' || type === 'media'
+          ? 'https://www.youtube.com/watch?v=7YcW25PHnAA'
+          : undefined,
+      mediaKind:
+        presetKind === 'link'
+          ? 'article'
+          : presetKind === 'video' || type === 'media'
+          ? 'video'
+          : undefined,
+      mediaComment: starterBlocks.find(
+        (b) => b.type === 'link' || b.type === 'video'
+      )?.relevanceComment,
+      codeLanguage: type === 'code' ? 'typescript' : undefined,
       quizQuestions:
         type === 'quiz'
           ? [
@@ -284,7 +415,7 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
           : undefined,
       dueDate: type === 'activity' ? '2026-11-18' : undefined,
       evidenceType: type === 'activity' ? 'Producto' : undefined,
-      tags: ['Investigación', 'SENA'],
+      tags: ['Lienzo', 'SENA'],
       updatedAt: '2026-11-09',
     };
 
@@ -326,11 +457,67 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
 
   const handleUpdateSelectedNode = (patch: Partial<GraphNode>) => {
     if (!selectedNode) return;
+    const updatedNode: GraphNode = {
+      ...selectedNode,
+      ...patch,
+      updatedAt: '2026-11-09',
+    };
     onUpdateNodes((prev) =>
-      prev.map((n) =>
-        n.id === selectedNode.id ? { ...n, ...patch, updatedAt: '2026-11-09' } : n
-      )
+      prev.map((n) => (n.id === selectedNode.id ? updatedNode : n))
     );
+
+    // Bidirectional Live Sync: if this node is linked to an OVA Lesson, automatically update the OVA lesson's blocks!
+    if (updatedNode.linkedOvaId) {
+      const nodeBlocks = ensureNodeBlocks(updatedNode);
+      onUpdateOvas((prevOvas) =>
+        prevOvas.map((ova) => {
+          if (ova.id !== updatedNode.linkedOvaId) return ova;
+          return {
+            ...ova,
+            updatedAt: '2026-11-09',
+            lessons: ova.lessons.map((lesson) => {
+              const isLinkedLesson =
+                lesson.id === updatedNode.linkedLessonId ||
+                lesson.linkedNodeIds.includes(updatedNode.id);
+              if (!isLinkedLesson) return lesson;
+
+              const currentLessonBlocks = ensureLessonBlocks(lesson);
+              const hasNodeBlocks = currentLessonBlocks.some(
+                (b) => b.sourceNodeId === updatedNode.id
+              );
+
+              let nextBlocks: LessonBlock[];
+              if (
+                lesson.linkedNodeIds.length === 1 &&
+                lesson.linkedNodeIds[0] === updatedNode.id
+              ) {
+                nextBlocks = nodeBlocks;
+              } else if (hasNodeBlocks) {
+                const firstIdx = currentLessonBlocks.findIndex(
+                  (b) => b.sourceNodeId === updatedNode.id
+                );
+                const withoutNode = currentLessonBlocks.filter(
+                  (b) => b.sourceNodeId !== updatedNode.id
+                );
+                nextBlocks = [...withoutNode];
+                nextBlocks.splice(firstIdx, 0, ...nodeBlocks);
+              } else {
+                nextBlocks = [...currentLessonBlocks, ...nodeBlocks];
+              }
+
+              return {
+                ...lesson,
+                ...(lesson.linkedNodeIds.length === 1 && patch.title
+                  ? { title: patch.title }
+                  : {}),
+                blocks: nextBlocks,
+                contentMarkdown: blocksToMarkdown(nextBlocks),
+              };
+            }),
+          };
+        })
+      );
+    }
   };
 
   const handleUpdateSelectedRegion = (patch: Partial<GraphRegion>) => {
@@ -340,14 +527,167 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
     );
   };
 
-  const handleTriggerPromote = (mode: 'new_lesson' | 'append_first') => {
+  const handleTriggerPromote = (
+    mode: 'new_lesson' | 'append_first' | 'sync_lesson'
+  ) => {
     if (!selectedNode || !targetOvaId) return;
-    onPromoteNodeToOva(selectedNode.id, targetOvaId, mode);
+    onPromoteNodeToOva(
+      selectedNode.id,
+      targetOvaId,
+      mode,
+      targetLessonId || undefined
+    );
     const targetOva = ovas.find((o) => o.id === targetOvaId);
     setPromoteFeedback(
-      `Nodo integrado exitosamente en "${targetOva?.title ?? 'OVA'}"`
+      mode === 'new_lesson'
+        ? `Nueva lección creada y sincronizada en "${targetOva?.title ?? 'OVA'}"`
+        : `Bloques sincronizados bidireccionalmente con "${targetOva?.title ?? 'OVA'}"`
     );
     setTimeout(() => setPromoteFeedback(null), 3500);
+  };
+
+  const handleCreateNewOvaFromNode = () => {
+    if (!selectedNode) return;
+    const newOvaId = `ova-${Date.now()}`;
+    const firstLessonId = `les-${Date.now()}-1`;
+    const nodeBlocks = ensureNodeBlocks(selectedNode);
+
+    const createdOva: OVA = {
+      id: newOvaId,
+      code: `OVA-SENA-${new Date().getFullYear()}-0${ovas.length + 1}`,
+      title:
+        newOvaTitle.trim() || `OVA: ${selectedNode.title}`,
+      fichaCode: newOvaFicha.trim() || '2874512',
+      programName: 'Tecnólogo en Análisis y Desarrollo de Software (ADSO)',
+      competence:
+        '220501096 · Desarrollar la solución de software de acuerdo con el diseño',
+      learningOutcome:
+        newOvaRap.trim() ||
+        'RAP 01 · Construir componentes técnicos según requerimientos del proyecto formativo',
+      status: 'published',
+      description: `Objeto Virtual de Aprendizaje creado y sincronizado directamente desde el Lienzo en Grafo a partir del nodo "${selectedNode.title}".`,
+      estimatedHours: 16,
+      updatedAt: '2026-11-09',
+      lessons: [
+        {
+          id: firstLessonId,
+          order: 1,
+          title: selectedNode.title,
+          durationMinutes: 45,
+          summary: `Lección construida desde el nodo "${selectedNode.title}" (${selectedNode.tags.join(', ')}).`,
+          contentMarkdown: blocksToMarkdown(nodeBlocks),
+          blocks: nodeBlocks,
+          mediaUrl: selectedNode.mediaUrl,
+          mediaTitle: selectedNode.title,
+          mediaComment: selectedNode.mediaComment,
+          linkedNodeIds: [selectedNode.id],
+          quiz: selectedNode.quizQuestions
+            ? [...selectedNode.quizQuestions]
+            : [],
+        },
+      ],
+    };
+
+    onUpdateOvas((prev) => [createdOva, ...prev]);
+    handleUpdateSelectedNode({
+      researchStatus: 'in_ova',
+      linkedOvaId: newOvaId,
+      linkedLessonId: firstLessonId,
+    });
+    setTargetOvaId(newOvaId);
+    setTargetLessonId(firstLessonId);
+    setShowCreateOvaInline(false);
+    setNewOvaTitle('');
+    setPromoteFeedback(
+      `Nuevo OVA "${createdOva.title}" creado y vinculado en tiempo real con este nodo.`
+    );
+    setTimeout(() => setPromoteFeedback(null), 4000);
+  };
+
+  const handleBuildOvaFromRegion = (region: GraphRegion) => {
+    const regionNodes = nodes.filter(
+      (n) =>
+        n.regionId === region.id ||
+        (n.x >= region.x &&
+          n.x <= region.x + region.width &&
+          n.y >= region.y &&
+          n.y <= region.y + region.height)
+    );
+    if (regionNodes.length === 0) return;
+
+    const newOvaId = `ova-reg-${Date.now()}`;
+    const nodeLessonMap: Record<string, string> = {};
+
+    const lessons: Lesson[] = regionNodes.map((n, idx) => {
+      const lesId = `les-${Date.now()}-${idx + 1}`;
+      nodeLessonMap[n.id] = lesId;
+      const nBlocks = ensureNodeBlocks(n);
+      return {
+        id: lesId,
+        order: idx + 1,
+        title: n.title,
+        durationMinutes: 45,
+        summary: `Lección ${idx + 1} generada desde la región "${region.title}".`,
+        contentMarkdown: blocksToMarkdown(nBlocks),
+        blocks: nBlocks,
+        mediaUrl: n.mediaUrl,
+        mediaTitle: n.title,
+        mediaComment: n.mediaComment,
+        linkedNodeIds: [n.id],
+        quiz: n.quizQuestions ? [...n.quizQuestions] : [],
+        activity:
+          n.type === 'activity'
+            ? {
+                id: `act-${Date.now()}-${idx}`,
+                title: n.title,
+                evidenceCode: `GA7-220501096-AA1-EV0${idx + 1}`,
+                evidenceType: n.evidenceType ?? 'Producto',
+                instructions: n.content,
+                dueDate: n.dueDate ?? '2026-11-16',
+                deliverableFormat: 'Repositorio Git o documento PDF',
+              }
+            : undefined,
+      };
+    });
+
+    const newOva: OVA = {
+      id: newOvaId,
+      code: `OVA-REG-${new Date().getFullYear()}-0${ovas.length + 1}`,
+      title: region.title.replace(/^Región\s+\d+\s*·\s*/i, ''),
+      fichaCode: '2874512',
+      programName: 'Tecnólogo en Análisis y Desarrollo de Software (ADSO)',
+      competence:
+        '220501096 · Desarrollar la solución de software de acuerdo con el diseño',
+      learningOutcome: `RAP · ${region.subtitle}`,
+      status: 'published',
+      description: `OVA construido automáticamente desde la región temática "${region.title}" del Lienzo en Grafo con ${lessons.length} lecciones sincronizadas.`,
+      estimatedHours: lessons.length * 6,
+      updatedAt: '2026-11-09',
+      lessons,
+    };
+
+    onUpdateOvas((prev) => [newOva, ...prev]);
+    onUpdateRegions((prev) =>
+      prev.map((r) => (r.id === region.id ? { ...r, linkedOvaId: newOvaId } : r))
+    );
+    onUpdateNodes((prev) =>
+      prev.map((n) =>
+        nodeLessonMap[n.id]
+          ? {
+              ...n,
+              researchStatus: 'in_ova',
+              linkedOvaId: newOvaId,
+              linkedLessonId: nodeLessonMap[n.id],
+              updatedAt: '2026-11-09',
+            }
+          : n
+      )
+    );
+    setTargetOvaId(newOvaId);
+    setPromoteFeedback(
+      `OVA "${newOva.title}" creado con ${lessons.length} lecciones sincronizadas desde esta región.`
+    );
+    setTimeout(() => setPromoteFeedback(null), 4000);
   };
 
   const resetView = () => {
@@ -371,23 +711,39 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
             <button
               type="button"
               onClick={() => handleCreateNode('markdown')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
             >
               <FileText className="w-3.5 h-3.5 text-indigo-600" />
-              Nota Markdown
+              Nota / Bloques
             </button>
             <button
               type="button"
-              onClick={() => handleCreateNode('media')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
+              onClick={() => handleCreateNode('media', 'link')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
             >
-              <Video className="w-3.5 h-3.5 text-sky-600" />
-              Video / Recurso
+              <Link2 className="w-3.5 h-3.5 text-indigo-600" />
+              Enlace con Preview
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCreateNode('media', 'video')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
+            >
+              <Video className="w-3.5 h-3.5 text-rose-600" />
+              Video con Preview
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCreateNode('code', 'code')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-100 bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0"
+            >
+              <Code2 className="w-3.5 h-3.5 text-emerald-400" />
+              Código Fuente
             </button>
             <button
               type="button"
               onClick={() => handleCreateNode('quiz')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
             >
               <HelpCircle className="w-3.5 h-3.5 text-emerald-600" />
               Cuestionario
@@ -395,7 +751,7 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
             <button
               type="button"
               onClick={() => handleCreateNode('activity')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
             >
               <FolderGit2 className="w-3.5 h-3.5 text-amber-600" />
               Evidencia RAP
@@ -403,7 +759,7 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
             <button
               type="button"
               onClick={handleCreateRegion}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors whitespace-nowrap shrink-0"
             >
               <Layers className="w-3.5 h-3.5 text-slate-500" />
               Región Temática
@@ -673,11 +1029,16 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
               })}
             </svg>
 
-            {/* 3. Interactive Draggable Nodes Layer */}
+            {/* 3. Interactive Draggable Nodes Layer with Direct Hover Previews for Links/Videos & Code Badges */}
             {filteredNodes.map((node) => {
               const isSelected = selectedNodeId === node.id;
               const isConnectingSource = connectingFromId === node.id;
               const linkedOva = ovas.find((o) => o.id === node.linkedOvaId);
+              const nodeBlocks = ensureNodeBlocks(node);
+              const mediaBlocks = nodeBlocks.filter(
+                (b) => b.type === 'link' || b.type === 'video'
+              );
+              const codeBlock = nodeBlocks.find((b) => b.type === 'code');
 
               return (
                 <div
@@ -688,17 +1049,17 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
                     top: `${node.y}px`,
                     width: `${NODE_WIDTH}px`,
                   }}
-                  className={`absolute rounded-xl border p-3.5 transition-shadow cursor-grab active:cursor-grabbing ${
+                  className={`absolute rounded-xl border p-3.5 transition-shadow cursor-grab active:cursor-grabbing hover:z-30 ${
                     canvasDark
                       ? 'bg-slate-900/95 border-slate-700 text-slate-100'
                       : 'bg-white border-slate-200 text-slate-900 shadow-sm'
                   } ${
                     isSelected
-                      ? 'ring-2 ring-indigo-500 border-indigo-500'
+                      ? 'ring-2 ring-indigo-500 border-indigo-500 z-20'
                       : 'hover:border-indigo-400'
                   } ${isConnectingSource ? 'ring-2 ring-amber-400' : ''}`}
                 >
-                  {/* Clean Unboxed Metadata Line (Zero-Pill Rule) */}
+                  {/* Clean Unboxed Metadata Line */}
                   <div className="flex items-center justify-between gap-2 text-[11px] mb-1.5">
                     <div
                       className={`flex items-center gap-1.5 truncate ${
@@ -709,7 +1070,10 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
                         <FileText className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                       )}
                       {node.type === 'media' && (
-                        <Video className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                        <Video className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                      )}
+                      {node.type === 'code' && (
+                        <Code2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                       )}
                       {node.type === 'quiz' && (
                         <HelpCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -763,14 +1127,65 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
 
                   {/* Snippet / Content Preview */}
                   <p
-                    className={`text-xs leading-relaxed line-clamp-2 mb-2.5 ${
+                    className={`text-xs leading-relaxed line-clamp-2 mb-2 ${
                       canvasDark ? 'text-slate-400' : 'text-slate-600'
                     }`}
                   >
-                    {node.content.replace(/[#*`]/g, '')}
+                    {node.content.replace(/[#*`>]/g, '')}
                   </p>
 
-                  {/* Footer Metadata (Unboxed Text with Separators) */}
+                  {/* Interactive Hover Preview Chips for Links, Videos & Source Code directly on the Canvas Node */}
+                  {(mediaBlocks.length > 0 || codeBlock) && (
+                    <div
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="flex flex-wrap items-center gap-1.5 mb-2"
+                    >
+                      {mediaBlocks.slice(0, 2).map((mb) => (
+                        <HoverPreviewTrigger
+                          key={mb.id}
+                          kind={mb.type === 'video' ? 'video' : 'link'}
+                          title={
+                            mb.title
+                              ? mb.title.length > 26
+                                ? `${mb.title.slice(0, 26)}…`
+                                : mb.title
+                              : mb.type === 'video'
+                              ? 'Video'
+                              : 'Enlace'
+                          }
+                          url={mb.url || 'https://'}
+                          relevanceComment={
+                            mb.relevanceComment ||
+                            mb.content ||
+                            'Recurso vinculado en este nodo del lienzo.'
+                          }
+                          domainOrSource={mb.domainOrSource}
+                          videoTimestamp={mb.videoTimestamp}
+                          inline
+                        />
+                      ))}
+                      {codeBlock && (
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border ${
+                            canvasDark
+                              ? 'bg-slate-950 text-emerald-300 border-emerald-500/30'
+                              : 'bg-slate-900 text-emerald-300 border-slate-700'
+                          }`}
+                          title={
+                            codeBlock.relevanceComment || codeBlock.content
+                          }
+                        >
+                          <Code2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span>
+                            {codeBlock.codeLanguage || 'code'}
+                            {codeBlock.title ? ` · ${codeBlock.title.split('/').pop()}` : ''}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Footer Metadata */}
                   <div
                     className={`pt-2 border-t flex items-center justify-between text-[11px] ${
                       canvasDark
@@ -779,11 +1194,11 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
                     }`}
                   >
                     <span className="truncate">
-                      {node.tags.slice(0, 3).join(' · ')}
+                      {nodeBlocks.length} bloques · {node.tags.slice(0, 2).join(' · ')}
                     </span>
                     {linkedOva ? (
                       <span className="text-emerald-400 font-mono shrink-0 ml-2">
-                        Ficha {linkedOva.fichaCode}
+                        ⇄ OVA {linkedOva.fichaCode}
                       </span>
                     ) : (
                       <span className="font-mono shrink-0 ml-2">
@@ -845,19 +1260,19 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
         </div>
       </div>
 
-      {/* Right Zone: Inspector & Progressive OVA Integration Deck */}
-      <aside className="w-full lg:w-[400px] xl:w-[430px] border-t lg:border-t-0 lg:border-l border-slate-200 bg-slate-50/70 flex flex-col h-full overflow-y-auto">
+      {/* Right Zone: Inspector & Bidirectional Notion-Style OVA Authoring Deck */}
+      <aside className="w-full lg:w-[480px] xl:w-[540px] border-t lg:border-t-0 lg:border-l border-slate-200 bg-slate-50/70 flex flex-col h-full overflow-y-auto">
         {selectedNode ? (
           <div className="p-5 space-y-5">
             <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
               <div>
                 <div className="text-xs text-slate-500 flex items-center gap-1.5 mb-1">
-                  <span>Inspector de Nodo</span>
+                  <span>Inspector de Nodo y Autoría OVA</span>
                   <span aria-hidden="true">·</span>
                   <span className="font-mono">{selectedNode.id}</span>
                 </div>
                 <h3 className="text-base font-bold text-slate-900">
-                  Propiedades y Contenido de Investigación
+                  Editar Bloques del Nodo y Sincronizar con OVA
                 </h3>
               </div>
               <button
@@ -874,7 +1289,7 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Título del Concepto / Nodo
+                  Título del Concepto / Lección en el Lienzo
                 </label>
                 <input
                   type="text"
@@ -889,7 +1304,7 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Tipo de Objeto
+                    Categoría Principal del Nodo
                   </label>
                   <select
                     value={selectedNode.type}
@@ -900,8 +1315,9 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
                     }
                     className="w-full px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-600"
                   >
-                    <option value="markdown">Nota Markdown</option>
-                    <option value="media">Video / Recurso URL</option>
+                    <option value="markdown">Nota / Bloques Notion</option>
+                    <option value="media">Enlace / Video con Preview</option>
+                    <option value="code">Segmento de Código Fuente</option>
                     <option value="quiz">Cuestionario Interactivo</option>
                     <option value="activity">Evidencia RAP</option>
                   </select>
@@ -972,51 +1388,11 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
               </div>
             </div>
 
-            {/* Markdown / Notes Editor */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Desarrollo del Concepto / Notas Markdown
-              </label>
-              <textarea
-                rows={6}
-                value={selectedNode.content}
-                onChange={(e) =>
-                  handleUpdateSelectedNode({ content: e.target.value })
-                }
-                className="w-full px-3 py-2 text-xs font-mono leading-relaxed bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-600"
-                placeholder="Escribe tus apuntes de investigación en formato Markdown..."
-              />
-            </div>
-
-            {/* Type-Specific Fields: Media URL */}
-            {selectedNode.type === 'media' && (
-              <div className="p-3.5 bg-white border border-slate-200 rounded-lg space-y-2.5">
-                <label className="block text-xs font-semibold text-slate-700">
-                  Enlace de Video, Documentación o Simulador
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="url"
-                    value={selectedNode.mediaUrl ?? ''}
-                    onChange={(e) =>
-                      handleUpdateSelectedNode({ mediaUrl: e.target.value })
-                    }
-                    placeholder="https://..."
-                    className="flex-1 px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800"
-                  />
-                  {selectedNode.mediaUrl && (
-                    <a
-                      href={selectedNode.mediaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg whitespace-nowrap shrink-0"
-                    >
-                      Abrir <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
+            {/* Full Notion-Style Block Editor directly inside the Canvas Node Inspector */}
+            <NotionNodeBlockEditor
+              node={selectedNode}
+              onUpdateNode={handleUpdateSelectedNode}
+            />
 
             {/* Type-Specific Fields: Activity / Evidence */}
             {selectedNode.type === 'activity' && (
@@ -1103,48 +1479,159 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
               </div>
             )}
 
-            {/* Promote / Link Node to OVA Lesson Section */}
+            {/* Create, Edit & Bidirectional Sync Node <-> OVA Lesson Section */}
             <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <h4 className="text-xs font-bold text-slate-900">
-                  Integrar este Nodo en un OVA SENA
+                  Crear o Editar OVA directamente desde el Lienzo
                 </h4>
-                <span className="text-[11px] text-slate-500">
-                  Investigación → Lección
-                </span>
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Convierte este nodo en una nueva lección o anéxalo a un OVA activo
-                para tus aprendices sin perder el vínculo con el mapa mental.
-              </p>
-
-              <select
-                value={targetOvaId}
-                onChange={(e) => setTargetOvaId(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-600"
-              >
-                {ovas.map((ova) => (
-                  <option key={ova.id} value={ova.id}>
-                    Ficha {ova.fichaCode} · {ova.title}
-                  </option>
-                ))}
-              </select>
-
-              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => handleTriggerPromote('new_lesson')}
+                  onClick={() => setShowCreateOvaInline((v) => !v)}
+                  className="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+                >
+                  {showCreateOvaInline ? 'Cancelar' : '+ Nuevo OVA aquí'}
+                </button>
+              </div>
+
+              {/* Active Bidirectional Sync Status if Node is already linked to an OVA */}
+              {selectedNode.linkedOvaId && (
+                <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-lg space-y-2 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Sincronización Bidireccional Activa
+                    </span>
+                    {onNavigateToOva && (
+                      <button
+                        type="button"
+                        onClick={onNavigateToOva}
+                        className="text-[11px] font-semibold text-emerald-800 underline hover:text-emerald-950"
+                      >
+                        Ver en Gestión de OVAs →
+                      </button>
+                    )}
+                  </div>
+                  <div className="text-emerald-800 text-[11px]">
+                    Todos los bloques de texto, enlaces con previsualización,
+                    videos y código fuente que edites en este nodo actualizan en
+                    tiempo real el OVA{' '}
+                    <strong>
+                      {ovas.find((o) => o.id === selectedNode.linkedOvaId)
+                        ?.title ?? selectedNode.linkedOvaId}
+                    </strong>
+                    .
+                  </div>
+                </div>
+              )}
+
+              {/* Inline Create New OVA Form right inside the Canvas Inspector */}
+              {showCreateOvaInline && (
+                <div className="p-3.5 bg-indigo-50/60 border border-indigo-200 rounded-lg space-y-2.5 text-xs">
+                  <div className="font-bold text-indigo-950">
+                    Crear Nuevo OVA SENA con este Nodo como 1ª Lección
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Título del Nuevo OVA
+                    </label>
+                    <input
+                      type="text"
+                      value={newOvaTitle}
+                      onChange={(e) => setNewOvaTitle(e.target.value)}
+                      placeholder={`Ej. OVA: ${selectedNode.title}`}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-md"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        Ficha SENA
+                      </label>
+                      <input
+                        type="text"
+                        value={newOvaFicha}
+                        onChange={(e) => setNewOvaFicha(e.target.value)}
+                        className="w-full px-2.5 py-1.5 font-mono bg-white border border-slate-200 rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        Resultado de Aprendizaje (RAP)
+                      </label>
+                      <input
+                        type="text"
+                        value={newOvaRap}
+                        onChange={(e) => setNewOvaRap(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-md"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreateNewOvaFromNode}
+                    className="w-full py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+                  >
+                    ✨ Crear OVA y Vincular Nodo Ahora
+                  </button>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="block text-[11px] font-semibold text-slate-600">
+                  1. Seleccionar OVA Destino:
+                </label>
+                <select
+                  value={targetOvaId}
+                  onChange={(e) => {
+                    const nextOvaId = e.target.value;
+                    setTargetOvaId(nextOvaId);
+                    const found = ovas.find((o) => o.id === nextOvaId);
+                    setTargetLessonId(found?.lessons[0]?.id ?? '');
+                  }}
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-600"
+                >
+                  {ovas.map((ova) => (
+                    <option key={ova.id} value={ova.id}>
+                      Ficha {ova.fichaCode} · {ova.title}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="block text-[11px] font-semibold text-slate-600">
+                  2. Lección del OVA a Sincronizar / Anexar:
+                </label>
+                <select
+                  value={targetLessonId}
+                  onChange={(e) => setTargetLessonId(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-600"
+                >
+                  {(
+                    ovas.find((o) => o.id === targetOvaId)?.lessons ?? []
+                  ).map((l) => (
+                    <option key={l.id} value={l.id}>
+                      Lección 0{l.order}: {l.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleTriggerPromote('sync_lesson')}
                   className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors whitespace-nowrap"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  Crear Lección en OVA
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Sincronizar en Lección Seleccionada
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleTriggerPromote('append_first')}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap"
+                  onClick={() => handleTriggerPromote('new_lesson')}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors whitespace-nowrap"
                 >
-                  Anexar a 1ª Lección
+                  <Plus className="w-3.5 h-3.5" />
+                  Crear como Nueva Lección
                 </button>
               </div>
 
@@ -1325,6 +1812,35 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
                 <option value="amber">Ámbar Evidencias</option>
                 <option value="slate">Pizarra Neutro</option>
               </select>
+            </div>
+
+            {/* Build a Full OVA from all Nodes inside this Region */}
+            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-slate-900">
+                  Construir OVA Completo desde esta Región
+                </h4>
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Convierte todos los nodos agrupados dentro de esta región en un
+                nuevo Objeto Virtual de Aprendizaje con sus lecciones, enlaces,
+                videos y segmentos de código sincronizados.
+              </p>
+              <button
+                type="button"
+                onClick={() => handleBuildOvaFromRegion(selectedRegion)}
+                className="w-full py-2.5 px-3 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Crear Nuevo OVA con los Nodos de esta Región
+              </button>
+              {promoteFeedback && (
+                <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <span>{promoteFeedback}</span>
+                </div>
+              )}
             </div>
           </div>
         ) : (

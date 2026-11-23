@@ -17,20 +17,29 @@ import {
   Trash2,
   Video,
 } from 'lucide-react';
-import { GraphNode, Lesson, OVA, QuizQuestion } from '../types/ova';
+import { GraphNode, Lesson, LessonBlock, OVA, QuizQuestion } from '../types/ova';
+import {
+  blocksToMarkdown,
+  ensureLessonBlocks,
+  NotionLessonBlockEditor,
+} from './NotionLessonBlocks';
 
 interface OvaBuilderViewProps {
   ovas: OVA[];
   nodes: GraphNode[];
   onUpdateOvas: React.Dispatch<React.SetStateAction<OVA[]>>;
+  onUpdateNodes?: React.Dispatch<React.SetStateAction<GraphNode[]>>;
   onOpenPrintGuide: (ovaId: string) => void;
+  onNavigateToGraph?: () => void;
 }
 
 export const OvaBuilderView: React.FC<OvaBuilderViewProps> = ({
   ovas,
   nodes,
   onUpdateOvas,
+  onUpdateNodes,
   onOpenPrintGuide,
+  onNavigateToGraph,
 }) => {
   const [selectedOvaId, setSelectedOvaId] = useState<string>(ovas[0]?.id ?? '');
   const [selectedLessonId, setSelectedLessonId] = useState<string>(
@@ -51,6 +60,50 @@ export const OvaBuilderView: React.FC<OvaBuilderViewProps> = ({
   const handleCreateOva = () => {
     const newOvaId = `ova-${Date.now()}`;
     const firstLessonId = `les-${Date.now()}-1`;
+    const initialBlocks: LessonBlock[] = [
+      {
+        id: `blk-${Date.now()}-1`,
+        type: 'heading',
+        title: '1. Contextualización y Conceptos Clave',
+        content: '',
+      },
+      {
+        id: `blk-${Date.now()}-2`,
+        type: 'text',
+        content:
+          'Desarrolla aquí el contenido de estudio para tus aprendices. Puedes incluir enlaces enriquecidos en el texto como [Documentación Técnica SENA](https://developer.mozilla.org/es/ "Enlace de referencia fundamental para comprender los estándares técnicos aplicados en esta unidad.") para que muestren un comentario al pasar el cursor.',
+      },
+      {
+        id: `blk-${Date.now()}-3`,
+        type: 'link',
+        title: 'Guía de Referencia Técnica y Estándares del Módulo',
+        url: 'https://developer.mozilla.org/es/',
+        domainOrSource: 'MDN Web Docs',
+        content: 'Recurso oficial de consulta para el aprendiz.',
+        relevanceComment:
+          'Este enlace contiene la especificación técnica necesaria para estructurar la primera evidencia de conocimiento.',
+      },
+      {
+        id: `blk-${Date.now()}-4`,
+        type: 'video',
+        title: 'Video Introductorio: Arquitectura y Ejemplo Práctico',
+        url: 'https://www.youtube.com/watch?v=7YcW25PHnAA',
+        domainOrSource: 'YouTube · Cápsula Formativa SENA',
+        videoTimestamp: 'Min 01:30 - 09:15',
+        content: 'Explicación audiovisual paso a paso del flujo de trabajo.',
+        relevanceComment:
+          'Observa del minuto 01:30 al 06:00 cómo se configura el entorno y se valida el primer caso de uso del proyecto formativo.',
+      },
+      {
+        id: `blk-${Date.now()}-5`,
+        type: 'code',
+        codeLanguage: 'typescript',
+        title: 'src/ejemploInicial.ts',
+        content: `export function inicializarModuloOva(fichaCode: string) {\n  console.log(\`Iniciando entorno práctico para Ficha SENA \${fichaCode}\`);\n  return { status: 'ready', fichaCode };\n}`,
+        relevanceComment:
+          'Plantilla inicial de código fuente que los aprendices pueden copiar y adaptar en su repositorio.',
+      },
+    ];
     const newOva: OVA = {
       id: newOvaId,
       code: `OVA-SENA-${new Date().getFullYear()}-0${ovas.length + 1}`,
@@ -63,7 +116,7 @@ export const OvaBuilderView: React.FC<OvaBuilderViewProps> = ({
         'RAP 01 · Implementar componentes técnicos según requerimientos del proyecto formativo',
       status: 'published',
       description:
-        'Descripción pedagógica del Objeto Virtual de Aprendizaje construido progresivamente desde el lienzo de investigación.',
+        'Descripción pedagógica del Objeto Virtual de Aprendizaje construido progresivamente con bloques de texto, enlaces, videos y código fuente.',
       estimatedHours: 16,
       updatedAt: '2026-11-09',
       lessons: [
@@ -73,8 +126,8 @@ export const OvaBuilderView: React.FC<OvaBuilderViewProps> = ({
           title: 'Lección 1: Introducción Conceptual y Fundamentos',
           durationMinutes: 45,
           summary: 'Síntesis de los conceptos esenciales de esta unidad formativa.',
-          contentMarkdown:
-            '### 1. Contextualización\nDesarrolla aquí el contenido de estudio para tus aprendices.\n\n### 2. Ejemplo Aplicado\nExplica paso a paso cómo aplicar el concepto en el proyecto formativo.',
+          contentMarkdown: blocksToMarkdown(initialBlocks),
+          blocks: initialBlocks,
           linkedNodeIds: [],
           quiz: [
             {
@@ -122,14 +175,28 @@ export const OvaBuilderView: React.FC<OvaBuilderViewProps> = ({
   const handleAddLesson = () => {
     if (!selectedOva) return;
     const nextOrder = selectedOva.lessons.length + 1;
+    const starterBlocks: LessonBlock[] = [
+      {
+        id: `blk-${Date.now()}-1`,
+        type: 'heading',
+        title: '1. Desarrollo Temático de la Lección',
+        content: '',
+      },
+      {
+        id: `blk-${Date.now()}-2`,
+        type: 'text',
+        content:
+          'Redacta aquí los conceptos clave, ejemplos y guías paso a paso para el aprendiz. Usa la barra superior o escribe "/" para agregar enlaces con previsualización, videos comentados o segmentos de código fuente.',
+      },
+    ];
     const newLesson: Lesson = {
       id: `les-${Date.now()}`,
       order: nextOrder,
       title: `Lección ${nextOrder}: Nuevo Tema de Estudio`,
       durationMinutes: 45,
       summary: 'Resumen de los objetivos de aprendizaje de esta lección.',
-      contentMarkdown:
-        '### Desarrollo Temático\nRedacta aquí los conceptos clave, ejemplos y guías paso a paso para el aprendiz.',
+      contentMarkdown: blocksToMarkdown(starterBlocks),
+      blocks: starterBlocks,
       linkedNodeIds: [],
       quiz: [],
     };
@@ -142,10 +209,122 @@ export const OvaBuilderView: React.FC<OvaBuilderViewProps> = ({
 
   const handleUpdateSelectedLesson = (patch: Partial<Lesson>) => {
     if (!selectedOva || !selectedLesson) return;
+    const nextLesson: Lesson = { ...selectedLesson, ...patch };
     const updatedLessons = selectedOva.lessons.map((l) =>
-      l.id === selectedLesson.id ? { ...l, ...patch } : l
+      l.id === selectedLesson.id ? nextLesson : l
     );
     handleUpdateSelectedOva({ lessons: updatedLessons });
+
+    // Bidirectional Sync: if this lesson is linked to GraphNode(s), update their blocks/content on the Canvas
+    if (onUpdateNodes && nextLesson.linkedNodeIds.length > 0 && patch.blocks) {
+      const lessonBlocks = patch.blocks;
+      onUpdateNodes((prevNodes) =>
+        prevNodes.map((node) => {
+          if (!nextLesson.linkedNodeIds.includes(node.id)) return node;
+          // If the lesson is linked to a single node, sync all blocks directly;
+          // otherwise sync blocks tagged with sourceNodeId === node.id
+          const blocksForNode =
+            nextLesson.linkedNodeIds.length === 1
+              ? lessonBlocks.map((b) => ({ ...b, sourceNodeId: node.id }))
+              : lessonBlocks.filter((b) => b.sourceNodeId === node.id);
+
+          if (blocksForNode.length === 0) return node;
+          const firstMedia = blocksForNode.find(
+            (b) => b.type === 'video' || b.type === 'link'
+          );
+          const firstCode = blocksForNode.find((b) => b.type === 'code');
+          return {
+            ...node,
+            blocks: blocksForNode,
+            content: blocksToMarkdown(blocksForNode),
+            ...(firstMedia
+              ? {
+                  mediaUrl: firstMedia.url,
+                  mediaKind: firstMedia.type === 'video' ? 'video' : 'article',
+                  mediaComment: firstMedia.relevanceComment,
+                }
+              : {}),
+            ...(firstCode ? { codeLanguage: firstCode.codeLanguage } : {}),
+            updatedAt: '2026-11-09',
+          };
+        })
+      );
+    }
+  };
+
+  const handlePushLessonToGraphCanvas = () => {
+    if (!selectedOva || !selectedLesson || !onUpdateNodes) return;
+    const currentBlocks = ensureLessonBlocks(selectedLesson);
+
+    if (selectedLesson.linkedNodeIds.length > 0) {
+      // Update the primary linked node on the canvas with all current lesson blocks
+      const primaryNodeId = selectedLesson.linkedNodeIds[0];
+      const taggedBlocks = currentBlocks.map((b) => ({
+        ...b,
+        sourceNodeId: primaryNodeId,
+      }));
+      onUpdateNodes((prev) =>
+        prev.map((n) =>
+          n.id === primaryNodeId
+            ? {
+                ...n,
+                title: selectedLesson.title,
+                blocks: taggedBlocks,
+                content: blocksToMarkdown(taggedBlocks),
+                linkedOvaId: selectedOva.id,
+                linkedLessonId: selectedLesson.id,
+                researchStatus: 'in_ova',
+                updatedAt: '2026-11-09',
+              }
+            : n
+        )
+      );
+      setExportMessage(
+        `Bloques de "${selectedLesson.title}" sincronizados con el nodo en el Lienzo en Grafo.`
+      );
+    } else {
+      // Create a new GraphNode on the canvas from this lesson
+      const newNodeId = `node-${Date.now()}`;
+      const taggedBlocks = currentBlocks.map((b) => ({
+        ...b,
+        sourceNodeId: newNodeId,
+      }));
+      const firstMedia = taggedBlocks.find(
+        (b) => b.type === 'video' || b.type === 'link'
+      );
+      const firstCode = taggedBlocks.find((b) => b.type === 'code');
+      const newNode: GraphNode = {
+        id: newNodeId,
+        title: selectedLesson.title,
+        type: firstCode ? 'code' : firstMedia ? 'media' : 'markdown',
+        researchStatus: 'in_ova',
+        x: 160 + ((nodes.length * 65) % 520),
+        y: 150 + ((nodes.length * 55) % 340),
+        content: blocksToMarkdown(taggedBlocks),
+        blocks: taggedBlocks,
+        mediaUrl: firstMedia?.url,
+        mediaKind: firstMedia?.type === 'video' ? 'video' : 'article',
+        mediaComment: firstMedia?.relevanceComment,
+        codeLanguage: firstCode?.codeLanguage,
+        quizQuestions:
+          selectedLesson.quiz.length > 0
+            ? [...selectedLesson.quiz]
+            : undefined,
+        linkedOvaId: selectedOva.id,
+        linkedLessonId: selectedLesson.id,
+        tags: ['OVA', `Ficha ${selectedOva.fichaCode}`, 'Sincronizado'],
+        updatedAt: '2026-11-09',
+      };
+      onUpdateNodes((prev) => [...prev, newNode]);
+      handleUpdateSelectedLesson({
+        linkedNodeIds: [newNodeId],
+        blocks: taggedBlocks,
+      });
+      setExportMessage(
+        `Se creó y vinculó el nodo "${selectedLesson.title}" en el Lienzo en Grafo.`
+      );
+    }
+    setTimeout(() => setExportMessage(null), 4000);
   };
 
   const handleMoveLesson = (index: number, direction: -1 | 1) => {
@@ -666,16 +845,38 @@ ${
                 </div>
               </div>
 
-              {/* Linked Nodes from Obsidian Canvas */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-800">
-                    Nodos del Mapa Mental Vinculados a esta Lección (
-                    {selectedLesson.linkedNodeIds.length})
-                  </span>
-                  <span className="text-slate-500">
-                    Sincronizado con el Lienzo en Grafo
-                  </span>
+              {/* Linked Nodes from Obsidian Canvas (Bidirectional Sync) */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="font-semibold text-slate-800">
+                      Sincronización Bidireccional con el Lienzo en Grafo (
+                      {selectedLesson.linkedNodeIds.length} nodo(s) vinculado(s))
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {onUpdateNodes && (
+                      <button
+                        type="button"
+                        onClick={handlePushLessonToGraphCanvas}
+                        className="px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
+                      >
+                        {selectedLesson.linkedNodeIds.length > 0
+                          ? '↻ Sincronizar Bloques con el Lienzo'
+                          : '+ Crear Nodo en el Lienzo desde esta Lección'}
+                      </button>
+                    )}
+                    {onNavigateToGraph && (
+                      <button
+                        type="button"
+                        onClick={onNavigateToGraph}
+                        className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-md transition-colors"
+                      >
+                        Abrir Lienzo en Grafo →
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {selectedLesson.linkedNodeIds.length > 0 ? (
                   <div className="flex flex-wrap gap-2 text-xs text-slate-700">
@@ -689,67 +890,27 @@ ${
                           <span className="font-medium">
                             {n?.title ?? nodeId}
                           </span>
+                          <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                            Sincronizado
+                          </span>
                         </div>
                       );
                     })}
                   </div>
                 ) : (
                   <p className="text-xs text-slate-500">
-                    Aún no hay nodos vinculados. Puedes enviar cualquier nodo
-                    desde la vista &ldquo;Lienzo en Grafo&rdquo; hacia esta
-                    lección.
+                    Aún no hay nodos vinculados. Haz clic en &ldquo;+ Crear Nodo
+                    en el Lienzo desde esta Lección&rdquo; o promueve cualquier
+                    nodo desde la vista &ldquo;Lienzo en Grafo&rdquo;.
                   </p>
                 )}
               </div>
 
-              {/* Markdown Study Content */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Material de Estudio (Markdown Estructurado)
-                </label>
-                <textarea
-                  rows={8}
-                  value={selectedLesson.contentMarkdown}
-                  onChange={(e) =>
-                    handleUpdateSelectedLesson({
-                      contentMarkdown: e.target.value,
-                    })
-                  }
-                  className="w-full px-3.5 py-2.5 text-xs font-mono leading-relaxed bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600"
-                />
-              </div>
-
-              {/* Multimedia Reference */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Título del Recurso Multimedia / Video
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedLesson.mediaTitle ?? ''}
-                    onChange={(e) =>
-                      handleUpdateSelectedLesson({ mediaTitle: e.target.value })
-                    }
-                    placeholder="Ej. Video Tutorial / Documentación Oficial"
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    URL del Recurso o Video
-                  </label>
-                  <input
-                    type="url"
-                    value={selectedLesson.mediaUrl ?? ''}
-                    onChange={(e) =>
-                      handleUpdateSelectedLesson({ mediaUrl: e.target.value })
-                    }
-                    placeholder="https://..."
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-              </div>
+              {/* Notion-Style Block Authoring Workspace (Text, Links with Hover Preview, Videos with Hover Preview, Source Code Segments) */}
+              <NotionLessonBlockEditor
+                lesson={selectedLesson}
+                onUpdateLesson={handleUpdateSelectedLesson}
+              />
 
               {/* SENA Activity / Evidence & Reminder Deadline Configurator */}
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">

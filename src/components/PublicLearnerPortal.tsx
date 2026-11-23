@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   BookOpen,
@@ -16,6 +16,7 @@ import {
   Video,
 } from 'lucide-react';
 import { GraphNode, Learner, OVA } from '../types/ova';
+import { LessonBlocksRenderer } from './NotionLessonBlocks';
 
 interface PublicLearnerPortalProps {
   ovas: OVA[];
@@ -44,6 +45,8 @@ interface PublicLearnerPortalProps {
   onOpenPrintGuide: (ovaId: string) => void;
   publicSection: 'catalog' | 'evidences' | 'progress';
   onChangePublicSection: (sec: 'catalog' | 'evidences' | 'progress') => void;
+  initialOvaId?: string | null;
+  initialLessonId?: string | null;
 }
 
 export const PublicLearnerPortal: React.FC<PublicLearnerPortalProps> = ({
@@ -58,6 +61,8 @@ export const PublicLearnerPortal: React.FC<PublicLearnerPortalProps> = ({
   onOpenPrintGuide,
   publicSection,
   onChangePublicSection,
+  initialOvaId,
+  initialLessonId,
 }) => {
   const activeLearner =
     learners.find((l) => l.id === activeLearnerId) ?? learners[0];
@@ -83,6 +88,20 @@ export const PublicLearnerPortal: React.FC<PublicLearnerPortalProps> = ({
   const currentLesson =
     currentOva?.lessons.find((l) => l.id === selectedLessonId) ??
     currentOva?.lessons[0];
+
+  useEffect(() => {
+    if (initialOvaId) {
+      setSelectedOvaId(initialOvaId);
+      const targetOva = publishedOvas.find((o) => o.id === initialOvaId);
+      if (initialLessonId) {
+        setSelectedLessonId(initialLessonId);
+      } else if (targetOva?.lessons[0]) {
+        setSelectedLessonId(targetOva.lessons[0].id);
+      }
+      setQuizAnswers({});
+      setQuizSubmitted(false);
+    }
+  }, [initialOvaId, initialLessonId, publishedOvas]);
 
   // Quiz state for current lesson
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
@@ -696,41 +715,8 @@ export const PublicLearnerPortal: React.FC<PublicLearnerPortalProps> = ({
                     </div>
                   </div>
 
-                  {/* Lesson Study Body (Formatted Markdown Rendering) */}
-                  <div className="space-y-3 text-sm text-slate-800 leading-relaxed">
-                    {currentLesson.contentMarkdown
-                      .split('\n\n')
-                      .map((block, idx) => {
-                        if (block.startsWith('### ')) {
-                          return (
-                            <h3
-                              key={idx}
-                              className="text-base font-bold text-slate-900 pt-2"
-                            >
-                              {block.replace('### ', '')}
-                            </h3>
-                          );
-                        }
-                        if (block.startsWith('#### ')) {
-                          return (
-                            <h4
-                              key={idx}
-                              className="text-sm font-bold text-slate-800 pt-1"
-                            >
-                              {block.replace('#### ', '')}
-                            </h4>
-                          );
-                        }
-                        return (
-                          <div
-                            key={idx}
-                            className="whitespace-pre-line text-slate-700"
-                          >
-                            {block}
-                          </div>
-                        );
-                      })}
-                  </div>
+                  {/* Lesson Study Body: Notion-Style Rich Blocks (Text, Hover Links, Hover Videos, Copyable Code Segments) */}
+                  <LessonBlocksRenderer lesson={currentLesson} />
 
                   {/* Linked Concept Nodes from the Instructor's Knowledge Graph */}
                   {currentLesson.linkedNodeIds.length > 0 && (
@@ -761,29 +747,6 @@ export const PublicLearnerPortal: React.FC<PublicLearnerPortalProps> = ({
                           );
                         })}
                       </div>
-                    </div>
-                  )}
-
-                  {/* Multimedia / Video Reference Box */}
-                  {currentLesson.mediaUrl && (
-                    <div className="p-4 bg-indigo-50/60 border border-indigo-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-0.5">
-                        <div className="text-xs font-semibold text-indigo-900 flex items-center gap-1.5">
-                          <Video className="w-4 h-4 text-indigo-600" />
-                          <span>Recurso Multimedia / Documentación de Apoyo</span>
-                        </div>
-                        <div className="text-xs text-indigo-800">
-                          {currentLesson.mediaTitle ?? currentLesson.mediaUrl}
-                        </div>
-                      </div>
-                      <a
-                        href={currentLesson.mediaUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
-                      >
-                        Abrir Recurso <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
                     </div>
                   )}
 

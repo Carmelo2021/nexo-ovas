@@ -36,6 +36,52 @@
   background-size: 24px 24px;
 }
 
+/* Editorial Swiss-Minimalist Landing Page Microanimations & Surfaces */
+.landing-paper-surface {
+  background-color: #f6f5f0;
+  color: #121211;
+  background-image:
+    linear-gradient(to right, rgba(24, 24, 22, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(24, 24, 22, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.75);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.75);
+    opacity: 0;
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes float-subtle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-float-subtle {
+  animation: float-subtle 4s ease-in-out infinite;
+}
+
+.micro-spring {
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 @media print {
   body {
     background: #ffffff !important;

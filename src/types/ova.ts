@@ -1,4 +1,4 @@
-export type NodeType = 'markdown' | 'media' | 'quiz' | 'activity';
+export type NodeType = 'markdown' | 'media' | 'code' | 'quiz' | 'activity';
 
 export type ResearchStatus = 'to_research' | 'draft' | 'verified' | 'in_ova';
 
@@ -19,6 +19,7 @@ export interface GraphRegion {
   width: number;
   height: number;
   tone: 'indigo' | 'emerald' | 'amber' | 'slate';
+  linkedOvaId?: string;
 }
 
 export interface GraphNode {
@@ -30,8 +31,11 @@ export interface GraphNode {
   y: number;
   regionId?: string;
   content: string;
+  blocks?: LessonBlock[];
   mediaUrl?: string;
   mediaKind?: 'video' | 'article' | 'repository' | 'simulation';
+  mediaComment?: string;
+  codeLanguage?: string;
   quizQuestions?: QuizQuestion[];
   dueDate?: string;
   evidenceType?: 'Conocimiento' | 'Desempeño' | 'Producto';
@@ -58,6 +62,28 @@ export interface LessonActivity {
   deliverableFormat: string;
 }
 
+export type LessonBlockType =
+  | 'heading'
+  | 'text'
+  | 'link'
+  | 'video'
+  | 'code'
+  | 'callout';
+
+export interface LessonBlock {
+  id: string;
+  type: LessonBlockType;
+  title?: string; // Section title, link label, video title, filename, or callout title
+  content: string; // Paragraph markdown, code source, or summary description
+  url?: string; // Target URL for 'link' or 'video'
+  relevanceComment?: string; // Hover preview commentary explaining content or relevance
+  domainOrSource?: string; // e.g. 'MDN Web Docs', 'YouTube · Canal SENA', 'RFC 9110'
+  videoTimestamp?: string; // e.g. '04:10 - 12:30' or '18 min'
+  codeLanguage?: string; // e.g. 'typescript', 'sql', 'bash', 'json', 'python', 'cisco'
+  calloutTone?: 'info' | 'tip' | 'warning';
+  sourceNodeId?: string; // Optional reference to a GraphNode for bidirectional Canvas <-> OVA sync
+}
+
 export interface Lesson {
   id: string;
   order: number;
@@ -65,8 +91,10 @@ export interface Lesson {
   durationMinutes: number;
   summary: string;
   contentMarkdown: string;
+  blocks?: LessonBlock[];
   mediaUrl?: string;
   mediaTitle?: string;
+  mediaComment?: string;
   linkedNodeIds: string[];
   quiz: QuizQuestion[];
   activity?: LessonActivity;

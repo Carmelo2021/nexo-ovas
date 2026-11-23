@@ -69,12 +69,38 @@ Un servicio RESTful bien estructurado utiliza los métodos HTTP según su contra
 - **GET**: Lectura segura e idempotente de colecciones o recursos individuales.
 - **POST**: Creación de nuevos recursos subordinados (retorna \`201 Created\` + cabecera \`Location\`).
 - **PUT / PATCH**: Reemplazo completo o actualización parcial del estado de un recurso.
-- **DELETE**: Eliminación lógica o física del recurso.
-
-#### Convención de Rutas para Proyecto Formativo
-1. Usar sustantivos en plural (\`/api/v1/aprendices\`, \`/api/v1/evidencias\`).
-2. Evitar verbos en la URI (\`/api/v1/crearAprendiz\` es un antipatrón).
-3. Manejar paginación explícita con \`?limit=20&offset=0\`.`,
+- **DELETE**: Eliminación lógica o física del recurso.`,
+    blocks: [
+      {
+        id: 'n1-blk-1',
+        type: 'text',
+        content:
+          'Un servicio RESTful modela entidades como recursos URI manipulados con verbos HTTP según el estándar [RFC 9110: Semántica HTTP](https://httpwg.org/specs/rfc9110.html "Especificación oficial IETF que define la idempotencia de GET, PUT y DELETE frente a POST.").',
+        sourceNodeId: 'node-1',
+      },
+      {
+        id: 'n1-blk-2',
+        type: 'link',
+        title: 'Guía MDN: Métodos de Petición HTTP e Idempotencia',
+        url: 'https://developer.mozilla.org/es/docs/Web/HTTP/Methods',
+        domainOrSource: 'MDN Web Docs',
+        content: 'Tabla comparativa de métodos seguros e idempotentes.',
+        relevanceComment:
+          'Permite al aprendiz verificar qué verbos HTTP alteran estado y qué códigos de estado retornar en la matriz de endpoints del proyecto formativo.',
+        sourceNodeId: 'node-1',
+      },
+      {
+        id: 'n1-blk-3',
+        type: 'code',
+        codeLanguage: 'typescript',
+        title: 'src/routes/aprendices.routes.ts',
+        content: `router.get('/api/v1/aprendices', listarAprendices); // 200 OK (Idempotente)
+router.post('/api/v1/aprendices', crearAprendiz);   // 201 Created + Location`,
+        relevanceComment:
+          'Convención de rutas REST usando sustantivos en plural y separación clara de verbos HTTP.',
+        sourceNodeId: 'node-1',
+      },
+    ],
   },
   {
     id: 'node-2',
@@ -87,10 +113,44 @@ Un servicio RESTful bien estructurado utiliza los métodos HTTP según su contra
     linkedOvaId: 'ova-adso-1',
     linkedLessonId: 'les-102',
     mediaKind: 'video',
-    mediaUrl: 'https://swagger.io/specification/',
+    mediaUrl: 'https://www.youtube.com/watch?v=pRS9LRBgjYg',
+    mediaComment:
+      'En el minuto 04:10 demuestra cómo definir esquemas DTO reutilizables en OpenAPI 3.1 antes de codificar los controladores Express.',
     tags: ['OpenAPI', 'DTO', 'Swagger', 'Documentación'],
     updatedAt: '2026-11-08',
     content: `Recurso audiovisual y especificación oficial para documentar APIs antes de codificar los controladores (enfoque *API-First*). Incluye plantilla de validación con esquemas tipados para evitar inyección de payloads malformados.`,
+    blocks: [
+      {
+        id: 'n2-blk-1',
+        type: 'text',
+        content:
+          'El enfoque **API-First** exige consensuar el contrato OpenAPI antes de escribir controladores o vistas frontend.',
+        sourceNodeId: 'node-2',
+      },
+      {
+        id: 'n2-blk-2',
+        type: 'video',
+        title: 'Taller Video: Contratos OpenAPI 3.1 y Validación de Esquemas DTO',
+        url: 'https://www.youtube.com/watch?v=pRS9LRBgjYg',
+        domainOrSource: 'YouTube · Ingeniería Software SENA',
+        videoTimestamp: 'Min 04:10 - 15:20',
+        content: 'Diseño de esquemas YAML y rechazo de payloads con 422.',
+        relevanceComment:
+          'Observa del minuto 04:10 al 11:00 cómo se centralizan los DTOs en #/components/schemas y se valida el patrón de 7 dígitos de la ficha SENA.',
+        sourceNodeId: 'node-2',
+      },
+      {
+        id: 'n2-blk-3',
+        type: 'link',
+        title: 'Especificación Oficial OpenAPI 3.1.0',
+        url: 'https://swagger.io/specification/',
+        domainOrSource: 'swagger.io',
+        content: 'Estándar oficial de documentación de APIs REST.',
+        relevanceComment:
+          'Referencia clave para documentar los códigos 201, 401, 403 y 422 exigidos en la evidencia de producto.',
+        sourceNodeId: 'node-2',
+      },
+    ],
   },
   {
     id: 'node-3',
@@ -137,16 +197,48 @@ Un servicio RESTful bien estructurado utiliza los métodos HTTP según su contra
     content: `### Reglas de Normalización Aplicadas
 - **1FN**: Atributos atómicos sin grupos repetidos ni arreglos serializados en texto.
 - **2FN**: Dependencia funcional completa respecto a llaves primarias compuestas.
-- **3FN**: Eliminación de dependencias transitivas entre columnas no clave.
-
-#### Nota de Investigación del Instructor
-Para el sistema de gestión de inventario de los aprendices, separar siempre \`catalogo_productos\` de \`movimientos_kardex\` para preservar trazabilidad histórica.`,
+- **3FN**: Eliminación de dependencias transitivas entre columnas no clave.`,
+    blocks: [
+      {
+        id: 'n4-blk-1',
+        type: 'text',
+        content:
+          'Separar `programas_formacion`, `fichas_caracterizacion` y `aprendices` elimina dependencias transitivas y cumple **3FN** con integridad referencial en [Constraints DDL PostgreSQL](https://www.postgresql.org/docs/current/ddl-constraints.html "Explica cómo declarar llaves primarias, foráneas y restricciones CHECK en PostgreSQL.").',
+        sourceNodeId: 'node-4',
+      },
+      {
+        id: 'n4-blk-2',
+        type: 'video',
+        title: 'Video Caso Práctico: Normalización 1FN, 2FN y 3FN Paso a Paso',
+        url: 'https://www.youtube.com/watch?v=GFQaEYEc8_8',
+        domainOrSource: 'YouTube · Modelado Relacional',
+        videoTimestamp: 'Min 01:45 - 12:15',
+        content: 'Transformación de una tabla plana a un esquema relacional 3FN.',
+        relevanceComment:
+          'En el minuto 06:30 se ejemplifica cómo evitar anomalías de actualización al separar el catálogo maestro de las tablas transaccionales.',
+        sourceNodeId: 'node-4',
+      },
+      {
+        id: 'n4-blk-3',
+        type: 'code',
+        codeLanguage: 'sql',
+        title: 'sql/01_schema_3fn.sql',
+        content: `CREATE TABLE fichas_caracterizacion (
+  ficha_codigo CHAR(7) PRIMARY KEY CHECK (ficha_codigo ~ '^[0-9]{7}$'),
+  codigo_programa VARCHAR(16) NOT NULL REFERENCES programas_formacion(codigo_programa)
+);`,
+        relevanceComment:
+          'Definición DDL con validación CHECK por expresión regular y llave foránea estricta.',
+        sourceNodeId: 'node-4',
+      },
+    ],
   },
   {
     id: 'node-5',
     title: 'Índices Compuestos B-Tree y Análisis con EXPLAIN ANALYZE',
-    type: 'markdown',
-    researchStatus: 'verified',
+    type: 'code',
+    codeLanguage: 'sql',
+    researchStatus: 'in_ova',
     x: 1150,
     y: 140,
     regionId: 'reg-datos',
@@ -155,9 +247,38 @@ Para el sistema de gestión de inventario de los aprendices, separar siempre \`c
     tags: ['Rendimiento', 'B-Tree', 'Consultas SQL'],
     updatedAt: '2026-11-09',
     content: `### Optimización de Consultas Frecuentes
-Un índice compuesto \`(ficha_codigo, fecha_entrega)\` acelera búsquedas por prefijo izquierdo.
-- Evitar funciones sobre la columna indexada en el \`WHERE\` (ej. \`WHERE YEAR(fecha) = 2026\` invalida el árbol B-Tree).
-- Revisar \`Seq Scan\` vs \`Index Scan\` en planes de ejecución.`,
+Un índice compuesto \`(ficha_codigo, fecha_entrega)\` acelera búsquedas por prefijo izquierdo.`,
+    blocks: [
+      {
+        id: 'n5-blk-1',
+        type: 'text',
+        content:
+          'Un índice compuesto `(ficha_codigo, fecha_entrega)` acelera consultas que filtran por el prefijo izquierdo sin aplicar funciones sobre la columna indexada.',
+        sourceNodeId: 'node-5',
+      },
+      {
+        id: 'n5-blk-2',
+        type: 'link',
+        title: 'Guía Oficial PostgreSQL: Interpretación de EXPLAIN ANALYZE',
+        url: 'https://www.postgresql.org/docs/current/using-explain.html',
+        domainOrSource: 'postgresql.org',
+        content: 'Comparativa entre Seq Scan, Index Scan y Bitmap Index Scan.',
+        relevanceComment:
+          'Relevante para demostrar con métricas reales en milisegundos la mejora de rendimiento de las consultas del proyecto formativo.',
+        sourceNodeId: 'node-5',
+      },
+      {
+        id: 'n5-blk-3',
+        type: 'code',
+        codeLanguage: 'sql',
+        title: 'sql/02_explain_btree.sql',
+        content: `CREATE INDEX idx_entregas_ficha_fecha ON entregas (ficha_codigo, fecha_entrega DESC);
+EXPLAIN ANALYZE SELECT * FROM entregas WHERE ficha_codigo = '2874512';`,
+        relevanceComment:
+          'Sentencia para comprobar que el motor utiliza Index Scan sobre el árbol B-Tree.',
+        sourceNodeId: 'node-5',
+      },
+    ],
   },
   {
     id: 'node-6',
@@ -170,12 +291,35 @@ Un índice compuesto \`(ficha_codigo, fecha_entrega)\` acelera búsquedas por pr
     tags: ['ACID', 'Concurrencia', 'Bloqueos'],
     updatedAt: '2026-11-09',
     content: `### Investigación en Curso para Próxima Lección
-Comparativa práctica entre \`READ COMMITTED\` y \`SERIALIZABLE\` cuando dos aprendices o cajeros descuentan stock del mismo lote simultáneamente. Pendiente agregar diagrama de *Lost Update*.`,
+Comparativa práctica entre \`READ COMMITTED\` y \`SERIALIZABLE\` cuando dos aprendices o cajeros descuentan stock del mismo lote simultáneamente.`,
+    blocks: [
+      {
+        id: 'n6-blk-1',
+        type: 'text',
+        content:
+          'Comparativa práctica entre `READ COMMITTED` y `SERIALIZABLE` para prevenir el fenómeno *Lost Update* en inventario concurrente.',
+        sourceNodeId: 'node-6',
+      },
+      {
+        id: 'n6-blk-2',
+        type: 'code',
+        codeLanguage: 'sql',
+        title: 'sql/03_transaccion_acid.sql',
+        content: `BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SELECT stock_actual FROM inventario WHERE id_item = 42 FOR UPDATE;
+UPDATE inventario SET stock_actual = stock_actual - 1 WHERE id_item = 42;
+COMMIT;`,
+        relevanceComment:
+          'Uso de bloqueo pesimista SELECT ... FOR UPDATE dentro de una transacción ACID.',
+        sourceNodeId: 'node-6',
+      },
+    ],
   },
   {
     id: 'node-7',
     title: 'Autenticación Stateless con JWT, Refresh Tokens y RBAC',
-    type: 'markdown',
+    type: 'code',
+    codeLanguage: 'typescript',
     researchStatus: 'in_ova',
     x: 380,
     y: 675,
@@ -186,8 +330,52 @@ Comparativa práctica entre \`READ COMMITTED\` y \`SERIALIZABLE\` cuando dos apr
     updatedAt: '2026-11-08',
     content: `### Estructura Segura de Tokens
 1. **Access Token** de vida corta (15 min) firmado con \`RS256\` o \`HS256\`.
-2. **Middleware de Roles**: Verificar el claim \`rol\` en el servidor antes de ejecutar casos de uso administrativos.
-3. **Almacenamiento**: Preferir cookies \`HttpOnly; SameSite=Strict\` frente a exponer credenciales sensibles.`,
+2. **Middleware de Roles**: Verificar el claim \`rol\` en el servidor antes de ejecutar casos de uso administrativos.`,
+    blocks: [
+      {
+        id: 'n7-blk-1',
+        type: 'text',
+        content:
+          'Los **Access Tokens** deben tener expiración corta (15-30 min) y validarse en un middleware RBAC antes de permitir operaciones sensibles.',
+        sourceNodeId: 'node-7',
+      },
+      {
+        id: 'n7-blk-2',
+        type: 'link',
+        title: 'OWASP Authentication & JWT Security Cheat Sheet',
+        url: 'https://cheatsheetseries.owasp.org/',
+        domainOrSource: 'OWASP Foundation',
+        content: 'Guía de endurecimiento de sesiones, hashing Argon2id y JWT.',
+        relevanceComment:
+          'Explica por qué jamás se debe guardar información sensible en el payload de un JWT y cómo mitigar ataques XSS/CSRF.',
+        sourceNodeId: 'node-7',
+      },
+      {
+        id: 'n7-blk-3',
+        type: 'video',
+        title: 'Video Guía: Implementación de Login JWT y Middleware de Roles en Express',
+        url: 'https://www.youtube.com/watch?v=mbsmsi7l3r4',
+        domainOrSource: 'YouTube · Seguridad Aplicativa',
+        videoTimestamp: 'Min 05:00 - 18:10',
+        content: 'Codificación paso a paso de firma y verificación de tokens.',
+        relevanceComment:
+          'A partir del minuto 05:00 se construye el middleware requireRole que diferencia entre aprendiz e instructor.',
+        sourceNodeId: 'node-7',
+      },
+      {
+        id: 'n7-blk-4',
+        type: 'code',
+        codeLanguage: 'typescript',
+        title: 'src/middlewares/requireRole.ts',
+        content: `const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtUserPayload;
+if (!allowedRoles.includes(payload.role)) {
+  return res.status(403).json({ error: 'Forbidden: Rol sin privilegios' });
+}`,
+        relevanceComment:
+          'Fragmento central de autorización RBAC requerido en la evidencia GA7-AA2-EV02.',
+        sourceNodeId: 'node-7',
+      },
+    ],
   },
   {
     id: 'node-8',
@@ -300,8 +488,10 @@ export const INITIAL_OVAS: OVA[] = [
         linkedNodeIds: ['node-1', 'node-3'],
         mediaTitle: 'Guía MDN: Métodos de Petición y Códigos de Estado HTTP',
         mediaUrl: 'https://developer.mozilla.org/es/docs/Web/HTTP/Methods',
+        mediaComment:
+          'Referencia oficial indispensable para verificar qué métodos HTTP son idempotentes y seguros al diseñar la matriz de endpoints de la evidencia GA7.',
         contentMarkdown: `### 1. ¿Qué define a una API verdaderamente RESTful?
-La transferencia de estado representacional (**REST**) propone modelar un sistema como un conjunto de **recursos** identificables mediante URIs únicas y manipulables a través de representaciones estándar (como JSON).
+La transferencia de estado representacional (**REST**) propone modelar un sistema como un conjunto de **recursos** identificables mediante URIs únicas y manipulables a través de representaciones estándar (como JSON), siguiendo el estándar [RFC 9110: HTTP Semantics](https://httpwg.org/specs/rfc9110.html "Estándar oficial IETF que define la semántica formal de métodos como GET, POST, PUT y DELETE y sus garantías de idempotencia.").
 
 ### 2. Matriz de Métodos HTTP y Contrato de Idempotencia
 - **GET \`/api/v1/fichas\`**: Obtiene el listado de fichas. Es *seguro* (no altera datos) e *idempotente*.
@@ -314,6 +504,87 @@ La transferencia de estado representacional (**REST**) propone modelar un sistem
 - **200 OK / 201 Created / 204 No Content**: Éxito en la operación solicitada.
 - **400 Bad Request / 401 Unauthorized / 403 Forbidden / 404 Not Found / 422 Unprocessable Content**: Errores originados en la solicitud del cliente.
 - **500 Internal Server Error / 503 Service Unavailable**: Fallos internos en la capa de servidor o base de datos.`,
+        blocks: [
+          {
+            id: 'blk-101-1',
+            type: 'heading',
+            title: '1. ¿Qué define a una API verdaderamente RESTful?',
+            content: '',
+          },
+          {
+            id: 'blk-101-2',
+            type: 'text',
+            content:
+              'La transferencia de estado representacional (**REST**) propone modelar un sistema como un conjunto de **recursos** identificables mediante URIs únicas y manipulables a través de representaciones estándar (como JSON). Puedes consultar la especificación en [RFC 9110: Semántica HTTP](https://httpwg.org/specs/rfc9110.html "Documento normativo del IETF que explica por qué GET, PUT y DELETE son idempotentes mientras que POST no lo es.") o revisar el [video:Resumen Visual de Métodos REST](https://www.youtube.com/watch?v=7YcW25PHnAA "Cápsula audiovisual de 10 minutos que ilustra el ciclo petición-respuesta, cabeceras HTTP y códigos de estado con ejemplos reales.").',
+          },
+          {
+            id: 'blk-101-3',
+            type: 'link',
+            title: 'Guía MDN: Métodos de Petición HTTP e Idempotencia',
+            url: 'https://developer.mozilla.org/es/docs/Web/HTTP/Methods',
+            domainOrSource: 'MDN Web Docs · Mozilla',
+            content: 'Documentación detallada sobre verbos HTTP, seguridad e idempotencia.',
+            relevanceComment:
+              'Lectura obligatoria para la Evidencia AA1-EV01: te permitirá justificar técnicamente cuándo usar PUT vs PATCH y qué códigos 2xx/4xx retornar en cada endpoint del proyecto formativo.',
+          },
+          {
+            id: 'blk-101-4',
+            type: 'video',
+            title: 'Video Explicativo: Diseño de Rutas RESTful, Paginación y Códigos 2xx / 4xx / 5xx',
+            url: 'https://www.youtube.com/watch?v=7YcW25PHnAA',
+            domainOrSource: 'YouTube · Arquitectura Backend ADSO',
+            videoTimestamp: 'Min 03:15 - 11:40',
+            content: 'Demostración práctica de diseño de URIs en plural y manejo de errores semánticos.',
+            relevanceComment:
+              'Presta especial atención entre el minuto 03:15 y 08:20: muestra cómo evitar antipatrones como /crearAprendiz en las rutas y cómo estructurar respuestas 201 Created con la cabecera Location.',
+          },
+          {
+            id: 'blk-101-5',
+            type: 'heading',
+            title: '2. Implementación de Controlador REST en TypeScript / Express',
+            content: '',
+          },
+          {
+            id: 'blk-101-6',
+            type: 'code',
+            codeLanguage: 'typescript',
+            title: 'src/controllers/evidencias.controller.ts',
+            content: `import { Request, Response } from 'express';
+
+// GET /api/v1/evidencias?limit=20&offset=0 (Seguro e Idempotente)
+export async function listarEvidencias(req: Request, res: Response) {
+  const limit = Math.min(Number(req.query.limit) || 20, 100);
+  const offset = Number(req.query.offset) || 0;
+  return res.status(200).json({ data: [], meta: { limit, offset } });
+}
+
+// POST /api/v1/evidencias (No Idempotente -> Retorna 201 Created)
+export async function registrarEvidencia(req: Request, res: Response) {
+  const { fichaCode, evidenceCode, repositoryUrl } = req.body;
+  if (!fichaCode || !evidenceCode || !repositoryUrl) {
+    return res.status(422).json({
+      error: 'Unprocessable Content',
+      message: 'Todos los campos del entregable SENA son obligatorios.',
+    });
+  }
+  const nuevaId = 'ev-' + Date.now();
+  return res
+    .status(201)
+    .location(\`/api/v1/evidencias/\${nuevaId}\`)
+    .json({ id: nuevaId, status: 'submitted' });
+}`,
+            relevanceComment:
+              'Observa cómo el método POST valida la semántica del dominio (retornando 422 si faltan campos) y responde con 201 Created adjuntando la cabecera Location hacia el nuevo recurso.',
+          },
+          {
+            id: 'blk-101-7',
+            type: 'callout',
+            calloutTone: 'tip',
+            title: 'Criterio de Evaluación para tu Proyecto Formativo SENA',
+            content:
+              'En tu matriz de endpoints evita verbos en las rutas (usa sustantivos en plural como `/api/v1/aprendices`) y documenta siempre al menos un código de éxito (`200`/`201`) y dos de error (`401`/`422`).',
+          },
+        ],
         quiz: [
           {
             id: 'q-101-1',
@@ -350,6 +621,8 @@ La transferencia de estado representacional (**REST**) propone modelar un sistem
         linkedNodeIds: ['node-2'],
         mediaTitle: 'Especificación Oficial OpenAPI 3.1 y Ejemplos YAML',
         mediaUrl: 'https://swagger.io/specification/',
+        mediaComment:
+          'Guía oficial de referencia para escribir el archivo openapi.yaml de tu proyecto formativo con esquemas reutilizables en components/schemas.',
         contentMarkdown: `### 1. Enfoque API-First en Equipos de Desarrollo
 Antes de codificar las vistas del frontend o las tablas definitivas, el equipo define el **contrato de interfaz** usando OpenAPI (Swagger). Esto permite que el equipo frontend y backend trabajen en paralelo sin bloqueos.
 
@@ -358,6 +631,83 @@ Nunca pases directamente el objeto \`req.body\` hacia el ORM o consulta SQL. Imp
 1. Verifica tipos primitivos (cadenas, números, fechas ISO-8601).
 2. Limita longitudes máximas y formatos (correo electrónico, código de ficha de 7 dígitos).
 3. Rechaza propiedades no declaradas en el contrato devolviendo un error estructurado \`422 Unprocessable Content\`.`,
+        blocks: [
+          {
+            id: 'blk-102-1',
+            type: 'heading',
+            title: '1. Enfoque API-First y Contratos OpenAPI 3.1',
+            content: '',
+          },
+          {
+            id: 'blk-102-2',
+            type: 'text',
+            content:
+              'Antes de codificar las vistas del frontend o las tablas definitivas, el equipo define el **contrato de interfaz** usando OpenAPI. Puedes probar tus contratos en vivo con [Swagger Editor Online](https://editor.swagger.io/ "Herramienta interactiva en el navegador para validar sintaxis YAML de OpenAPI 3.x y previsualizar la documentación de endpoints.") antes de subirlos al repositorio.',
+          },
+          {
+            id: 'blk-102-3',
+            type: 'link',
+            title: 'Especificación Oficial OpenAPI 3.1.0 (Swagger)',
+            url: 'https://swagger.io/specification/',
+            domainOrSource: 'swagger.io · OpenAPI Initiative',
+            content: 'Referencia completa de tipos de datos, respuestas y esquemas.',
+            relevanceComment:
+              'Revisa la sección "Components Object" para aprender a centralizar tus DTOs en #/components/schemas y no repetir definiciones JSON en cada ruta.',
+          },
+          {
+            id: 'blk-102-4',
+            type: 'video',
+            title: 'Taller Práctico: Documentación de API REST con OpenAPI YAML y Validación Zod',
+            url: 'https://www.youtube.com/watch?v=pRS9LRBgjYg',
+            domainOrSource: 'YouTube · Ingeniería de Software SENA',
+            videoTimestamp: 'Min 04:10 - 15:20',
+            content: 'Cómo sincronizar tus esquemas de validación en TypeScript con el contrato OpenAPI.',
+            relevanceComment:
+              'Este video muestra cómo transformar un esquema DTO validado en servidor en documentación interactiva Swagger UI lista para sustentar ante el instructor.',
+          },
+          {
+            id: 'blk-102-5',
+            type: 'code',
+            codeLanguage: 'yaml',
+            title: 'openapi.yaml',
+            content: `openapi: 3.1.0
+info:
+  title: API Gestión de Evidencias SENA
+  version: 1.0.0
+paths:
+  /api/v1/evidencias:
+    post:
+      summary: Registrar entrega de evidencia de aprendiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearEvidenciaDTO'
+      responses:
+        '201':
+          description: Evidencia registrada exitosamente
+        '422':
+          description: Error de validación en los campos del DTO
+components:
+  schemas:
+    CrearEvidenciaDTO:
+      type: object
+      required: [fichaCode, evidenceCode, repositoryUrl]
+      properties:
+        fichaCode:
+          type: string
+          pattern: '^[0-9]{7}$'
+        evidenceCode:
+          type: string
+          example: GA7-220501096-AA1-EV01
+        repositoryUrl:
+          type: string
+          format: uri`,
+            relevanceComment:
+              'Plantilla base OpenAPI 3.1: nota cómo la expresión regular ^[0-9]{7}$ restringe el código de ficha SENA exactamente a 7 dígitos numéricos.',
+          },
+        ],
         quiz: [
           {
             id: 'q-102-1',
@@ -382,6 +732,8 @@ Nunca pases directamente el objeto \`req.body\` hacia el ORM o consulta SQL. Imp
         linkedNodeIds: ['node-7', 'node-8'],
         mediaTitle: 'Guía OWASP: Buenas Prácticas de Autenticación y Manejo de Sesiones',
         mediaUrl: 'https://cheatsheetseries.owasp.org/',
+        mediaComment:
+          'Listado de verificación de seguridad OWASP para evitar vulnerabilidades frecuentes al almacenar contraseñas y firmar tokens JWT.',
         contentMarkdown: `### 1. Anatomía de un JSON Web Token (JWT)
 Un JWT consta de tres partes codificadas en Base64Url separadas por puntos (\`Header.Payload.Signature\`):
 - **Header**: Algoritmo de firma (\`HS256\` o \`RS256\`) y tipo de token.
@@ -392,6 +744,77 @@ Un JWT consta de tres partes codificadas en Base64Url separadas por puntos (\`He
 - **Jamás guardar contraseñas en texto plano**: Utilizar funciones de derivación con *salt* como **Argon2id** o **bcrypt** (factor de costo $\\ge 12$).
 - **Expiración corta**: Configurar \`exp\` entre 15 y 30 minutos para tokens de acceso.
 - **Principio de menor privilegio**: Validar en un middleware intermedio tanto la firma del token como el permiso específico del rol antes de ejecutar acciones sensibles.`,
+        blocks: [
+          {
+            id: 'blk-103-1',
+            type: 'heading',
+            title: '1. Anatomía de un JSON Web Token (JWT) y Control RBAC',
+            content: '',
+          },
+          {
+            id: 'blk-103-2',
+            type: 'text',
+            content:
+              'Un JWT consta de tres segmentos codificados en Base64Url (`Header.Payload.Signature`). Recuerda que el Payload está **firmado pero no cifrado**: puedes inspeccionar cualquier token en [Depurador Interactivo JWT.io](https://jwt.io/ "Herramienta para decodificar el Header y Payload de un JWT y verificar su firma criptográfica HS256/RS256.") para comprobar que nunca debes incluir contraseñas ni datos sensibles dentro de los claims.',
+          },
+          {
+            id: 'blk-103-3',
+            type: 'link',
+            title: 'OWASP Authentication & JWT Cheat Sheet Series',
+            url: 'https://cheatsheetseries.owasp.org/',
+            domainOrSource: 'OWASP Foundation',
+            content: 'Estándares internacionales de seguridad aplicativa para tokens y contraseñas.',
+            relevanceComment:
+              'Consulta este recurso antes de entregar la Evidencia AA2-EV02: explica cómo prevenir robo de tokens por XSS utilizando cookies HttpOnly y tiempos de expiración cortos.',
+          },
+          {
+            id: 'blk-103-4',
+            type: 'video',
+            title: 'Demostración: Hashing con Bcrypt/Argon2 y Middleware de Roles en Express',
+            url: 'https://www.youtube.com/watch?v=mbsmsi7l3r4',
+            domainOrSource: 'YouTube · Seguridad Aplicativa ADSO',
+            videoTimestamp: 'Min 05:00 - 18:10',
+            content: 'Implementación desde cero de login, firma de JWT y protección de endpoints por rol.',
+            relevanceComment:
+              'A partir del minuto 05:00 se codifica el middleware de autorización RBAC que distingue entre el rol "aprendiz" y el rol "instructor", requisito directo de tu entrega.',
+          },
+          {
+            id: 'blk-103-5',
+            type: 'code',
+            codeLanguage: 'typescript',
+            title: 'src/middlewares/requireRole.ts',
+            content: `import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+
+export interface JwtUserPayload {
+  sub: string;
+  role: 'instructor' | 'aprendiz';
+  fichaCode: string;
+}
+
+export function requireRole(allowedRoles: Array<'instructor' | 'aprendiz'>) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token de autenticación requerido' });
+    }
+    try {
+      const token = authHeader.slice(7);
+      const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtUserPayload;
+      if (!allowedRoles.includes(payload.role)) {
+        return res.status(403).json({ error: 'Permisos insuficientes para este rol' });
+      }
+      res.locals.user = payload;
+      return next();
+    } catch {
+      return res.status(401).json({ error: 'Token inválido o expirado' });
+    }
+  };
+}`,
+            relevanceComment:
+              'Middleware reutilizable que separa claramente el error 401 (no autenticado o token vencido) del error 403 (autenticado pero sin el rol requerido).',
+          },
+        ],
         quiz: [
           {
             id: 'q-103-1',
@@ -442,6 +865,8 @@ Un JWT consta de tres partes codificadas en Base64Url separadas por puntos (\`He
         linkedNodeIds: ['node-4'],
         mediaTitle: 'Documentación Oficial PostgreSQL: Definición de Datos y Constraints',
         mediaUrl: 'https://www.postgresql.org/docs/current/ddl.html',
+        mediaComment:
+          'Manual oficial de PostgreSQL sobre llaves primarias, llaves foráneas (ON DELETE RESTRICT/CASCADE) y restricciones CHECK.',
         contentMarkdown: `### 1. ¿Por qué normalizar el modelo de datos?
 Un esquema sin normalizar almacena datos redundantes en múltiples filas, provocando inconsistencias cuando se actualiza un dato (por ejemplo, el nombre de un programa de formación repetido en miles de matrículas).
 
@@ -449,6 +874,66 @@ Un esquema sin normalizar almacena datos redundantes en múltiples filas, provoc
 1. **Primera Forma Normal (1FN)**: Cada columna contiene un único valor atómico; no existen listas separadas por comas dentro de una celda.
 2. **Segunda Forma Normal (2FN)**: Cumple 1FN y todo atributo no primo depende por completo de la llave primaria completa (clave en tablas puente con llave compuesta).
 3. **Tercera Forma Normal (3FN)**: Cumple 2FN y ningún atributo no primo depende transitivamente de otro atributo no primo.`,
+        blocks: [
+          {
+            id: 'blk-201-1',
+            type: 'heading',
+            title: '1. ¿Por qué normalizar hasta Tercera Forma Normal (3FN)?',
+            content: '',
+          },
+          {
+            id: 'blk-201-2',
+            type: 'text',
+            content:
+              'Un esquema sin normalizar almacena datos redundantes en múltiples filas, provocando anomalías de inserción y actualización. Revisa las reglas de integridad referencial en [PostgreSQL DDL Constraints](https://www.postgresql.org/docs/current/ddl-constraints.html "Explica con ejemplos cómo declarar llaves primarias, foráneas, UNIQUE y CHECK en PostgreSQL para blindar la integridad del modelo.") antes de generar el script de tu evidencia.',
+          },
+          {
+            id: 'blk-201-3',
+            type: 'link',
+            title: 'Documentación Oficial PostgreSQL: Data Definition (DDL) y Llaves Foráneas',
+            url: 'https://www.postgresql.org/docs/current/ddl.html',
+            domainOrSource: 'postgresql.org · Documentación Oficial',
+            content: 'Guía completa de creación de tablas, tipos de datos y restricciones relacionales.',
+            relevanceComment:
+              'Imprescindible para la Evidencia GA4-AA1-EV01: muestra la sintaxis estándar de REFERENCES y cómo evitar registros huérfanos en tablas detalle.',
+          },
+          {
+            id: 'blk-201-4',
+            type: 'video',
+            title: 'Caso Práctico: De Tabla Desnormalizada a Modelo Relacional en 3FN',
+            url: 'https://www.youtube.com/watch?v=GFQaEYEc8_8',
+            domainOrSource: 'YouTube · Base de Datos Relacionales',
+            videoTimestamp: 'Min 01:45 - 12:15',
+            content: 'Descomposición paso a paso pasando por 1FN, 2FN y 3FN sin pérdida de información.',
+            relevanceComment:
+              'Observa en el minuto 06:30 cómo se separa la entidad "Fichas" de la tabla "Matrículas" para eliminar la dependencia transitiva del nombre del programa de formación.',
+          },
+          {
+            id: 'blk-201-5',
+            type: 'code',
+            codeLanguage: 'sql',
+            title: 'sql/01_schema_3fn.sql',
+            content: `CREATE TABLE programas_formacion (
+  codigo_programa VARCHAR(16) PRIMARY KEY,
+  nombre_programa VARCHAR(160) NOT NULL UNIQUE
+);
+
+CREATE TABLE fichas_caracterizacion (
+  ficha_codigo CHAR(7) PRIMARY KEY CHECK (ficha_codigo ~ '^[0-9]{7}$'),
+  codigo_programa VARCHAR(16) NOT NULL REFERENCES programas_formacion(codigo_programa),
+  fecha_inicio DATE NOT NULL
+);
+
+CREATE TABLE aprendices (
+  id_aprendiz SERIAL PRIMARY KEY,
+  documento VARCHAR(20) NOT NULL UNIQUE,
+  nombre_completo VARCHAR(120) NOT NULL,
+  ficha_codigo CHAR(7) NOT NULL REFERENCES fichas_caracterizacion(ficha_codigo)
+);`,
+            relevanceComment:
+              'Esquema normalizado en 3FN: el nombre del programa vive únicamente en programas_formacion y se vincula a través de fichas_caracterizacion.',
+          },
+        ],
         quiz: [
           {
             id: 'q-201-1',
@@ -489,6 +974,38 @@ Si creas el índice \`CREATE INDEX idx_evidencias_ficha_estado ON evidencias (fi
 - Acelera consultas que filtran por \`ficha_codigo\`.
 - Acelera consultas que filtran por \`ficha_codigo AND estado\`.
 - **No** es óptimo si la consulta filtra únicamente por \`estado\` omitiendo \`ficha_codigo\`.`,
+        blocks: [
+          {
+            id: 'blk-202-1',
+            type: 'heading',
+            title: '1. Índices Compuestos B-Tree y Regla del Prefijo Izquierdo',
+            content: '',
+          },
+          {
+            id: 'blk-202-2',
+            type: 'text',
+            content:
+              'Los índices B-Tree aceleran drásticamente las búsquedas por igualdad y rango (`WHERE`, `JOIN`, `ORDER BY`). Consulta la guía oficial [Uso de EXPLAIN en PostgreSQL](https://www.postgresql.org/docs/current/using-explain.html "Explica cómo interpretar Seq Scan, Index Scan y Bitmap Heap Scan junto con los costos estimados y tiempos reales en milisegundos.") para comparar el rendimiento antes y después de indexar.',
+          },
+          {
+            id: 'blk-202-3',
+            type: 'code',
+            codeLanguage: 'sql',
+            title: 'sql/02_indices_explain.sql',
+            content: `-- 1. Crear índice compuesto siguiendo el orden de filtrado más selectivo
+CREATE INDEX idx_entregas_ficha_fecha
+  ON entregas_evidencias (ficha_codigo, fecha_entrega DESC);
+
+-- 2. Verificar que el optimizador utilice Index Scan en lugar de Seq Scan
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT id_entrega, aprendiz_id, estado, fecha_entrega
+FROM entregas_evidencias
+WHERE ficha_codigo = '2874512'
+  AND fecha_entrega >= '2026-11-01';`,
+            relevanceComment:
+              'Al filtrar primero por ficha_codigo (prefijo izquierdo del índice) y luego por rango de fecha_entrega, PostgreSQL resuelve la consulta mediante un Index Scan directo.',
+          },
+        ],
         quiz: [
           {
             id: 'q-202-1',
@@ -533,6 +1050,54 @@ Una **VLAN (Virtual Local Area Network)** divide un switch físico en múltiples
 ### 2. Etiquetado IEEE 802.1Q y VLAN Nativa
 Cuando una trama atraviesa un enlace **Trunk** entre dos switches, el protocolo 802.1Q inserta una etiqueta de 4 bytes en la cabecera Ethernet con el **VLAN ID (12 bits, hasta 4094 VLANs)**.
 - Cambia siempre la **VLAN Nativa** por defecto (VLAN 1) a una VLAN dedicada sin puertos de usuario activos para prevenir ataques de *VLAN Hopping*.`,
+        blocks: [
+          {
+            id: 'blk-301-1',
+            type: 'heading',
+            title: '1. Dominios de Broadcast y Etiquetado IEEE 802.1Q',
+            content: '',
+          },
+          {
+            id: 'blk-301-2',
+            type: 'text',
+            content:
+              'Una **VLAN** divide un switch físico en múltiples dominios de broadcast lógicos independientes (ej. VLAN 10 Académica, VLAN 20 Instructores, VLAN 99 Gestión). Cuando una trama cruza un enlace troncal, el estándar **IEEE 802.1Q** inserta una etiqueta de 4 bytes identificando la VLAN de origen.',
+          },
+          {
+            id: 'blk-301-3',
+            type: 'video',
+            title: 'Laboratorio Guiado: Configuración de Trunk 802.1Q y Router-on-a-Stick',
+            url: 'https://www.youtube.com/watch?v=1XH2s2s9L8I',
+            domainOrSource: 'YouTube · Laboratorio Cisco SENA',
+            videoTimestamp: 'Min 02:10 - 14:00',
+            content: 'Configuración paso a paso en CLI de switches Capa 2 y subinterfaces de router.',
+            relevanceComment:
+              'Observa en el minuto 07:40 cómo se cambia la VLAN nativa a la VLAN 99 en ambos extremos del enlace troncal para evitar alertas de Native VLAN Mismatch en CDP/STP.',
+          },
+          {
+            id: 'blk-301-4',
+            type: 'code',
+            codeLanguage: 'cisco',
+            title: 'switch-core-sena.ios',
+            content: `! 1. Creación de VLANs corporativas SENA
+vlan 10
+ name ACADEMICA_APRENDICES
+vlan 20
+ name INSTRUCTORES
+vlan 99
+ name GESTION_Y_NATIVA
+
+! 2. Configuración de Enlace Troncal 802.1Q endurecido
+interface GigabitEthernet0/1
+ description TRUNK_HACIA_ROUTER_PRINCIPAL
+ switchport mode trunk
+ switchport trunk native vlan 99
+ switchport trunk allowed vlan 10,20,99
+ switchport nonegotiate`,
+            relevanceComment:
+              'El comando switchport nonegotiate desactiva tramas DTP en el puerto troncal, mitigando ataques de negociación automática de troncales (VLAN Hopping).',
+          },
+        ],
         quiz: [
           {
             id: 'q-301-1',
