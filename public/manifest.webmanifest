@@ -1,0 +1,10 @@
+{
+  "name": "NexoOVA Studio Móvil — SENA",
+  "short_name": "NexoOVA",
+  "description": "Objetos Virtuales de Aprendizaje, bloques interactivos y anuncios de evidencias SENA.",
+  "start_url": "/?mode=mobile",
+  "display": "standalone",
+  "background_color": "#f6f5f0",
+  "theme_color": "#121211",
+  "orientation": "portrait-primary"
+}

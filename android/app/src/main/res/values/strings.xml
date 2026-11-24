@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NexoOVA SENA</string>
+    <string name="title_activity_main">NexoOVA SENA</string>
+    <string name="package_name">co.edu.sena.nexoova</string>
+    <string name="custom_url_scheme">co.edu.sena.nexoova</string>
+</resources>

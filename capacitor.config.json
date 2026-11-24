@@ -1,0 +1,9 @@
+{
+  "appId": "co.edu.sena.nexoova",
+  "appName": "NexoOVA SENA",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

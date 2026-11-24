@@ -1,57 +1,104 @@
 import React, { useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
-  BookOpen,
   Check,
   Clock,
   Code2,
   Copy,
+  Cpu,
+  Edit3,
   ExternalLink,
   Eye,
   FileCode2,
   FileText,
+  GitBranch,
   Globe,
   Heading3,
   Info,
-  Columns,
+  Layers,
   Lightbulb,
   Link2,
   MessageSquareQuote,
   Play,
   Plus,
+  RefreshCw,
+  RotateCcw,
   Sparkles,
   Terminal,
   Trash2,
   Video,
 } from 'lucide-react';
 import {
+  DiagramKind,
   GraphNode,
+  InteractiveKind,
   Lesson,
   LessonBlock,
   LessonBlockType,
 } from '../types/ova';
 
 export const CODE_LANGUAGES = [
-  { value: 'typescript', label: 'TypeScript / Node.js' },
   { value: 'javascript', label: 'JavaScript (ES6+)' },
+  { value: 'typescript', label: 'TypeScript / Node.js' },
   { value: 'sql', label: 'SQL (PostgreSQL / MySQL)' },
   { value: 'python', label: 'Python' },
-  { value: 'json', label: 'JSON / OpenAPI' },
-  { value: 'yaml', label: 'YAML (Swagger / Docker)' },
+  { value: 'json', label: 'JSON / Objetos' },
+  { value: 'yaml', label: 'YAML (OpenAPI / Docker)' },
   { value: 'bash', label: 'Bash / Terminal CLI' },
-  { value: 'cisco', label: 'Cisco IOS CLI (Redes)' },
   { value: 'html', label: 'HTML / CSS' },
 ];
 
+export const DIAGRAM_KINDS: Array<{ value: DiagramKind; label: string }> = [
+  {
+    value: 'var_let_const',
+    label: 'Diagrama: Ámbito (Scope) de var vs let vs const',
+  },
+  {
+    value: 'data_types',
+    label: 'Diagrama: Tipos Primitivos (Stack) vs Referencia (Heap)',
+  },
+  {
+    value: 'if_else_flow',
+    label: 'Diagrama de Flujo: Condicionales (if / else if / else)',
+  },
+  {
+    value: 'loops_flow',
+    label: 'Diagrama de Flujo: Ciclos Repetitivos (for / while)',
+  },
+  {
+    value: 'try_catch_flow',
+    label: 'Diagrama de Flujo: Manejo de Errores (try / catch / finally)',
+  },
+];
+
+export const INTERACTIVE_KINDS: Array<{
+  value: InteractiveKind;
+  label: string;
+}> = [
+  {
+    value: 'array_lab',
+    label: 'Gráfico Interactivo Animado: Arreglos (push, pop, shift, unshift)',
+  },
+  {
+    value: 'array_functional',
+    label: 'Simulador Animado: Métodos Funcionales (map, filter, find, reduce)',
+  },
+  {
+    value: 'object_lab',
+    label: 'Gráfico Interactivo Animado: Objetos Clave-Valor y Desestructuración',
+  },
+];
+
 export function extractDomain(url?: string): string {
-  if (!url) return 'recurso.sena.edu.co';
+  if (!url) return 'developer.mozilla.org';
   try {
     const parsed = new URL(url);
     return parsed.hostname.replace(/^www\./, '');
   } catch {
-    return url.replace(/^https?:\/\//, '').split('/')[0] || 'enlace-externo';
+    return url.replace(/^https?:\/\//, '').split('/')[0] || 'enlace-web';
   }
 }
 
@@ -63,19 +110,13 @@ export function extractYouTubeId(url?: string): string | null {
   return match ? match[1] : null;
 }
 
-/**
- * Ensures any Lesson (even legacy ones stored in localStorage without `blocks`)
- * has a rich array of Notion-style blocks.
- */
 export function ensureLessonBlocks(lesson: Lesson): LessonBlock[] {
-  if (lesson.blocks && lesson.blocks.length > 0) {
+  if (Array.isArray(lesson.blocks)) {
     return lesson.blocks;
   }
 
   const generated: LessonBlock[] = [];
   const raw = lesson.contentMarkdown || '';
-
-  // Split by fenced code blocks first if any exist in contentMarkdown
   const parts = raw.split(/(```[\s\S]*?```)/g);
 
   parts.forEach((part, partIdx) => {
@@ -84,16 +125,16 @@ export function ensureLessonBlocks(lesson: Lesson): LessonBlock[] {
 
     if (trimmed.startsWith('```') && trimmed.endsWith('```')) {
       const lines = trimmed.slice(3, -3).split('\n');
-      const firstLine = lines[0]?.trim() || 'typescript';
+      const firstLine = lines[0]?.trim() || 'javascript';
       const codeBody = lines.slice(1).join('\n').trim();
       generated.push({
         id: `${lesson.id}-blk-code-${partIdx}`,
         type: 'code',
-        codeLanguage: firstLine || 'typescript',
-        title: `fragmento_${partIdx + 1}.${firstLine === 'sql' ? 'sql' : 'ts'}`,
+        codeLanguage: firstLine || 'javascript',
+        title: `ejemplo_${partIdx + 1}.js`,
         content: codeBody || lines.join('\n'),
         relevanceComment:
-          'Segmento de código fuente de referencia para implementar en el proyecto formativo.',
+          'Segmento de código fuente de referencia para practicar.',
       });
       return;
     }
@@ -145,19 +186,15 @@ export function ensureLessonBlocks(lesson: Lesson): LessonBlock[] {
         'Documentación y material audiovisual complementario de la lección.',
       relevanceComment:
         lesson.mediaComment ||
-        `Este recurso complementa directamente la lección "${lesson.title}". Revísalo para fundamentar la entrega de la evidencia del RAP.`,
+        `Recurso complementario para la lección "${lesson.title}".`,
     });
   }
 
   return generated;
 }
 
-/**
- * Ensures any GraphNode on the Knowledge Graph Canvas has Notion-style blocks
- * (text, links with hover preview comments, videos with hover preview comments, or source code segments).
- */
 export function ensureNodeBlocks(node: GraphNode): LessonBlock[] {
-  if (node.blocks && node.blocks.length > 0) {
+  if (Array.isArray(node.blocks)) {
     return node.blocks.map((b) => ({ ...b, sourceNodeId: node.id }));
   }
 
@@ -171,13 +208,13 @@ export function ensureNodeBlocks(node: GraphNode): LessonBlock[] {
 
     if (trimmed.startsWith('```') && trimmed.endsWith('```')) {
       const lines = trimmed.slice(3, -3).split('\n');
-      const firstLine = lines[0]?.trim() || node.codeLanguage || 'typescript';
+      const firstLine = lines[0]?.trim() || node.codeLanguage || 'javascript';
       const codeBody = lines.slice(1).join('\n').trim();
       generated.push({
         id: `${node.id}-nblk-code-${partIdx}`,
         type: 'code',
         codeLanguage: firstLine,
-        title: `snippet_${node.id}.${firstLine === 'sql' ? 'sql' : 'ts'}`,
+        title: `ejemplo_${node.id}.js`,
         content: codeBody || lines.join('\n'),
         relevanceComment:
           'Segmento de código fuente definido desde el nodo en el Lienzo en Grafo.',
@@ -190,7 +227,7 @@ export function ensureNodeBlocks(node: GraphNode): LessonBlock[] {
       generated.push({
         id: `${node.id}-nblk-code-main`,
         type: 'code',
-        codeLanguage: node.codeLanguage || 'typescript',
+        codeLanguage: node.codeLanguage || 'javascript',
         title: node.title,
         content: trimmed,
         relevanceComment:
@@ -227,16 +264,7 @@ export function ensureNodeBlocks(node: GraphNode): LessonBlock[] {
       relevanceComment:
         node.mediaComment ||
         node.content ||
-        `Recurso investigado en el nodo "${node.title}" para integrar en el OVA.`,
-      sourceNodeId: node.id,
-    });
-  }
-
-  if (generated.length === 0) {
-    generated.push({
-      id: `${node.id}-nblk-default`,
-      type: 'text',
-      content: node.content || 'Escribe el contenido de este nodo...',
+        `Recurso investigado en el nodo "${node.title}".`,
       sourceNodeId: node.id,
     });
   }
@@ -244,10 +272,6 @@ export function ensureNodeBlocks(node: GraphNode): LessonBlock[] {
   return generated;
 }
 
-/**
- * Converts Notion-style blocks back into clean Markdown so exports to Obsidian (.md),
- * Zajuna LMS (.html), and Printable PDF Guides stay 100% synchronized.
- */
 export function blocksToMarkdown(blocks: LessonBlock[]): string {
   return blocks
     .map((b) => {
@@ -258,6 +282,10 @@ export function blocksToMarkdown(blocks: LessonBlock[]): string {
           return b.content;
         case 'callout':
           return `> **${b.title || 'Nota Pedagógica'}:** ${b.content}`;
+        case 'diagram':
+          return `📊 **[Ilustración / Diagrama: ${b.title || 'Flujo Visual'}]**\n${b.content}`;
+        case 'interactive':
+          return `⚡ **[Laboratorio Interactivo: ${b.title || 'Simulador JS'}]**\n${b.content}`;
         case 'link':
           return `🔗 **[${b.title || b.url}](${b.url || '#'} "${(
             b.relevanceComment || b.content
@@ -272,7 +300,7 @@ export function blocksToMarkdown(blocks: LessonBlock[]): string {
           }\n> *Relevancia del video:* ${b.relevanceComment || b.content}`;
         case 'code':
           return `${b.title ? `#### Archivo: \`${b.title}\`\n` : ''}\`\`\`${
-            b.codeLanguage || 'typescript'
+            b.codeLanguage || 'javascript'
           }\n${b.content}\n\`\`\`${
             b.relevanceComment ? `\n*Nota técnica:* ${b.relevanceComment}` : ''
           }`;
@@ -284,9 +312,1478 @@ export function blocksToMarkdown(blocks: LessonBlock[]): string {
 }
 
 /**
+ * Illustrated SVG Diagram Component for Visual Explanations (Control Structures, Variables, Data Types)
+ */
+export const DiagramBlockView: React.FC<{
+  block: LessonBlock;
+  editable?: boolean;
+  onUpdateBlock?: (patch: Partial<LessonBlock>) => void;
+}> = ({ block, editable = false, onUpdateBlock }) => {
+  const kind: DiagramKind = block.diagramKind ?? 'if_else_flow';
+
+  return (
+    <div className="my-3 rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
+      {/* Header Bar */}
+      <div className="px-4 py-2.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <GitBranch className="w-4 h-4 text-amber-400 shrink-0" />
+          {editable && onUpdateBlock ? (
+            <input
+              type="text"
+              value={block.title ?? ''}
+              onChange={(e) => onUpdateBlock({ title: e.target.value })}
+              placeholder="Título del gráfico o esquema visual..."
+              className="flex-1 bg-slate-800/90 text-white text-xs font-bold px-2.5 py-1 rounded border border-slate-700 focus:outline-none focus:border-amber-400"
+            />
+          ) : (
+            <span className="text-xs font-bold truncate">
+              {block.title || 'Esquema Visual Explicativo'}
+            </span>
+          )}
+        </div>
+
+        {editable && onUpdateBlock ? (
+          <select
+            value={kind}
+            onChange={(e) =>
+              onUpdateBlock({ diagramKind: e.target.value as DiagramKind })
+            }
+            className="px-2 py-1 text-[11px] bg-slate-800 text-amber-300 border border-slate-700 rounded font-mono"
+          >
+            {DIAGRAM_KINDS.map((dk) => (
+              <option key={dk.value} value={dk.value}>
+                {dk.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">
+            Esquema Ilustrado JS
+          </span>
+        )}
+      </div>
+
+      {/* SVG Diagram Canvas */}
+      <div className="p-4 sm:p-6 bg-gradient-to-b from-slate-50 to-white flex justify-center overflow-x-auto">
+        {kind === 'if_else_flow' && (
+          <svg
+            viewBox="0 0 700 250"
+            className="w-full max-w-2xl h-auto"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {/* Start node */}
+            <rect
+              x="20"
+              y="95"
+              width="110"
+              height="48"
+              rx="24"
+              fill="#0f172a"
+            />
+            <text
+              x="75"
+              y="123"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="12"
+              fontWeight="bold"
+            >
+              Inicio / Dato
+            </text>
+            <path
+              d="M 130 119 L 185 119"
+              stroke="#475569"
+              strokeWidth="2.2"
+              markerEnd="url(#d-arrow)"
+            />
+
+            {/* Condition Diamond 1 */}
+            <polygon
+              points="265,65 345,119 265,173 185,119"
+              fill="#fef3c7"
+              stroke="#d97706"
+              strokeWidth="2.2"
+            />
+            <text
+              x="265"
+              y="115"
+              textAnchor="middle"
+              fill="#92400e"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              if (condición)
+            </text>
+            <text
+              x="265"
+              y="131"
+              textAnchor="middle"
+              fill="#b45309"
+              fontSize="10"
+              fontFamily="monospace"
+            >
+              ¿Es true?
+            </text>
+
+            {/* TRUE Branch (Top) */}
+            <path
+              d="M 265 65 L 265 35 L 430 35"
+              fill="none"
+              stroke="#059669"
+              strokeWidth="2.4"
+            />
+            <text
+              x="335"
+              y="27"
+              fill="#059669"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              true (Verdadero)
+            </text>
+            <rect
+              x="430"
+              y="12"
+              width="195"
+              height="48"
+              rx="10"
+              fill="#ecfdf5"
+              stroke="#10b981"
+              strokeWidth="2"
+            />
+            <text
+              x="527"
+              y="33"
+              textAnchor="middle"
+              fill="#065f46"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              Ejecuta Bloque IF {`{ ... }`}
+            </text>
+            <text
+              x="527"
+              y="49"
+              textAnchor="middle"
+              fill="#047857"
+              fontSize="10"
+              fontFamily="monospace"
+            >
+              Omite el bloque else
+            </text>
+
+            {/* FALSE Branch (Bottom) */}
+            <path
+              d="M 265 173 L 265 205 L 430 205"
+              fill="none"
+              stroke="#e11d48"
+              strokeWidth="2.4"
+            />
+            <text
+              x="335"
+              y="197"
+              fill="#e11d48"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              false (Falso)
+            </text>
+            <rect
+              x="430"
+              y="180"
+              width="195"
+              height="48"
+              rx="10"
+              fill="#fff1f2"
+              stroke="#f43f5e"
+              strokeWidth="2"
+            />
+            <text
+              x="527"
+              y="201"
+              textAnchor="middle"
+              fill="#9f1239"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              Ejecuta ELSE / ELSE IF
+            </text>
+            <text
+              x="527"
+              y="217"
+              textAnchor="middle"
+              fill="#be123c"
+              fontSize="10"
+              fontFamily="monospace"
+            >
+              Ruta alternativa
+            </text>
+
+            {/* Convergence */}
+            <path
+              d="M 625 36 L 665 36 L 665 119 L 625 204 L 665 204 L 665 119"
+              fill="none"
+              stroke="#64748b"
+              strokeWidth="1.8"
+              strokeDasharray="4 3"
+            />
+            <circle cx="665" cy="119" r="8" fill="#4f46e5" />
+          </svg>
+        )}
+
+        {kind === 'loops_flow' && (
+          <svg
+            viewBox="0 0 720 250"
+            className="w-full max-w-2xl h-auto"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {/* Step 1: Init */}
+            <rect
+              x="16"
+              y="92"
+              width="135"
+              height="54"
+              rx="10"
+              fill="#eef2ff"
+              stroke="#6366f1"
+              strokeWidth="2"
+            />
+            <text
+              x="83"
+              y="115"
+              textAnchor="middle"
+              fill="#312e81"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              1. Inicialización
+            </text>
+            <text
+              x="83"
+              y="133"
+              textAnchor="middle"
+              fill="#4338ca"
+              fontSize="11"
+              fontFamily="monospace"
+            >
+              let i = 0;
+            </text>
+
+            <path d="M 151 119 L 195 119" stroke="#475569" strokeWidth="2.2" />
+
+            {/* Step 2: Condition */}
+            <polygon
+              points="275,64 355,119 275,174 195,119"
+              fill="#fef3c7"
+              stroke="#d97706"
+              strokeWidth="2.2"
+            />
+            <text
+              x="275"
+              y="115"
+              textAnchor="middle"
+              fill="#92400e"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              2. Condición
+            </text>
+            <text
+              x="275"
+              y="131"
+              textAnchor="middle"
+              fill="#b45309"
+              fontSize="11"
+              fontFamily="monospace"
+            >
+              i &lt; límite
+            </text>
+
+            {/* True -> Execute Body */}
+            <path d="M 355 119 L 420 119" stroke="#059669" strokeWidth="2.4" />
+            <text
+              x="387"
+              y="110"
+              textAnchor="middle"
+              fill="#059669"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              true
+            </text>
+
+            <rect
+              x="420"
+              y="90"
+              width="165"
+              height="58"
+              rx="10"
+              fill="#ecfdf5"
+              stroke="#10b981"
+              strokeWidth="2"
+            />
+            <text
+              x="502"
+              y="115"
+              textAnchor="middle"
+              fill="#065f46"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              3. Cuerpo del Ciclo
+            </text>
+            <text
+              x="502"
+              y="133"
+              textAnchor="middle"
+              fill="#047857"
+              fontSize="10"
+              fontFamily="monospace"
+            >
+              Ejecuta iteración actual
+            </text>
+
+            {/* Step 4: Increment & Loop back */}
+            <path
+              d="M 502 90 L 502 32 L 275 32 L 275 64"
+              fill="none"
+              stroke="#4f46e5"
+              strokeWidth="2.2"
+              strokeDasharray="5 3"
+            />
+            <rect
+              x="325"
+              y="12"
+              width="145"
+              height="36"
+              rx="8"
+              fill="#312e81"
+            />
+            <text
+              x="397"
+              y="34"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="11"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              4. Paso: i++
+            </text>
+
+            {/* False -> Exit Loop */}
+            <path
+              d="M 275 174 L 275 218 L 590 218"
+              fill="none"
+              stroke="#e11d48"
+              strokeWidth="2.2"
+            />
+            <text
+              x="345"
+              y="210"
+              fill="#e11d48"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              false (o instrucción break)
+            </text>
+            <rect
+              x="590"
+              y="196"
+              width="115"
+              height="42"
+              rx="21"
+              fill="#0f172a"
+            />
+            <text
+              x="647"
+              y="221"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              Fin del Ciclo
+            </text>
+          </svg>
+        )}
+
+        {kind === 'var_let_const' && (
+          <svg
+            viewBox="0 0 700 220"
+            className="w-full max-w-2xl h-auto"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {/* Card 1: var */}
+            <rect
+              x="15"
+              y="15"
+              width="205"
+              height="190"
+              rx="12"
+              fill="#fff1f2"
+              stroke="#fda4af"
+              strokeWidth="2"
+            />
+            <text
+              x="117"
+              y="45"
+              textAnchor="middle"
+              fill="#9f1239"
+              fontSize="16"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              var (Legado ES5)
+            </text>
+            <text x="32" y="80" fill="#881337" fontSize="11">
+              • Ámbito de función (ignora {`{ }`})
+            </text>
+            <text x="32" y="105" fill="#881337" fontSize="11">
+              • Permite re-declarar sin error
+            </text>
+            <text x="32" y="130" fill="#881337" fontSize="11">
+              • Hoisting con valor undefined
+            </text>
+            <rect
+              x="32"
+              y="155"
+              width="170"
+              height="30"
+              rx="6"
+              fill="#ffe4e6"
+            />
+            <text
+              x="117"
+              y="174"
+              textAnchor="middle"
+              fill="#be123c"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              ⚠️ Evitar en código moderno
+            </text>
+
+            {/* Card 2: let */}
+            <rect
+              x="247"
+              y="15"
+              width="205"
+              height="190"
+              rx="12"
+              fill="#eef2ff"
+              stroke="#818cf8"
+              strokeWidth="2"
+            />
+            <text
+              x="349"
+              y="45"
+              textAnchor="middle"
+              fill="#312e81"
+              fontSize="16"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              let (Mutable ES6)
+            </text>
+            <text x="264" y="80" fill="#1e1b4b" fontSize="11">
+              • Ámbito estricto de bloque {`{ }`}
+            </text>
+            <text x="264" y="105" fill="#1e1b4b" fontSize="11">
+              • Permite reasignar su valor
+            </text>
+            <text x="264" y="130" fill="#1e1b4b" fontSize="11">
+              • Protegida por Zona Muerta (TDZ)
+            </text>
+            <rect
+              x="264"
+              y="155"
+              width="170"
+              height="30"
+              rx="6"
+              fill="#e0e7ff"
+            />
+            <text
+              x="349"
+              y="174"
+              textAnchor="middle"
+              fill="#4338ca"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              ✓ Usar en contadores / estado
+            </text>
+
+            {/* Card 3: const */}
+            <rect
+              x="480"
+              y="15"
+              width="205"
+              height="190"
+              rx="12"
+              fill="#ecfdf5"
+              stroke="#34d399"
+              strokeWidth="2"
+            />
+            <text
+              x="582"
+              y="45"
+              textAnchor="middle"
+              fill="#064e3b"
+              fontSize="16"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              const (Constante)
+            </text>
+            <text x="497" y="80" fill="#065f46" fontSize="11">
+              • Ámbito estricto de bloque {`{ }`}
+            </text>
+            <text x="497" y="105" fill="#065f46" fontSize="11">
+              • Impide reasignar la referencia
+            </text>
+            <text x="497" y="130" fill="#065f46" fontSize="11">
+              • Objetos/Arrays sí pueden mutar
+            </text>
+            <rect
+              x="497"
+              y="155"
+              width="170"
+              height="30"
+              rx="6"
+              fill="#d1fae5"
+            />
+            <text
+              x="582"
+              y="174"
+              textAnchor="middle"
+              fill="#047857"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              ★ Opción por defecto en JS
+            </text>
+          </svg>
+        )}
+
+        {kind === 'data_types' && (
+          <svg
+            viewBox="0 0 700 220"
+            className="w-full max-w-2xl h-auto"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {/* Stack Primitives */}
+            <rect
+              x="20"
+              y="15"
+              width="315"
+              height="190"
+              rx="12"
+              fill="#f8fafc"
+              stroke="#94a3b8"
+              strokeWidth="2"
+            />
+            <text
+              x="177"
+              y="42"
+              textAnchor="middle"
+              fill="#0f172a"
+              fontSize="14"
+              fontWeight="bold"
+            >
+              7 Tipos Primitivos (Inmutables · Por Valor)
+            </text>
+            <text
+              x="40"
+              y="72"
+              fill="#334155"
+              fontSize="11"
+              fontFamily="monospace"
+            >
+              • string → &quot;Hola SENA&quot;
+            </text>
+            <text
+              x="40"
+              y="94"
+              fill="#334155"
+              fontSize="11"
+              fontFamily="monospace"
+            >
+              • number → 42, 3.1416, NaN
+            </text>
+            <text
+              x="40"
+              y="116"
+              fill="#334155"
+              fontSize="11"
+              fontFamily="monospace"
+            >
+              • boolean → true / false
+            </text>
+            <text
+              x="40"
+              y="138"
+              fill="#334155"
+              fontSize="11"
+              fontFamily="monospace"
+            >
+              • undefined → variable sin valor asignado
+            </text>
+            <text
+              x="40"
+              y="160"
+              fill="#334155"
+              fontSize="11"
+              fontFamily="monospace"
+            >
+              • null → ausencia intencional de objeto
+            </text>
+            <text
+              x="40"
+              y="182"
+              fill="#334155"
+              fontSize="11"
+              fontFamily="monospace"
+            >
+              • bigint / symbol → 9007199254740991n / Symbol()
+            </text>
+
+            {/* Heap Reference Types */}
+            <rect
+              x="365"
+              y="15"
+              width="315"
+              height="190"
+              rx="12"
+              fill="#eef2ff"
+              stroke="#6366f1"
+              strokeWidth="2"
+            />
+            <text
+              x="522"
+              y="42"
+              textAnchor="middle"
+              fill="#312e81"
+              fontSize="14"
+              fontWeight="bold"
+            >
+              Tipos de Referencia (Heap · Puntero Memoria)
+            </text>
+            <text
+              x="385"
+              y="76"
+              fill="#1e1b4b"
+              fontSize="11"
+              fontFamily="monospace"
+            >
+              • Object → {`{ nombre: "Ana", ficha: 2874512 }`}
+            </text>
+            <text
+              x="385"
+              y="104"
+              fill="#1e1b4b"
+              fontSize="11"
+              fontFamily="monospace"
+            >
+              • Array → [&quot;JS&quot;, &quot;SQL&quot;, &quot;Node&quot;]
+            </text>
+            <text
+              x="385"
+              y="132"
+              fill="#1e1b4b"
+              fontSize="11"
+              fontFamily="monospace"
+            >
+              • Function → (a, b) =&gt; a + b
+            </text>
+            <rect
+              x="385"
+              y="154"
+              width="275"
+              height="34"
+              rx="8"
+              fill="#e0e7ff"
+            />
+            <text
+              x="522"
+              y="175"
+              textAnchor="middle"
+              fill="#4338ca"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              Al copiar la variable se copia la dirección
+            </text>
+          </svg>
+        )}
+
+        {kind === 'try_catch_flow' && (
+          <svg
+            viewBox="0 0 700 200"
+            className="w-full max-w-2xl h-auto"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect
+              x="20"
+              y="65"
+              width="175"
+              height="68"
+              rx="10"
+              fill="#eef2ff"
+              stroke="#6366f1"
+              strokeWidth="2"
+            />
+            <text
+              x="107"
+              y="93"
+              textAnchor="middle"
+              fill="#312e81"
+              fontSize="12"
+              fontWeight="bold"
+            >
+              1. Bloque try {`{ ... }`}
+            </text>
+            <text
+              x="107"
+              y="113"
+              textAnchor="middle"
+              fill="#4338ca"
+              fontSize="10"
+              fontFamily="monospace"
+            >
+              Código supervisado
+            </text>
+
+            <path
+              d="M 195 82 L 265 45"
+              stroke="#e11d48"
+              strokeWidth="2.2"
+            />
+            <path
+              d="M 195 115 L 265 145"
+              stroke="#059669"
+              strokeWidth="2.2"
+            />
+
+            <rect
+              x="265"
+              y="15"
+              width="195"
+              height="58"
+              rx="10"
+              fill="#fff1f2"
+              stroke="#f43f5e"
+              strokeWidth="2"
+            />
+            <text
+              x="362"
+              y="40"
+              textAnchor="middle"
+              fill="#9f1239"
+              fontSize="12"
+              fontWeight="bold"
+            >
+              2A. catch (error) {`{ ... }`}
+            </text>
+            <text
+              x="362"
+              y="58"
+              textAnchor="middle"
+              fill="#be123c"
+              fontSize="10"
+              fontFamily="monospace"
+            >
+              Si ocurre throw / excepción
+            </text>
+
+            <rect
+              x="265"
+              y="122"
+              width="195"
+              height="58"
+              rx="10"
+              fill="#ecfdf5"
+              stroke="#10b981"
+              strokeWidth="2"
+            />
+            <text
+              x="362"
+              y="147"
+              textAnchor="middle"
+              fill="#065f46"
+              fontSize="12"
+              fontWeight="bold"
+            >
+              2B. Ejecución sin errores
+            </text>
+            <text
+              x="362"
+              y="165"
+              textAnchor="middle"
+              fill="#047857"
+              fontSize="10"
+              fontFamily="monospace"
+            >
+              Ignora el bloque catch
+            </text>
+
+            <path d="M 460 44 L 520 85" stroke="#475569" strokeWidth="2.2" />
+            <path d="M 460 151 L 520 112" stroke="#475569" strokeWidth="2.2" />
+
+            <rect
+              x="520"
+              y="65"
+              width="160"
+              height="68"
+              rx="10"
+              fill="#0f172a"
+            />
+            <text
+              x="600"
+              y="93"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="12"
+              fontWeight="bold"
+            >
+              3. finally {`{ ... }`}
+            </text>
+            <text
+              x="600"
+              y="113"
+              textAnchor="middle"
+              fill="#cbd5e1"
+              fontSize="10"
+              fontFamily="monospace"
+            >
+              Se ejecuta SIEMPRE
+            </text>
+          </svg>
+        )}
+      </div>
+
+      {/* Caption / Pedagogical Explanation */}
+      <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 text-xs text-slate-700">
+        {editable && onUpdateBlock ? (
+          <input
+            type="text"
+            value={block.content}
+            onChange={(e) => onUpdateBlock({ content: e.target.value })}
+            placeholder="Escribe aquí la explicación o pie de imagen del diagrama..."
+            className="w-full bg-white px-2.5 py-1.5 rounded border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-indigo-600"
+          />
+        ) : (
+          <div>
+            <strong className="text-slate-900">Lectura del diagrama:</strong>{' '}
+            {block.content}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Interactive Animated Graphics with Microinteractions for OVA 3 (JavaScript Arrays & Objects)
+ */
+export const InteractiveGraphicBlockView: React.FC<{
+  block: LessonBlock;
+  editable?: boolean;
+  onUpdateBlock?: (patch: Partial<LessonBlock>) => void;
+}> = ({ block, editable = false, onUpdateBlock }) => {
+  const kind: InteractiveKind = block.interactiveKind ?? 'array_lab';
+
+  // State for Array Lab ('array_lab')
+  const [arrItems, setArrItems] = useState<string[]>([
+    'JavaScript',
+    'HTML5',
+    'CSS3',
+  ]);
+  const [customArrInput, setCustomArrInput] = useState<string>('Node.js');
+  const [lastArrOp, setLastArrOp] = useState<string>(
+    "let lenguajes = ['JavaScript', 'HTML5', 'CSS3']; // length: 3"
+  );
+
+  // State for Functional Array Simulator ('array_functional')
+  const baseScores = [85, 55, 92, 65, 100];
+  const [fnMode, setFnMode] = useState<'map' | 'filter' | 'find' | 'reduce'>(
+    'map'
+  );
+
+  // State for Object Lab ('object_lab')
+  const [objProps, setObjProps] = useState<
+    Array<{ key: string; value: string; highlight?: boolean }>
+  >([
+    { key: 'nombre', value: '"Valentina Rojas"' },
+    { key: 'ficha', value: '2874512' },
+    { key: 'programa', value: '"ADSO"' },
+    { key: 'activo', value: 'true' },
+  ]);
+  const [newKey, setNewKey] = useState<string>('trimestre');
+  const [newVal, setNewVal] = useState<string>('4');
+  const [objConsole, setObjConsole] = useState<string>(
+    'const aprendiz = { nombre: "Valentina Rojas", ficha: 2874512, programa: "ADSO", activo: true };'
+  );
+
+  const triggerHighlightKey = (targetKey: string, expr: string) => {
+    setObjProps((prev) =>
+      prev.map((p) => ({ ...p, highlight: p.key === targetKey }))
+    );
+    setObjConsole(expr);
+  };
+
+  return (
+    <div className="my-3 rounded-2xl border border-indigo-200 bg-white overflow-hidden shadow-xs">
+      {/* Top Interactive Bar */}
+      <div className="px-4 py-2.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Cpu className="w-4 h-4 text-emerald-400 shrink-0" />
+          {editable && onUpdateBlock ? (
+            <input
+              type="text"
+              value={block.title ?? ''}
+              onChange={(e) => onUpdateBlock({ title: e.target.value })}
+              placeholder="Título del laboratorio interactivo..."
+              className="flex-1 bg-slate-800/90 text-white text-xs font-bold px-2.5 py-1 rounded border border-slate-700 focus:outline-none focus:border-emerald-400"
+            />
+          ) : (
+            <span className="text-xs font-bold truncate">
+              {block.title || 'Laboratorio Visual Interactivo de JavaScript'}
+            </span>
+          )}
+        </div>
+
+        {editable && onUpdateBlock ? (
+          <select
+            value={kind}
+            onChange={(e) =>
+              onUpdateBlock({
+                interactiveKind: e.target.value as InteractiveKind,
+              })
+            }
+            className="px-2 py-1 text-[11px] bg-slate-800 text-emerald-300 border border-slate-700 rounded font-mono"
+          >
+            {INTERACTIVE_KINDS.map((ik) => (
+              <option key={ik.value} value={ik.value}>
+                {ik.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+            Gráfico Interactivo · Microanimaciones
+          </span>
+        )}
+      </div>
+
+      {/* Interactive Playground Body */}
+      <div className="p-4 sm:p-5 space-y-4 bg-slate-50/70">
+        {kind === 'array_lab' && (
+          <div className="space-y-4">
+            {/* Animated Array Memory Cells */}
+            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-slate-600 font-semibold">
+                  Memoria del Arreglo (`Array` indexado en base 0):
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-bold">
+                  lenguajes.length = {arrItems.length}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5 min-h-[76px] py-2">
+                <AnimatePresence mode="popLayout">
+                  {arrItems.map((item, idx) => (
+                    <motion.div
+                      key={`${item}-${idx}`}
+                      layout
+                      initial={{ opacity: 0, scale: 0.7, y: -12 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.6, y: 12 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 420,
+                        damping: 26,
+                      }}
+                      className="group relative px-3.5 py-2.5 rounded-xl bg-slate-900 text-white border border-slate-700 shadow-sm flex flex-col items-center min-w-[92px]"
+                    >
+                      <span className="text-[10px] font-mono text-amber-400 font-bold">
+                        índice [{idx}]
+                      </span>
+                      <span className="text-xs font-mono font-semibold text-emerald-300 mt-0.5">
+                        &apos;{item}&apos;
+                      </span>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {arrItems.length === 0 && (
+                  <div className="text-xs font-mono text-slate-400 italic">
+                    [ ] Arreglo vacío (length: 0)
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Micro-interactive Controls */}
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={customArrInput}
+                onChange={(e) => setCustomArrInput(e.target.value)}
+                placeholder="Nuevo elemento..."
+                className="w-36 px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg"
+              />
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                type="button"
+                onClick={() => {
+                  const val = customArrInput.trim() || 'Item';
+                  const next = [...arrItems, val];
+                  setArrItems(next);
+                  setLastArrOp(
+                    `lenguajes.push('${val}'); // Añade al final -> nueva longitud: ${next.length}`
+                  );
+                }}
+                className="px-3 py-1.5 text-xs font-mono font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg"
+              >
+                .push(&apos;{customArrInput || 'Item'}&apos;)
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                type="button"
+                onClick={() => {
+                  if (arrItems.length === 0) return;
+                  const removed = arrItems[arrItems.length - 1];
+                  setArrItems(arrItems.slice(0, -1));
+                  setLastArrOp(
+                    `lenguajes.pop(); // Eliminó '${removed}' del final`
+                  );
+                }}
+                className="px-3 py-1.5 text-xs font-mono font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg"
+              >
+                .pop()
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                type="button"
+                onClick={() => {
+                  const val = customArrInput.trim() || 'Inicio';
+                  const next = [val, ...arrItems];
+                  setArrItems(next);
+                  setLastArrOp(
+                    `lenguajes.unshift('${val}'); // Insertó en el índice [0] y desplazó el resto`
+                  );
+                }}
+                className="px-3 py-1.5 text-xs font-mono font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg"
+              >
+                .unshift()
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                type="button"
+                onClick={() => {
+                  if (arrItems.length === 0) return;
+                  const removed = arrItems[0];
+                  setArrItems(arrItems.slice(1));
+                  setLastArrOp(
+                    `lenguajes.shift(); // Extrajo '${removed}' del índice [0]`
+                  );
+                }}
+                className="px-3 py-1.5 text-xs font-mono font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg"
+              >
+                .shift()
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                type="button"
+                onClick={() => {
+                  setArrItems([...arrItems].reverse());
+                  setLastArrOp(
+                    `lenguajes.reverse(); // Invirtió el orden de los índices in-place`
+                  );
+                }}
+                className="px-3 py-1.5 text-xs font-mono font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg"
+              >
+                .reverse()
+              </motion.button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setArrItems(['JavaScript', 'HTML5', 'CSS3']);
+                  setLastArrOp(
+                    "let lenguajes = ['JavaScript', 'HTML5', 'CSS3']; // Reiniciado"
+                  );
+                }}
+                className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg"
+                title="Reiniciar arreglo"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Live JS Console Output */}
+            <div className="px-3.5 py-2 bg-slate-950 text-emerald-300 rounded-lg font-mono text-xs flex items-center gap-2">
+              <Terminal className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="truncate">{lastArrOp}</span>
+            </div>
+          </div>
+        )}
+
+        {kind === 'array_functional' && (
+          <div className="space-y-4">
+            {/* Method Switcher */}
+            <div className="flex flex-wrap items-center gap-2">
+              {(
+                [
+                  {
+                    id: 'map',
+                    label: '.map(n => Math.min(100, n + 5))',
+                    desc: 'Transforma cada elemento 1 a 1 y retorna un NUEVO arreglo del mismo tamaño.',
+                  },
+                  {
+                    id: 'filter',
+                    label: '.filter(n => n >= 70)',
+                    desc: 'Filtra y conserva solo los elementos cuyo callback retorne true (Aprobados >= 70).',
+                  },
+                  {
+                    id: 'find',
+                    label: '.find(n => n > 90)',
+                    desc: 'Detiene la búsqueda y retorna el PRIMER elemento que cumpla la condición.',
+                  },
+                  {
+                    id: 'reduce',
+                    label: '.reduce((acc, n) => acc + n, 0)',
+                    desc: 'Acumula todos los elementos en un único valor final (Suma total = 397).',
+                  },
+                ] as const
+              ).map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setFnMode(m.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+                    fnMode === m.id
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Visual Transformation Pipeline */}
+            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-4">
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-mono text-slate-500">
+                  Arreglo Original (Inmutable):{' '}
+                  <code>const notas = [85, 55, 92, 65, 100];</code>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {baseScores.map((score, i) => {
+                    const passes =
+                      fnMode === 'map' ||
+                      fnMode === 'reduce' ||
+                      (fnMode === 'filter' && score >= 70) ||
+                      (fnMode === 'find' && score === 92);
+                    return (
+                      <motion.div
+                        key={i}
+                        animate={{
+                          scale: passes ? 1.03 : 0.92,
+                          opacity: passes ? 1 : 0.38,
+                        }}
+                        className={`px-3 py-2 rounded-lg font-mono text-xs border ${
+                          passes
+                            ? 'bg-slate-900 text-white border-slate-800'
+                            : 'bg-slate-100 text-slate-400 border-slate-200 line-through'
+                        }`}
+                      >
+                        [{i}]: <strong>{score}</strong>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="border-t border-dashed border-slate-200 pt-3 space-y-2">
+                <div className="text-[11px] font-mono font-semibold text-indigo-700">
+                  Resultado retornado por <code>.{fnMode}()</code>:
+                </div>
+
+                {fnMode === 'map' && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {baseScores.map((s, i) => (
+                      <motion.div
+                        key={`map-${i}`}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.06 }}
+                        className="px-3 py-2 rounded-lg bg-emerald-600 text-white font-mono text-xs font-bold"
+                      >
+                        [{i}]: {Math.min(100, s + 5)}
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+
+                {fnMode === 'filter' && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {baseScores
+                      .filter((s) => s >= 70)
+                      .map((s, i) => (
+                        <motion.div
+                          key={`fil-${i}`}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="px-3 py-2 rounded-lg bg-emerald-600 text-white font-mono text-xs font-bold"
+                        >
+                          [{i}]: {s} (Aprobado)
+                        </motion.div>
+                      ))}
+                  </div>
+                )}
+
+                {fnMode === 'find' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="inline-block px-4 py-2 rounded-lg bg-amber-500 text-slate-950 font-mono text-xs font-bold"
+                  >
+                    Valor único retornado: 92 (Primer elemento &gt; 90)
+                  </motion.div>
+                )}
+
+                {fnMode === 'reduce' && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="inline-block px-4 py-2 rounded-lg bg-indigo-700 text-white font-mono text-xs font-bold"
+                  >
+                    Acumulador Total = 397 (Promedio: 79.4)
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {kind === 'object_lab' && (
+          <div className="space-y-4">
+            {/* Animated Key-Value Object Inspector */}
+            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="font-bold text-slate-800">
+                  const aprendiz = {`{`}
+                </span>
+                <span className="text-slate-500">
+                  {objProps.length} propiedades clave: valor
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-3">
+                <AnimatePresence mode="popLayout">
+                  {objProps.map((prop) => (
+                    <motion.div
+                      key={prop.key}
+                      layout
+                      initial={{ opacity: 0, scale: 0.85 }}
+                      animate={{
+                        opacity: 1,
+                        scale: prop.highlight ? 1.03 : 1,
+                      }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      onClick={() =>
+                        triggerHighlightKey(
+                          prop.key,
+                          `aprendiz.${prop.key} // Retorna -> ${prop.value}`
+                        )
+                      }
+                      className={`p-2.5 rounded-xl border font-mono text-xs cursor-pointer transition-colors flex items-center justify-between ${
+                        prop.highlight
+                          ? 'bg-indigo-950 text-white border-indigo-500 ring-2 ring-indigo-400'
+                          : 'bg-slate-50 text-slate-800 border-slate-200 hover:border-indigo-400'
+                      }`}
+                    >
+                      <div>
+                        <span
+                          className={
+                            prop.highlight
+                              ? 'text-amber-300 font-bold'
+                              : 'text-indigo-700 font-bold'
+                          }
+                        >
+                          {prop.key}
+                        </span>
+                        <span>: </span>
+                        <span
+                          className={
+                            prop.highlight
+                              ? 'text-emerald-300'
+                              : 'text-emerald-700'
+                          }
+                        >
+                          {prop.value}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setObjProps((prev) =>
+                            prev.filter((p) => p.key !== prop.key)
+                          );
+                          setObjConsole(
+                            `delete aprendiz.${prop.key}; // Propiedad eliminada`
+                          );
+                        }}
+                        className="text-slate-400 hover:text-rose-500 text-[10px] px-1"
+                        title="delete aprendiz.propiedad"
+                      >
+                        ✕
+                      </button>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+
+              <div className="text-xs font-mono font-bold text-slate-800">
+                {`};`}
+              </div>
+            </div>
+
+            {/* Interactive Object Operations */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  triggerHighlightKey(
+                    'nombre',
+                    'aprendiz.nombre; // Notación de punto -> "Valentina Rojas"'
+                  )
+                }
+                className="px-2.5 py-1.5 text-xs font-mono font-semibold bg-white border border-slate-300 hover:border-indigo-500 rounded-lg text-slate-800"
+              >
+                aprendiz.nombre
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  triggerHighlightKey(
+                    'ficha',
+                    'aprendiz["ficha"]; // Notación de corchetes -> 2874512'
+                  )
+                }
+                className="px-2.5 py-1.5 text-xs font-mono font-semibold bg-white border border-slate-300 hover:border-indigo-500 rounded-lg text-slate-800"
+              >
+                aprendiz[&quot;ficha&quot;]
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setObjConsole(
+                    `const { nombre, ficha } = aprendiz; // Desestructuración directa`
+                  )
+                }
+                className="px-2.5 py-1.5 text-xs font-mono font-semibold bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg"
+              >
+                const {`{ nombre, ficha }`} = aprendiz
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setObjConsole(
+                    `Object.keys(aprendiz) -> [${objProps
+                      .map((p) => `"${p.key}"`)
+                      .join(', ')}]`
+                  )
+                }
+                className="px-2.5 py-1.5 text-xs font-mono font-semibold bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg"
+              >
+                Object.keys()
+              </button>
+            </div>
+
+            {/* Add / Mutate Key-Value Pair */}
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={newKey}
+                onChange={(e) => setNewKey(e.target.value)}
+                placeholder="clave..."
+                className="w-28 px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg"
+              />
+              <input
+                type="text"
+                value={newVal}
+                onChange={(e) => setNewVal(e.target.value)}
+                placeholder="valor..."
+                className="w-28 px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const k = newKey.trim();
+                  if (!k) return;
+                  const v = newVal.trim() || 'true';
+                  setObjProps((prev) => {
+                    const exists = prev.some((p) => p.key === k);
+                    if (exists) {
+                      return prev.map((p) =>
+                        p.key === k
+                          ? { key: k, value: v, highlight: true }
+                          : { ...p, highlight: false }
+                      );
+                    }
+                    return [
+                      ...prev.map((p) => ({ ...p, highlight: false })),
+                      { key: k, value: v, highlight: true },
+                    ];
+                  });
+                  setObjConsole(`aprendiz.${k} = ${v}; // Propiedad asignada`);
+                }}
+                className="px-3 py-1.5 text-xs font-mono font-semibold text-white bg-slate-900 hover:bg-indigo-600 rounded-lg"
+              >
+                + Asignar Propiedad
+              </button>
+            </div>
+
+            <div className="px-3.5 py-2 bg-slate-950 text-emerald-300 rounded-lg font-mono text-xs flex items-center gap-2">
+              <Terminal className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="truncate">{objConsole}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Editable Description / Guide Caption */}
+        <div className="text-xs text-slate-600 pt-1">
+          {editable && onUpdateBlock ? (
+            <input
+              type="text"
+              value={block.content}
+              onChange={(e) => onUpdateBlock({ content: e.target.value })}
+              placeholder="Instrucción para que el aprendiz interactúe con el gráfico..."
+              className="w-full bg-white px-2.5 py-1.5 rounded border border-slate-300 text-xs text-slate-800"
+            />
+          ) : (
+            <div>
+              <strong className="text-slate-900">Experimenta:</strong>{' '}
+              {block.content}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
  * Floating Hover Preview Component for both Links and Videos (Notion-style Link/Video Popover).
- * Appears when hovering or focusing on a link or video reference, displaying the instructor's
- * commentary about the content and relevance of the link/video.
  */
 export const HoverPreviewTrigger: React.FC<{
   kind: 'link' | 'video';
@@ -323,7 +1820,6 @@ export const HoverPreviewTrigger: React.FC<{
       onFocus={() => setIsOpen(true)}
       onBlur={() => setIsOpen(false)}
     >
-      {/* Trigger Element (Inline Pill or Full Notion Block Card) */}
       {inline ? (
         <a
           href={url}
@@ -418,15 +1914,15 @@ export const HoverPreviewTrigger: React.FC<{
                 </div>
 
                 <div className="text-sm font-bold text-slate-900 group-hover:text-indigo-700 transition-colors flex items-center gap-1.5">
-                  <span className="truncate">{title}</span>
+                  <span className="truncate">{title || 'Sin título'}</span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 </div>
 
                 <div className="text-xs text-slate-500 flex items-center gap-1.5 pt-0.5">
                   <MessageSquareQuote className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                   <span className="truncate italic">
-                    Ubica el cursor aquí para previsualizar el comentario de
-                    relevancia del instructor...
+                    {relevanceComment ||
+                      'Pasa el cursor aquí para previsualizar el comentario de relevancia...'}
                   </span>
                 </div>
               </div>
@@ -448,7 +1944,7 @@ export const HoverPreviewTrigger: React.FC<{
               )}
 
               <a
-                href={url}
+                href={url || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
@@ -466,14 +1962,13 @@ export const HoverPreviewTrigger: React.FC<{
         </div>
       )}
 
-      {/* Floating Notion-Style Hover Preview Card (Adaptive Bottom-Sheet on Mobile, Floating Popover on Desktop) */}
+      {/* Floating Notion-Style Hover Preview Card */}
       {isOpen && (
         <div
           className="fixed inset-x-4 bottom-4 sm:absolute sm:inset-x-auto sm:left-0 sm:bottom-full sm:mb-2 sm:w-96 z-50 pointer-events-auto animate-in fade-in duration-150"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="bg-slate-900 text-slate-100 rounded-xl shadow-2xl border border-slate-700 overflow-hidden">
-            {/* Visual Header for Video vs Link */}
             {kind === 'video' ? (
               <div className="relative bg-slate-950 border-b border-slate-800 p-3">
                 {ytId ? (
@@ -529,23 +2024,6 @@ export const HoverPreviewTrigger: React.FC<{
                         </div>
                       </div>
                     </div>
-                    {/* Simulated timeline scrubber bar */}
-                    <div className="pt-1 space-y-1">
-                      <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden flex">
-                        <div className="w-1/4 bg-slate-600" />
-                        <div
-                          className="w-2/5 bg-rose-500"
-                          title="Segmento relevante destacado por el instructor"
-                        />
-                        <div className="flex-1 bg-slate-800" />
-                      </div>
-                      <div className="flex justify-between text-[10px] font-mono text-slate-400">
-                        <span>Segmento destacado por el instructor</span>
-                        <span className="text-rose-400">
-                          {videoTimestamp || 'Ver completo'}
-                        </span>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
@@ -565,7 +2043,6 @@ export const HoverPreviewTrigger: React.FC<{
               </div>
             )}
 
-            {/* Main Popover Body: Title + Instructor's Relevance Commentary */}
             <div className="p-3.5 space-y-2.5">
               <div>
                 <div className="text-xs font-bold text-white leading-snug">
@@ -576,7 +2053,6 @@ export const HoverPreviewTrigger: React.FC<{
                 </div>
               </div>
 
-              {/* Instructor Relevance / Commentary Box */}
               <div
                 className={`p-2.5 rounded-lg border text-xs leading-relaxed space-y-1 ${
                   kind === 'video'
@@ -599,37 +2075,8 @@ export const HoverPreviewTrigger: React.FC<{
                 <p className="text-xs text-slate-100 font-normal">
                   {relevanceComment ||
                     description ||
-                    'Recurso seleccionado por el instructor para profundizar los conceptos clave de esta lección.'}
+                    'Recurso seleccionado por el instructor para profundizar los conceptos de esta lección.'}
                 </p>
-              </div>
-
-              {description &&
-                relevanceComment &&
-                description !== relevanceComment && (
-                  <p className="text-[11px] text-slate-300 leading-normal">
-                    {description}
-                  </p>
-                )}
-
-              <div className="pt-1 flex items-center justify-between gap-2 border-t border-slate-800 text-[11px]">
-                <span className="text-slate-400">
-                  {kind === 'video'
-                    ? 'Recurso audiovisual OVA'
-                    : 'Lectura recomendada SENA'}
-                </span>
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`inline-flex items-center gap-1 font-semibold hover:underline ${
-                    kind === 'video' ? 'text-rose-400' : 'text-indigo-400'
-                  }`}
-                >
-                  {kind === 'video'
-                    ? 'Abrir video en nueva pestaña'
-                    : 'Abrir enlace ahora'}
-                  <ExternalLink className="w-3 h-3" />
-                </a>
               </div>
             </div>
           </div>
@@ -640,12 +2087,13 @@ export const HoverPreviewTrigger: React.FC<{
 };
 
 /**
- * Source Code Segment Block (Notion / IDE style) with language badge, filename,
- * line numbering, copy button, and instructor annotation.
+ * Source Code Segment Block (Notion / IDE style) with In-Place Editing support!
  */
 export const CodeSegmentBlockView: React.FC<{
   block: LessonBlock;
-}> = ({ block }) => {
+  editable?: boolean;
+  onUpdateBlock?: (patch: Partial<LessonBlock>) => void;
+}> = ({ block, editable = false, onUpdateBlock }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -657,27 +2105,59 @@ export const CodeSegmentBlockView: React.FC<{
   const lines = (block.content || '').split('\n');
   const langLabel =
     CODE_LANGUAGES.find((l) => l.value === block.codeLanguage)?.label ||
-    (block.codeLanguage ?? 'TypeScript').toUpperCase();
+    (block.codeLanguage ?? 'JavaScript').toUpperCase();
 
   return (
     <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100 shadow-sm my-2">
-      {/* Top IDE Bar */}
+      {/* Top IDE Bar (Editable directly in place when editable=true) */}
       <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 shrink-0">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
           </div>
-          {block.title && (
-            <span className="text-xs font-mono font-semibold text-slate-200 truncate flex items-center gap-1.5">
-              <FileCode2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-              {block.title}
-            </span>
+
+          {editable && onUpdateBlock ? (
+            <>
+              <input
+                type="text"
+                value={block.title ?? ''}
+                onChange={(e) => onUpdateBlock({ title: e.target.value })}
+                placeholder="archivo.js"
+                className="px-2 py-0.5 text-xs font-mono font-semibold text-slate-100 bg-slate-800 border border-slate-700 rounded focus:outline-none focus:border-indigo-400 w-44"
+              />
+              <select
+                value={block.codeLanguage ?? 'javascript'}
+                onChange={(e) =>
+                  onUpdateBlock({ codeLanguage: e.target.value })
+                }
+                className="px-2 py-0.5 text-[11px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded focus:outline-none"
+              >
+                {CODE_LANGUAGES.map((lang) => (
+                  <option
+                    key={lang.value}
+                    value={lang.value}
+                    className="bg-slate-900 text-slate-100"
+                  >
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <>
+              {block.title && (
+                <span className="text-xs font-mono font-semibold text-slate-200 truncate flex items-center gap-1.5">
+                  <FileCode2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  {block.title}
+                </span>
+              )}
+              <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                {langLabel}
+              </span>
+            </>
           )}
-          <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-            {langLabel}
-          </span>
         </div>
 
         <button
@@ -699,49 +2179,65 @@ export const CodeSegmentBlockView: React.FC<{
         </button>
       </div>
 
-      {/* Code Lines with Line Numbers */}
-      <div className="p-4 overflow-x-auto font-mono text-xs leading-relaxed">
-        <table className="w-full border-collapse">
-          <tbody>
-            {lines.map((line, idx) => (
-              <tr key={idx} className="hover:bg-slate-900/70">
-                <td className="select-none pr-4 text-right text-slate-600 w-8 align-top">
-                  {idx + 1}
-                </td>
-                <td className="text-slate-100 whitespace-pre font-mono">
-                  {line || ' '}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Code Surface: Directly editable in place inside the IDE frame when editable=true */}
+      {editable && onUpdateBlock ? (
+        <div className="p-3 bg-slate-950">
+          <textarea
+            rows={Math.max(4, lines.length)}
+            value={block.content}
+            onChange={(e) => onUpdateBlock({ content: e.target.value })}
+            placeholder="// Escribe o edita el código fuente directamente aquí..."
+            className="w-full font-mono text-xs leading-relaxed bg-slate-950 text-emerald-300 focus:outline-none resize-y"
+          />
+        </div>
+      ) : (
+        <div className="p-4 overflow-x-auto font-mono text-xs leading-relaxed">
+          <table className="w-full border-collapse">
+            <tbody>
+              {lines.map((line, idx) => (
+                <tr key={idx} className="hover:bg-slate-900/70">
+                  <td className="select-none pr-4 text-right text-slate-600 w-8 align-top">
+                    {idx + 1}
+                  </td>
+                  <td className="text-slate-100 whitespace-pre font-mono">
+                    {line || ' '}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {/* Instructor Commentary / Code Explanation Footer */}
-      {block.relevanceComment && (
-        <div className="px-4 py-2.5 bg-slate-900/90 border-t border-slate-800 text-xs text-slate-300 flex items-start gap-2">
-          <Terminal className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-          <div>
-            <strong className="text-emerald-300">
-              Explicación técnica del segmento:
-            </strong>{' '}
-            {block.relevanceComment}
-          </div>
+      {/* Instructor Commentary / Code Explanation Footer (Editable in place) */}
+      {(editable || block.relevanceComment) && (
+        <div className="px-4 py-2.5 bg-slate-900/90 border-t border-slate-800 text-xs text-slate-300 flex items-center gap-2">
+          <Terminal className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          {editable && onUpdateBlock ? (
+            <input
+              type="text"
+              value={block.relevanceComment ?? ''}
+              onChange={(e) =>
+                onUpdateBlock({ relevanceComment: e.target.value })
+              }
+              placeholder="Añade aquí una nota o explicación técnica del código..."
+              className="flex-1 bg-slate-800/80 text-slate-200 px-2.5 py-1 rounded border border-slate-700 text-xs focus:outline-none focus:border-emerald-400"
+            />
+          ) : (
+            <div>
+              <strong className="text-emerald-300">
+                Explicación del código:
+              </strong>{' '}
+              {block.relevanceComment}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 };
 
-/**
- * Parses a text paragraph for inline annotated links or videos:
- * Syntax supported:
- *   [Texto del enlace](https://url "Comentario de relevancia")
- *   [video:Título del video](https://url "Comentario sobre el video")
- * Also formats inline `code` and **bold** text cleanly.
- */
 export function renderRichTextWithInlinePreviews(text: string): React.ReactNode {
-  // Match markdown links with optional title attribute: [label](url "comment") or [label](url)
   const linkRegex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g;
   const elements: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -795,7 +2291,6 @@ export function renderRichTextWithInlinePreviews(text: string): React.ReactNode 
 }
 
 function formatInlineCodeAndBold(segment: string): React.ReactNode {
-  // Split by inline backticks `code`
   const parts = segment.split(/(`[^`]+`)/g);
   return parts.map((part, idx) => {
     if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
@@ -808,7 +2303,6 @@ function formatInlineCodeAndBold(segment: string): React.ReactNode {
         </code>
       );
     }
-    // Format **bold**
     const boldParts = part.split(/(\*\*[^*]+\*\*)/g);
     return (
       <React.Fragment key={idx}>
@@ -828,7 +2322,7 @@ function formatInlineCodeAndBold(segment: string): React.ReactNode {
 }
 
 /**
- * Full Notion-Style Lesson Content Renderer (Used in PublicLearnerPortal & Instructor Live Preview)
+ * Full Notion-Style Lesson Content Renderer (Used in PublicLearnerPortal & Printable Guide)
  */
 export const LessonBlocksRenderer: React.FC<{
   lesson: Lesson;
@@ -899,6 +2393,12 @@ export const LessonBlocksRenderer: React.FC<{
             );
           }
 
+          case 'diagram':
+            return <DiagramBlockView key={block.id} block={block} />;
+
+          case 'interactive':
+            return <InteractiveGraphicBlockView key={block.id} block={block} />;
+
           case 'link':
             return (
               <div key={block.id} className="my-1">
@@ -938,7 +2438,6 @@ export const LessonBlocksRenderer: React.FC<{
                   isEmbedOpen={isEmbedOpen}
                 />
 
-                {/* Expandable Notion-style Embedded Video Preview Frame */}
                 {isEmbedOpen && (
                   <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100 p-4 space-y-3">
                     {ytId ? (
@@ -953,21 +2452,9 @@ export const LessonBlocksRenderer: React.FC<{
                       </div>
                     ) : (
                       <div className="p-6 rounded-lg bg-slate-900 border border-slate-800 flex flex-col items-center text-center space-y-3">
-                        <div className="w-12 h-12 rounded-full bg-rose-600/20 border border-rose-500/40 text-rose-400 flex items-center justify-center">
-                          <Video className="w-6 h-6" />
-                        </div>
-                        <div className="space-y-1 max-w-lg">
-                          <div className="text-sm font-bold text-white">
-                            {block.title}
-                          </div>
-                          <p className="text-xs text-slate-300">
-                            {block.relevanceComment || block.content}
-                          </p>
-                          {block.videoTimestamp && (
-                            <div className="text-xs font-mono text-rose-300 pt-1">
-                              ⏱ Segmento sugerido: {block.videoTimestamp}
-                            </div>
-                          )}
+                        <Video className="w-6 h-6 text-rose-400" />
+                        <div className="text-sm font-bold text-white">
+                          {block.title}
                         </div>
                         <a
                           href={block.url}
@@ -975,20 +2462,11 @@ export const LessonBlocksRenderer: React.FC<{
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-lg"
                         >
-                          Abrir Reproductor Externo ({extractDomain(block.url)})
+                          Abrir Reproductor Externo
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       </div>
                     )}
-                    <div className="text-xs text-slate-300 flex items-start gap-2 bg-slate-900/80 p-3 rounded-lg border border-slate-800">
-                      <MessageSquareQuote className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                      <div>
-                        <strong className="text-rose-300">
-                          Guía de observación del instructor:
-                        </strong>{' '}
-                        {block.relevanceComment || block.content}
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
@@ -1007,26 +2485,22 @@ export const LessonBlocksRenderer: React.FC<{
 };
 
 /**
- * Interactive Notion-Style Block Editor for Instructors in `OvaBuilderView`.
- * Supports block creation, `/` slash commands, reordering, inline link/video helper,
- * and instant hover preview testing.
+ * Unified In-Place WYSIWYG Block Editor ("Editar textos y contenido en el mismo lugar").
+ * Every block renders its real visual representation AND allows editing its text, code,
+ * links, videos, diagrams, and interactive graphics directly in the exact same place!
  */
 export const NotionLessonBlockEditor: React.FC<{
   lesson: Lesson;
   onUpdateLesson: (patch: Partial<Lesson>) => void;
 }> = ({ lesson, onUpdateLesson }) => {
   const blocks = useMemo(() => ensureLessonBlocks(lesson), [lesson]);
-
-  const [editorMode, setEditorMode] = useState<
-    'blocks' | 'split' | 'preview' | 'markdown'
-  >('blocks');
-
-  // Slash command palette state
-  const [slashMenuOpenForIdx, setSlashMenuOpenForIdx] = useState<number | null>(
+  const [newElementType, setNewElementType] =
+    useState<LessonBlockType>('text');
+  const [editingMediaBlockId, setEditingMediaBlockId] = useState<string | null>(
     null
   );
 
-  // Inline link/video helper modal for text blocks
+  // Inline link/video helper for text blocks
   const [inlineHelperBlockId, setInlineHelperBlockId] = useState<string | null>(
     null
   );
@@ -1039,20 +2513,15 @@ export const NotionLessonBlockEditor: React.FC<{
 
   const commitBlocks = (nextBlocks: LessonBlock[]) => {
     const syncedMarkdown = blocksToMarkdown(nextBlocks);
-    // Also sync first video/link to legacy mediaUrl/mediaTitle if needed
     const primaryMedia = nextBlocks.find(
       (b) => b.type === 'video' || b.type === 'link'
     );
     onUpdateLesson({
       blocks: nextBlocks,
       contentMarkdown: syncedMarkdown,
-      ...(primaryMedia
-        ? {
-            mediaUrl: primaryMedia.url,
-            mediaTitle: primaryMedia.title,
-            mediaComment: primaryMedia.relevanceComment,
-          }
-        : {}),
+      mediaUrl: primaryMedia?.url,
+      mediaTitle: primaryMedia?.title,
+      mediaComment: primaryMedia?.relevanceComment,
     });
   };
 
@@ -1069,57 +2538,72 @@ export const NotionLessonBlockEditor: React.FC<{
       newBlock = {
         id: newId,
         type: 'heading',
-        title: 'Nuevo Subtítulo o Sección Temática',
+        title: '',
         content: '',
       };
     } else if (type === 'link') {
       newBlock = {
         id: newId,
         type: 'link',
-        title: 'Documentación Técnica / Referencia Oficial',
-        url: 'https://developer.mozilla.org/es/docs/Web/HTTP',
-        domainOrSource: 'MDN Web Docs',
-        content: 'Especificación y guía de referencia sobre el estándar.',
-        relevanceComment:
-          'Este enlace es fundamental porque explica los casos borde que debes contemplar en la evidencia del RAP.',
+        title: '',
+        url: '',
+        domainOrSource: '',
+        content: '',
+        relevanceComment: '',
       };
+      setEditingMediaBlockId(newId);
     } else if (type === 'video') {
       newBlock = {
         id: newId,
         type: 'video',
-        title: 'Video Demostrativo: Implementación Paso a Paso',
-        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        domainOrSource: 'YouTube · Cápsula Técnica SENA',
-        videoTimestamp: 'Min 02:30 - 08:45',
-        content: 'Demostración práctica de configuración y pruebas.',
-        relevanceComment:
-          'Observa especialmente a partir del minuto 02:30 cómo se estructura el middleware de validación antes de persistir los datos.',
+        title: '',
+        url: '',
+        domainOrSource: '',
+        videoTimestamp: '',
+        content: '',
+        relevanceComment: '',
       };
+      setEditingMediaBlockId(newId);
     } else if (type === 'code') {
       newBlock = {
         id: newId,
         type: 'code',
-        codeLanguage: 'typescript',
-        title: 'src/middlewares/validateSchema.ts',
-        content: `export function validatePayload(payload: Record<string, unknown>) {\n  if (!payload.fichaCode || typeof payload.fichaCode !== 'string') {\n    throw new Error('422 Unprocessable Content: código de ficha requerido');\n  }\n  return true;\n}`,
-        relevanceComment:
-          'Ejemplo de validación defensiva en la capa de entrada antes de invocar el servicio o repositorio SQL.',
+        codeLanguage: 'javascript',
+        title: '',
+        content: '',
+        relevanceComment: '',
+      };
+    } else if (type === 'diagram') {
+      newBlock = {
+        id: newId,
+        type: 'diagram',
+        diagramKind: 'if_else_flow',
+        title: 'Esquema Visual de Estructura de Control',
+        content:
+          'Observa cómo se ramifica el flujo de ejecución según el valor booleano de la condición.',
+      };
+    } else if (type === 'interactive') {
+      newBlock = {
+        id: newId,
+        type: 'interactive',
+        interactiveKind: 'array_lab',
+        title: 'Laboratorio Interactivo de Estructura de Datos en JS',
+        content:
+          'Haz clic en los métodos para observar cómo muta o se transforma la estructura en tiempo real.',
       };
     } else if (type === 'callout') {
       newBlock = {
         id: newId,
         type: 'callout',
         calloutTone: 'tip',
-        title: 'Recomendación Clave para tu Evidencia SENA',
-        content:
-          'Recuerda incluir capturas o pruebas automatizadas de este flujo dentro del archivo README.md de tu entrega.',
+        title: '',
+        content: '',
       };
     } else {
       newBlock = {
         id: newId,
         type: 'text',
-        content:
-          'Redacta aquí la explicación conceptual. Puedes insertar enlaces o videos inline con previsualización al pasar el cursor.',
+        content: '',
       };
     }
 
@@ -1128,7 +2612,6 @@ export const NotionLessonBlockEditor: React.FC<{
       afterIndex !== undefined ? afterIndex + 1 : next.length;
     next.splice(insertIdx, 0, newBlock);
     commitBlocks(next);
-    setSlashMenuOpenForIdx(null);
   };
 
   const handleMoveBlock = (index: number, direction: -1 | 1) => {
@@ -1153,7 +2636,6 @@ export const NotionLessonBlockEditor: React.FC<{
   };
 
   const handleDeleteBlock = (index: number) => {
-    if (blocks.length <= 1) return;
     const next = blocks.filter((_, idx) => idx !== index);
     commitBlocks(next);
   };
@@ -1183,906 +2665,479 @@ export const NotionLessonBlockEditor: React.FC<{
     setInlineComment('');
   };
 
-  const stats = useMemo(() => {
-    return {
-      text: blocks.filter((b) => b.type === 'text' || b.type === 'heading' || b.type === 'callout').length,
-      links: blocks.filter((b) => b.type === 'link').length,
-      videos: blocks.filter((b) => b.type === 'video').length,
-      code: blocks.filter((b) => b.type === 'code').length,
-    };
-  }, [blocks]);
-
   return (
-    <div className="border border-slate-200 rounded-xl bg-slate-50/60 overflow-hidden">
-      {/* Top Notion Authoring Header & Mode Switcher */}
-      <div className="bg-white border-b border-slate-200 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-600" />
-            <span className="text-xs font-bold text-slate-900">
-              Constructor Modular de Contenido (Estilo Notion)
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500">
-            Combina bloques de texto, enlaces con previsualización, videos
-            comentados y segmentos de código fuente. Escribe{' '}
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-300 rounded">
-              /
-            </kbd>{' '}
-            en un bloque de texto o usa la barra rápida para insertar bloques.
-          </p>
-        </div>
-
-        {/* View Mode Switcher */}
-        <div className="flex items-center gap-1 p-1 bg-slate-100 border border-slate-200 rounded-lg text-xs">
-          <button
-            type="button"
-            onClick={() => setEditorMode('blocks')}
-            className={`px-2.5 py-1 rounded font-semibold transition-colors ${
-              editorMode === 'blocks'
-                ? 'bg-white text-indigo-700 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Editor de Bloques ({blocks.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditorMode('split')}
-            className={`hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded font-semibold transition-colors ${
-              editorMode === 'split'
-                ? 'bg-white text-indigo-700 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Columns className="w-3.5 h-3.5" />
-            Dividido (Editor + Hover)
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditorMode('preview')}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded font-semibold transition-colors ${
-              editorMode === 'preview'
-                ? 'bg-emerald-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            Vista Previa Interactiva
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditorMode('markdown')}
-            className={`px-2.5 py-1 rounded font-mono text-[11px] transition-colors ${
-              editorMode === 'markdown'
-                ? 'bg-white text-slate-900 shadow-2xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Markdown
-          </button>
-        </div>
-      </div>
-
-      {/* Quick Insert Block Toolbar (Notion Slash Bar) */}
-      <div className="bg-slate-100/80 border-b border-slate-200 px-4 py-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] font-semibold text-slate-500 mr-1">
-            + Insertar Bloque:
+    <div className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-2xs">
+      {/* Top In-Place Add Element Bar */}
+      <div className="bg-slate-50 border-b border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Edición Directa en el Mismo Lugar:</span>
           </span>
+          <select
+            aria-label="Seleccionar tipo de elemento a agregar"
+            value={newElementType}
+            onChange={(e) =>
+              setNewElementType(e.target.value as LessonBlockType)
+            }
+            className="px-2.5 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-600"
+          >
+            <option value="text">📝 Texto / Párrafo / Ejercicio</option>
+            <option value="heading">📌 Subtítulo de Sección</option>
+            <option value="code">💻 Código Fuente (IDE In-Situ)</option>
+            <option value="diagram">📊 Diagrama / Esquema Visual SVG</option>
+            <option value="interactive">
+              ⚡ Gráfico Interactivo Animado (Arrays / Objetos)
+            </option>
+            <option value="link">🔗 Enlace con Previsualización Hover</option>
+            <option value="video">🎬 Video con Previsualización Hover</option>
+            <option value="callout">💡 Nota / Callout Destacado</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => handleAddBlockAt(newElementType)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Agregar Elemento
+          </button>
+        </div>
+
+        {/* Quick 1-Click Element Pills */}
+        <div className="flex flex-wrap items-center gap-1">
           <button
             type="button"
             onClick={() => handleAddBlockAt('text')}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 rounded-md transition-colors"
+            className="px-2 py-1 text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-md"
           >
-            <FileText className="w-3.5 h-3.5 text-slate-500" />
-            Texto
-          </button>
-          <button
-            type="button"
-            onClick={() => handleAddBlockAt('heading')}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 rounded-md transition-colors"
-          >
-            <Heading3 className="w-3.5 h-3.5 text-slate-500" />
-            Subtítulo
-          </button>
-          <button
-            type="button"
-            onClick={() => handleAddBlockAt('link')}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md transition-colors"
-          >
-            <Link2 className="w-3.5 h-3.5 text-indigo-600" />
-            Enlace con Previsualización
-          </button>
-          <button
-            type="button"
-            onClick={() => handleAddBlockAt('video')}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-md transition-colors"
-          >
-            <Video className="w-3.5 h-3.5 text-rose-600" />
-            Video con Previsualización
+            + Texto
           </button>
           <button
             type="button"
             onClick={() => handleAddBlockAt('code')}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-md transition-colors"
+            className="px-2 py-1 text-[11px] font-medium bg-slate-900 hover:bg-slate-800 text-white rounded-md"
           >
-            <Code2 className="w-3.5 h-3.5 text-emerald-400" />
-            Segmento de Código Fuente
+            + Código
           </button>
           <button
             type="button"
-            onClick={() => handleAddBlockAt('callout')}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-white hover:bg-amber-50 text-amber-800 border border-amber-200 rounded-md transition-colors"
+            onClick={() => handleAddBlockAt('diagram')}
+            className="px-2 py-1 text-[11px] font-medium bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-md"
           >
-            <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-            Callout / Nota
+            + Diagrama
           </button>
-        </div>
-
-        {/* Block Summary Pills */}
-        <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
-          <span>{stats.text} texto</span>
-          <span>·</span>
-          <span className="text-indigo-700 font-semibold">
-            {stats.links} enlaces
-          </span>
-          <span>·</span>
-          <span className="text-rose-700 font-semibold">
-            {stats.videos} videos
-          </span>
-          <span>·</span>
-          <span className="text-emerald-700 font-semibold">
-            {stats.code} códigos
-          </span>
+          <button
+            type="button"
+            onClick={() => handleAddBlockAt('interactive')}
+            className="px-2 py-1 text-[11px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-md"
+          >
+            + Gráfico Interactivo
+          </button>
+          <button
+            type="button"
+            onClick={() => handleAddBlockAt('link')}
+            className="px-2 py-1 text-[11px] font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md"
+          >
+            + Enlace
+          </button>
+          <button
+            type="button"
+            onClick={() => handleAddBlockAt('video')}
+            className="px-2 py-1 text-[11px] font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-md"
+          >
+            + Video
+          </button>
         </div>
       </div>
 
-      {/* Main Content Area according to selected mode */}
-      {editorMode === 'markdown' ? (
-        <div className="p-4 space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>
-              Markdown sincronizado automáticamente con tus bloques (incluye
-              comentarios de enlaces, videos y bloques de código):
-            </span>
+      {/* Unified Document Canvas: Edit Texts and Content Directly In-Place */}
+      <div className="p-5 space-y-4">
+        {blocks.length === 0 && (
+          <div className="p-8 bg-slate-50/70 border border-dashed border-slate-300 rounded-xl text-center space-y-3">
+            <p className="text-xs text-slate-500">
+              Esta lección está vacía. Ningún elemento es obligatorio: elige
+              arriba qué elemento deseas agregar y edítalo directamente aquí.
+            </p>
           </div>
-          <textarea
-            rows={12}
-            value={lesson.contentMarkdown}
-            onChange={(e) =>
-              onUpdateLesson({ contentMarkdown: e.target.value })
-            }
-            className="w-full px-3.5 py-2.5 text-xs font-mono leading-relaxed bg-white border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-600"
-          />
-        </div>
-      ) : editorMode === 'preview' ? (
-        <div className="p-5 bg-white space-y-4">
-          <div className="px-3.5 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-center justify-between">
-            <span>
-              <strong>Modo Vista Previa Activo:</strong> Pasa el cursor sobre
-              cualquier enlace o video para experimentar la tarjeta flotante con
-              el comentario sobre su contenido o relevancia.
-            </span>
-          </div>
-          <LessonBlocksRenderer lesson={{ ...lesson, blocks }} />
-        </div>
-      ) : (
-        <div
-          className={
-            editorMode === 'split'
-              ? 'grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-slate-200'
-              : ''
-          }
-        >
-          {/* Left / Main Column: Block-by-Block Notion Composer */}
-          <div className="p-4 space-y-3">
-            {blocks.map((block, idx) => (
-              <div
-                key={block.id}
-                className="group relative bg-white border border-slate-200 hover:border-slate-300 rounded-xl p-3.5 transition-all shadow-2xs space-y-2.5"
-              >
-                {/* Block Top Control Bar (Type Badge + Move/Duplicate/Convert/Delete) */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono text-slate-400">
-                      #{idx + 1}
-                    </span>
-                    <select
-                      aria-label="Cambiar tipo de bloque"
-                      value={block.type}
-                      onChange={(e) =>
-                        handleUpdateBlock(block.id, {
-                          type: e.target.value as LessonBlockType,
-                        })
-                      }
-                      className={`text-xs font-bold px-2 py-0.5 rounded border focus:outline-none ${
-                        block.type === 'link'
-                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                          : block.type === 'video'
-                          ? 'bg-rose-50 text-rose-700 border-rose-200'
-                          : block.type === 'code'
-                          ? 'bg-slate-900 text-emerald-300 border-slate-800'
-                          : block.type === 'callout'
-                          ? 'bg-amber-50 text-amber-800 border-amber-200'
-                          : block.type === 'heading'
-                          ? 'bg-slate-100 text-slate-900 border-slate-300'
-                          : 'bg-slate-50 text-slate-700 border-slate-200'
-                      }`}
-                    >
-                      <option value="text">📝 Bloque de Texto / Párrafo</option>
-                      <option value="heading">📌 Subtítulo de Sección</option>
-                      <option value="link">
-                        🔗 Enlace Web con Previsualización Hover
-                      </option>
-                      <option value="video">
-                        🎬 Video con Previsualización Hover
-                      </option>
-                      <option value="code">💻 Segmento de Código Fuente</option>
-                      <option value="callout">💡 Callout / Nota Destacada</option>
-                    </select>
-                  </div>
+        )}
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSlashMenuOpenForIdx(
-                          slashMenuOpenForIdx === idx ? null : idx
-                        )
-                      }
-                      className="px-2 py-0.5 text-[11px] font-mono font-semibold text-indigo-600 hover:bg-indigo-50 rounded border border-indigo-100"
-                      title="Insertar bloque debajo (Menú /)"
-                    >
-                      + / Bloque
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMoveBlock(idx, -1)}
-                      disabled={idx === 0}
-                      className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded"
-                      title="Subir bloque"
-                    >
-                      <ArrowUp className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMoveBlock(idx, 1)}
-                      disabled={idx === blocks.length - 1}
-                      className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded"
-                      title="Bajar bloque"
-                    >
-                      <ArrowDown className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDuplicateBlock(idx)}
-                      className="p-1 text-slate-400 hover:text-indigo-600 rounded"
-                      title="Duplicar bloque"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
-                    {blocks.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteBlock(idx)}
-                        className="p-1 text-slate-400 hover:text-red-600 rounded"
-                        title="Eliminar bloque"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
+        {blocks.map((block, idx) => (
+          <div
+            key={block.id}
+            className="group relative rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50/40 p-2 -mx-2 transition-all"
+          >
+            {/* Floating Mini Action Bar on Block Hover (Top-Right) */}
+            <div className="flex items-center justify-between gap-2 mb-1 opacity-80 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono text-slate-400">
+                  #{idx + 1}
+                </span>
+                <select
+                  aria-label="Cambiar tipo de elemento"
+                  value={block.type}
+                  onChange={(e) =>
+                    handleUpdateBlock(block.id, {
+                      type: e.target.value as LessonBlockType,
+                    })
+                  }
+                  className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 focus:outline-none"
+                >
+                  <option value="text">📝 Texto</option>
+                  <option value="heading">📌 Subtítulo</option>
+                  <option value="code">💻 Código Fuente</option>
+                  <option value="diagram">📊 Diagrama Visual</option>
+                  <option value="interactive">⚡ Gráfico Interactivo</option>
+                  <option value="link">🔗 Enlace Hover</option>
+                  <option value="video">🎬 Video Hover</option>
+                  <option value="callout">💡 Nota / Callout</option>
+                </select>
+              </div>
 
-                {/* Block-Specific Editor Fields */}
-                {block.type === 'heading' && (
-                  <input
-                    type="text"
-                    value={block.title ?? block.content}
-                    onChange={(e) =>
-                      handleUpdateBlock(block.id, {
-                        title: e.target.value,
-                        content: e.target.value,
-                      })
-                    }
-                    placeholder="Escribe el título de la sección..."
-                    className="w-full px-3 py-1.5 text-sm font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-indigo-600"
-                  />
-                )}
-
+              <div className="flex items-center gap-0.5">
                 {block.type === 'text' && (
-                  <div className="space-y-2">
-                    <textarea
-                      rows={3}
-                      value={block.content}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val.endsWith('\n/') || val === '/') {
-                          setSlashMenuOpenForIdx(idx);
-                        }
-                        handleUpdateBlock(block.id, { content: val });
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInlineHelperBlockId(
+                          inlineHelperBlockId === block.id ? null : block.id
+                        );
+                        setInlineHelperKind('link');
                       }}
-                      placeholder="Redacta el contenido aquí... (Escribe '/' para abrir el menú de bloques o inserta enlaces/videos con comentario abajo)"
-                      className="w-full px-3 py-2 text-xs leading-relaxed bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:outline-none focus:border-indigo-600"
-                    />
-
-                    {/* Inline Link / Video with Hover Preview Assistant */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setInlineHelperBlockId(
-                              inlineHelperBlockId === block.id ? null : block.id
-                            );
-                            setInlineHelperKind('link');
-                          }}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
-                        >
-                          <Link2 className="w-3 h-3" />+ Insertar enlace en el
-                          texto con comentario hover
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setInlineHelperBlockId(
-                              inlineHelperBlockId === block.id ? null : block.id
-                            );
-                            setInlineHelperKind('video');
-                          }}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-md transition-colors"
-                        >
-                          <Video className="w-3 h-3" />+ Insertar video en el
-                          texto con comentario hover
-                        </button>
-                      </div>
-                    </div>
-
-                    {inlineHelperBlockId === block.id && (
-                      <div className="p-3 bg-slate-100 border border-slate-300 rounded-lg space-y-2.5 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-800">
-                            {inlineHelperKind === 'video'
-                              ? '🎬 Insertar Enlace a Video con Previsualización en este Párrafo'
-                              : '🔗 Insertar Enlace Web con Previsualización en este Párrafo'}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setInlineHelperBlockId(null)}
-                            className="text-slate-500 hover:text-slate-800"
-                          >
-                            Cerrar
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            value={inlineLabel}
-                            onChange={(e) => setInlineLabel(e.target.value)}
-                            placeholder={
-                              inlineHelperKind === 'video'
-                                ? 'Texto del video (ej. Ver explicación JWT)'
-                                : 'Texto del enlace (ej. RFC 9110 Sección 9)'
-                            }
-                            className="px-2.5 py-1.5 bg-white border border-slate-200 rounded"
-                          />
-                          <input
-                            type="url"
-                            value={inlineUrl}
-                            onChange={(e) => setInlineUrl(e.target.value)}
-                            placeholder="https://..."
-                            className="px-2.5 py-1.5 bg-white border border-slate-200 rounded font-mono"
-                          />
-                        </div>
-                        <input
-                          type="text"
-                          value={inlineComment}
-                          onChange={(e) => setInlineComment(e.target.value)}
-                          placeholder={
-                            inlineHelperKind === 'video'
-                              ? 'Comentario sobre el contenido o relevancia del video (se verá al pasar el cursor)...'
-                              : 'Comentario sobre el contenido o relevancia del enlace (se verá al pasar el cursor)...'
-                          }
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded"
-                        />
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => handleInsertInlineResource(block.id)}
-                            className="px-3 py-1.5 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700"
-                          >
-                            Insertar en el párrafo
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* If paragraph contains inline links/videos, show live hover preview bar */}
-                    {/\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/.test(
-                      block.content
-                    ) && (
-                      <div className="p-2.5 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-xs space-y-1">
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                          Vista previa del párrafo (Pasa el cursor sobre los
-                          enlaces resaltados):
-                        </div>
-                        <div className="text-slate-700 leading-relaxed">
-                          {renderRichTextWithInlinePreviews(block.content)}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      className="px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 hover:bg-indigo-50 rounded"
+                    >
+                      + Enlace inline
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInlineHelperBlockId(
+                          inlineHelperBlockId === block.id ? null : block.id
+                        );
+                        setInlineHelperKind('video');
+                      }}
+                      className="px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 hover:bg-rose-50 rounded"
+                    >
+                      + Video inline
+                    </button>
+                  </>
                 )}
-
-                {block.type === 'link' && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <div className="sm:col-span-2">
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Título del Enlace / Recurso Web
-                        </label>
-                        <input
-                          type="text"
-                          value={block.title ?? ''}
-                          onChange={(e) =>
-                            handleUpdateBlock(block.id, {
-                              title: e.target.value,
-                            })
-                          }
-                          placeholder="Ej. Especificación Oficial OpenAPI 3.1.0"
-                          className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Fuente / Dominio
-                        </label>
-                        <input
-                          type="text"
-                          value={block.domainOrSource ?? ''}
-                          onChange={(e) =>
-                            handleUpdateBlock(block.id, {
-                              domainOrSource: e.target.value,
-                            })
-                          }
-                          placeholder="Ej. swagger.io / MDN"
-                          className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        URL del Enlace
-                      </label>
-                      <input
-                        type="url"
-                        value={block.url ?? ''}
-                        onChange={(e) =>
-                          handleUpdateBlock(block.id, { url: e.target.value })
-                        }
-                        placeholder="https://..."
-                        className="w-full px-2.5 py-1.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-indigo-700 mb-1">
-                        Comentario sobre Contenido o Relevancia del Enlace (Se
-                        muestra en la previsualización al pasar el cursor)
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={block.relevanceComment ?? ''}
-                        onChange={(e) =>
-                          handleUpdateBlock(block.id, {
-                            relevanceComment: e.target.value,
-                          })
-                        }
-                        placeholder="Explica al aprendiz por qué este enlace es importante, qué sección debe leer o cómo aplica a su evidencia..."
-                        className="w-full px-2.5 py-1.5 text-xs bg-indigo-50/40 border border-indigo-200 rounded-lg text-slate-800 focus:bg-white focus:outline-none focus:border-indigo-600"
-                      />
-                    </div>
-
-                    {/* Live Hover Preview Test Strip right in the editor */}
-                    <div className="pt-1">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                        Prueba tu previsualización (Ubica el cursor sobre la
-                        tarjeta):
-                      </div>
-                      <HoverPreviewTrigger
-                        kind="link"
-                        title={
-                          block.title || block.url || 'Enlace sin título'
-                        }
-                        url={block.url || 'https://'}
-                        relevanceComment={
-                          block.relevanceComment ||
-                          'Agrega un comentario arriba para verlo aquí al pasar el cursor.'
-                        }
-                        domainOrSource={block.domainOrSource}
-                        description={block.content}
-                      />
-                    </div>
-                  </div>
+                {(block.type === 'link' || block.type === 'video') && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditingMediaBlockId(
+                        editingMediaBlockId === block.id ? null : block.id
+                      )
+                    }
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded"
+                  >
+                    <Edit3 className="w-2.5 h-2.5" />
+                    {editingMediaBlockId === block.id
+                      ? 'Listo'
+                      : 'Editar URL / Comentario'}
+                  </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => handleMoveBlock(idx, -1)}
+                  disabled={idx === 0}
+                  className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded"
+                  title="Subir"
+                >
+                  <ArrowUp className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMoveBlock(idx, 1)}
+                  disabled={idx === blocks.length - 1}
+                  className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded"
+                  title="Bajar"
+                >
+                  <ArrowDown className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDuplicateBlock(idx)}
+                  className="p-1 text-slate-400 hover:text-indigo-600 rounded"
+                  title="Duplicar"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteBlock(idx)}
+                  className="p-1 text-slate-400 hover:text-red-600 rounded"
+                  title="Eliminar"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
 
-                {block.type === 'video' && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <div className="sm:col-span-2">
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Título del Video Educativo
-                        </label>
-                        <input
-                          type="text"
-                          value={block.title ?? ''}
-                          onChange={(e) =>
-                            handleUpdateBlock(block.id, {
-                              title: e.target.value,
-                            })
-                          }
-                          placeholder="Ej. Masterclass: Diseño de Índices B-Tree y EXPLAIN ANALYZE"
-                          className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Minuto Clave / Duración
-                        </label>
-                        <input
-                          type="text"
-                          value={block.videoTimestamp ?? ''}
-                          onChange={(e) =>
-                            handleUpdateBlock(block.id, {
-                              videoTimestamp: e.target.value,
-                            })
-                          }
-                          placeholder="Ej. Min 03:20 - 11:45"
-                          className="w-full px-2.5 py-1.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                    </div>
+            {/* IN-PLACE RENDERING + DIRECT EDITING IN THE SAME PLACE */}
+            {block.type === 'heading' && (
+              <div className="flex items-center gap-2 pt-1 border-b border-slate-200 pb-1.5">
+                <span className="w-1.5 h-5 rounded-full bg-indigo-600 shrink-0" />
+                <input
+                  type="text"
+                  value={block.title ?? block.content}
+                  onChange={(e) =>
+                    handleUpdateBlock(block.id, {
+                      title: e.target.value,
+                      content: e.target.value,
+                    })
+                  }
+                  placeholder="Escribe el subtítulo de la sección aquí mismo..."
+                  className="w-full text-base font-bold text-slate-900 bg-transparent focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1.5 py-0.5"
+                />
+              </div>
+            )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <div className="sm:col-span-2">
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          URL del Video (YouTube, Vimeo, Drive, MP4...)
-                        </label>
-                        <input
-                          type="url"
-                          value={block.url ?? ''}
-                          onChange={(e) =>
-                            handleUpdateBlock(block.id, { url: e.target.value })
-                          }
-                          placeholder="https://www.youtube.com/watch?v=..."
-                          className="w-full px-2.5 py-1.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Canal / Fuente
-                        </label>
-                        <input
-                          type="text"
-                          value={block.domainOrSource ?? ''}
-                          onChange={(e) =>
-                            handleUpdateBlock(block.id, {
-                              domainOrSource: e.target.value,
-                            })
-                          }
-                          placeholder="Ej. YouTube · SENA ADSO"
-                          className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                    </div>
+            {block.type === 'text' && (
+              <div className="space-y-2">
+                <textarea
+                  rows={Math.max(
+                    2,
+                    Math.min(10, (block.content || '').split('\n').length + 1)
+                  )}
+                  value={block.content}
+                  onChange={(e) =>
+                    handleUpdateBlock(block.id, { content: e.target.value })
+                  }
+                  placeholder="Redacta el texto, explicación o ejercicio directamente aquí..."
+                  className="w-full text-sm text-slate-800 leading-relaxed bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-slate-200 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 focus:outline-none transition-colors resize-y"
+                />
 
-                    <div>
-                      <label className="block text-[11px] font-semibold text-rose-700 mb-1">
-                        Comentario sobre Contenido o Relevancia del Video (Se
-                        muestra en la previsualización al pasar el cursor)
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={block.relevanceComment ?? ''}
-                        onChange={(e) =>
-                          handleUpdateBlock(block.id, {
-                            relevanceComment: e.target.value,
-                          })
-                        }
-                        placeholder="Indica qué concepto demuestra el video, en qué minuto prestar atención o cómo apoya la evidencia..."
-                        className="w-full px-2.5 py-1.5 text-xs bg-rose-50/40 border border-rose-200 rounded-lg text-slate-800 focus:bg-white focus:outline-none focus:border-rose-500"
-                      />
-                    </div>
-
-                    {/* Live Hover Preview Test Strip right in the editor */}
-                    <div className="pt-1">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                        Prueba tu previsualización de video (Ubica el cursor
-                        sobre la tarjeta):
-                      </div>
-                      <HoverPreviewTrigger
-                        kind="video"
-                        title={block.title || block.url || 'Video sin título'}
-                        url={block.url || 'https://'}
-                        relevanceComment={
-                          block.relevanceComment ||
-                          'Agrega un comentario arriba para verlo aquí al pasar el cursor.'
-                        }
-                        domainOrSource={block.domainOrSource}
-                        videoTimestamp={block.videoTimestamp}
-                        description={block.content}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {block.type === 'code' && (
-                  <div className="space-y-2.5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Lenguaje del Código Fuente
-                        </label>
-                        <select
-                          value={block.codeLanguage ?? 'typescript'}
-                          onChange={(e) =>
-                            handleUpdateBlock(block.id, {
-                              codeLanguage: e.target.value,
-                            })
-                          }
-                          className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                        >
-                          {CODE_LANGUAGES.map((lang) => (
-                            <option key={lang.value} value={lang.value}>
-                              {lang.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Nombre del Archivo / Ruta (Opcional)
-                        </label>
-                        <input
-                          type="text"
-                          value={block.title ?? ''}
-                          onChange={(e) =>
-                            handleUpdateBlock(block.id, {
-                              title: e.target.value,
-                            })
-                          }
-                          placeholder="Ej. src/controllers/auth.controller.ts"
-                          className="w-full px-2.5 py-1.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Segmento de Código Fuente
-                      </label>
-                      <textarea
-                        rows={6}
-                        value={block.content}
-                        onChange={(e) =>
-                          handleUpdateBlock(block.id, {
-                            content: e.target.value,
-                          })
-                        }
-                        placeholder="// Escribe o pega el código fuente aquí..."
-                        className="w-full px-3 py-2.5 text-xs font-mono leading-relaxed bg-slate-950 text-emerald-300 border border-slate-800 rounded-lg focus:outline-none focus:border-indigo-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Comentario / Explicación Técnica del Código
-                      </label>
-                      <input
-                        type="text"
-                        value={block.relevanceComment ?? ''}
-                        onChange={(e) =>
-                          handleUpdateBlock(block.id, {
-                            relevanceComment: e.target.value,
-                          })
-                        }
-                        placeholder="Explica qué hace este segmento de código o qué líneas son críticas..."
-                        className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {block.type === 'callout' && (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Estilo de Callout
-                        </label>
-                        <select
-                          value={block.calloutTone ?? 'info'}
-                          onChange={(e) =>
-                            handleUpdateBlock(block.id, {
-                              calloutTone: e.target.value as
-                                | 'info'
-                                | 'tip'
-                                | 'warning',
-                            })
-                          }
-                          className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                        >
-                          <option value="info">📌 Nota Conceptual (Índigo)</option>
-                          <option value="tip">💡 Buena Práctica (Esmeralda)</option>
-                          <option value="warning">
-                            ⚠️ Advertencia / Error Común (Ámbar)
-                          </option>
-                        </select>
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Título del Callout
-                        </label>
-                        <input
-                          type="text"
-                          value={block.title ?? ''}
-                          onChange={(e) =>
-                            handleUpdateBlock(block.id, {
-                              title: e.target.value,
-                            })
-                          }
-                          placeholder="Ej. Criterio de Evaluación SENA"
-                          className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                    </div>
-                    <textarea
-                      rows={2}
-                      value={block.content}
-                      onChange={(e) =>
-                        handleUpdateBlock(block.id, { content: e.target.value })
-                      }
-                      placeholder="Contenido destacado del callout..."
-                      className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                    />
-                  </div>
-                )}
-
-                {/* Floating Slash Command Menu (`/`) anchored below current block */}
-                {slashMenuOpenForIdx === idx && (
-                  <div className="p-3 bg-slate-900 text-slate-100 rounded-xl shadow-xl border border-slate-700 space-y-2 z-30">
-                    <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-1.5">
-                      <span className="font-bold text-indigo-300">
-                        Menú Rápido de Bloques (Estilo Notion /)
+                {inlineHelperBlockId === block.id && (
+                  <div className="p-3 bg-slate-100 border border-slate-300 rounded-lg space-y-2 text-xs">
+                    <div className="flex items-center justify-between font-bold text-slate-800">
+                      <span>
+                        {inlineHelperKind === 'video'
+                          ? '🎬 Insertar Video Inline con Previsualización'
+                          : '🔗 Insertar Enlace Inline con Previsualización'}
                       </span>
                       <button
                         type="button"
-                        onClick={() => setSlashMenuOpenForIdx(null)}
-                        className="text-slate-400 hover:text-white text-[11px]"
+                        onClick={() => setInlineHelperBlockId(null)}
+                        className="text-slate-500"
                       >
-                        Cerrar (Esc)
+                        ✕
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => handleAddBlockAt('text', idx)}
-                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800 text-left"
-                      >
-                        <FileText className="w-4 h-4 text-slate-300 shrink-0" />
-                        <div>
-                          <div className="font-semibold">/texto · Párrafo</div>
-                          <div className="text-[10px] text-slate-400">
-                            Redacción con enlaces inline
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAddBlockAt('heading', idx)}
-                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800 text-left"
-                      >
-                        <Heading3 className="w-4 h-4 text-slate-300 shrink-0" />
-                        <div>
-                          <div className="font-semibold">
-                            /titulo · Subtítulo
-                          </div>
-                          <div className="text-[10px] text-slate-400">
-                            Encabezado de sección
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAddBlockAt('link', idx)}
-                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800 text-left"
-                      >
-                        <Link2 className="w-4 h-4 text-indigo-400 shrink-0" />
-                        <div>
-                          <div className="font-semibold text-indigo-300">
-                            /enlace · Enlace con Preview
-                          </div>
-                          <div className="text-[10px] text-slate-400">
-                            Muestra comentario al pasar cursor
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAddBlockAt('video', idx)}
-                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800 text-left"
-                      >
-                        <Video className="w-4 h-4 text-rose-400 shrink-0" />
-                        <div>
-                          <div className="font-semibold text-rose-300">
-                            /video · Video con Preview
-                          </div>
-                          <div className="text-[10px] text-slate-400">
-                            Miniatura + relevancia en hover
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAddBlockAt('code', idx)}
-                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800 text-left"
-                      >
-                        <Code2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <div>
-                          <div className="font-semibold text-emerald-300">
-                            /codigo · Código Fuente
-                          </div>
-                          <div className="text-[10px] text-slate-400">
-                            IDE con lenguaje y botón copiar
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAddBlockAt('callout', idx)}
-                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800 text-left"
-                      >
-                        <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
-                        <div>
-                          <div className="font-semibold text-amber-300">
-                            /nota · Callout Pedagógico
-                          </div>
-                          <div className="text-[10px] text-slate-400">
-                            Caja destacada para tips o alertas
-                          </div>
-                        </div>
-                      </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={inlineLabel}
+                        onChange={(e) => setInlineLabel(e.target.value)}
+                        placeholder="Texto visible..."
+                        className="px-2.5 py-1.5 bg-white border border-slate-200 rounded"
+                      />
+                      <input
+                        type="url"
+                        value={inlineUrl}
+                        onChange={(e) => setInlineUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="px-2.5 py-1.5 bg-white border border-slate-200 rounded font-mono"
+                      />
                     </div>
+                    <input
+                      type="text"
+                      value={inlineComment}
+                      onChange={(e) => setInlineComment(e.target.value)}
+                      placeholder="Comentario de relevancia al pasar el cursor..."
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleInsertInlineResource(block.id)}
+                      className="px-3 py-1 bg-indigo-600 text-white font-semibold rounded"
+                    >
+                      Insertar en este texto
+                    </button>
+                  </div>
+                )}
+
+                {/\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/.test(
+                  block.content
+                ) && (
+                  <div className="px-2.5 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs text-slate-700 leading-relaxed">
+                    {renderRichTextWithInlinePreviews(block.content)}
                   </div>
                 )}
               </div>
-            ))}
-          </div>
+            )}
 
-          {/* Right Column when in Split Mode: Real-time Interactive Learner Preview */}
-          {editorMode === 'split' && (
-            <div className="p-5 bg-white space-y-4">
-              <div className="text-xs font-bold text-indigo-700 uppercase tracking-wider border-b border-slate-200 pb-2 flex items-center justify-between">
-                <span>Vista Previa en Vivo (Pasa el cursor sobre enlaces/videos)</span>
-                <Eye className="w-4 h-4" />
+            {block.type === 'code' && (
+              <CodeSegmentBlockView
+                block={block}
+                editable
+                onUpdateBlock={(patch) => handleUpdateBlock(block.id, patch)}
+              />
+            )}
+
+            {block.type === 'diagram' && (
+              <DiagramBlockView
+                block={block}
+                editable
+                onUpdateBlock={(patch) => handleUpdateBlock(block.id, patch)}
+              />
+            )}
+
+            {block.type === 'interactive' && (
+              <InteractiveGraphicBlockView
+                block={block}
+                editable
+                onUpdateBlock={(patch) => handleUpdateBlock(block.id, patch)}
+              />
+            )}
+
+            {block.type === 'callout' && (
+              <div
+                className={`p-3.5 rounded-xl border flex items-start gap-3 ${
+                  block.calloutTone === 'tip'
+                    ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                    : block.calloutTone === 'warning'
+                    ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+                    : 'bg-indigo-50/70 border-indigo-200 text-indigo-950'
+                }`}
+              >
+                <select
+                  aria-label="Tono de nota"
+                  value={block.calloutTone ?? 'info'}
+                  onChange={(e) =>
+                    handleUpdateBlock(block.id, {
+                      calloutTone: e.target.value as
+                        | 'info'
+                        | 'tip'
+                        | 'warning',
+                    })
+                  }
+                  className="text-xs bg-white/80 border border-slate-300 rounded px-1.5 py-1 font-semibold"
+                >
+                  <option value="info">📌 Nota</option>
+                  <option value="tip">💡 Tip</option>
+                  <option value="warning">⚠️ Alerta</option>
+                </select>
+                <div className="flex-1 space-y-1">
+                  <input
+                    type="text"
+                    value={block.title ?? ''}
+                    onChange={(e) =>
+                      handleUpdateBlock(block.id, { title: e.target.value })
+                    }
+                    placeholder="Título de la nota destacada..."
+                    className="w-full text-xs font-bold bg-transparent focus:bg-white/80 rounded px-1.5 py-0.5 focus:outline-none"
+                  />
+                  <textarea
+                    rows={2}
+                    value={block.content}
+                    onChange={(e) =>
+                      handleUpdateBlock(block.id, { content: e.target.value })
+                    }
+                    placeholder="Escribe el contenido de la nota aquí mismo..."
+                    className="w-full text-xs bg-transparent focus:bg-white/80 rounded px-1.5 py-0.5 focus:outline-none resize-y"
+                  />
+                </div>
               </div>
-              <LessonBlocksRenderer lesson={{ ...lesson, blocks }} />
-            </div>
-          )}
-        </div>
-      )}
+            )}
+
+            {(block.type === 'link' || block.type === 'video') && (
+              <div className="space-y-2">
+                {/* Real Hover Preview Card always visible in-place */}
+                <HoverPreviewTrigger
+                  kind={block.type}
+                  title={
+                    block.title ||
+                    block.url ||
+                    (block.type === 'video'
+                      ? 'Video educativo (clic en Editar URL / Comentario)'
+                      : 'Enlace web (clic en Editar URL / Comentario)')
+                  }
+                  url={block.url || 'https://developer.mozilla.org'}
+                  relevanceComment={
+                    block.relevanceComment ||
+                    'Escribe el comentario de relevancia abajo para previsualizarlo al pasar el cursor.'
+                  }
+                  domainOrSource={block.domainOrSource}
+                  videoTimestamp={block.videoTimestamp}
+                  description={block.content}
+                />
+
+                {/* Compact Inline Properties Drawer right under the card when editing or empty */}
+                {(editingMediaBlockId === block.id ||
+                  !block.title ||
+                  !block.url) && (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                    <input
+                      type="text"
+                      value={block.title ?? ''}
+                      onChange={(e) =>
+                        handleUpdateBlock(block.id, { title: e.target.value })
+                      }
+                      placeholder={
+                        block.type === 'video'
+                          ? 'Título del video...'
+                          : 'Título del enlace...'
+                      }
+                      className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg"
+                    />
+                    <input
+                      type="url"
+                      value={block.url ?? ''}
+                      onChange={(e) =>
+                        handleUpdateBlock(block.id, { url: e.target.value })
+                      }
+                      placeholder="https://..."
+                      className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-mono"
+                    />
+                    {block.type === 'video' ? (
+                      <input
+                        type="text"
+                        value={block.videoTimestamp ?? ''}
+                        onChange={(e) =>
+                          handleUpdateBlock(block.id, {
+                            videoTimestamp: e.target.value,
+                          })
+                        }
+                        placeholder="Minuto clave (ej. Min 02:15 - 08:40)"
+                        className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-mono"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={block.domainOrSource ?? ''}
+                        onChange={(e) =>
+                          handleUpdateBlock(block.id, {
+                            domainOrSource: e.target.value,
+                          })
+                        }
+                        placeholder="Fuente (ej. MDN Web Docs)"
+                        className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg"
+                      />
+                    )}
+                    <input
+                      type="text"
+                      value={block.relevanceComment ?? ''}
+                      onChange={(e) =>
+                        handleUpdateBlock(block.id, {
+                          relevanceComment: e.target.value,
+                        })
+                      }
+                      placeholder="Comentario sobre el contenido o relevancia (se muestra al pasar el cursor)..."
+                      className="sm:col-span-3 px-2.5 py-1.5 bg-white border border-indigo-200 rounded-lg"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
 
-/**
- * Notion-Style Block Editor adapted specifically for a GraphNode inside the
- * Knowledge Graph Canvas ("Lienzo en Grafo"), enabling instructors to author
- * text, links with hover preview comments, videos with hover preview comments,
- * and source code segments directly on the canvas.
- */
 export const NotionNodeBlockEditor: React.FC<{
   node: GraphNode;
   onUpdateNode: (patch: Partial<GraphNode>) => void;

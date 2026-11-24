@@ -60,98 +60,30 @@ export const OvaBuilderView: React.FC<OvaBuilderViewProps> = ({
   const handleCreateOva = () => {
     const newOvaId = `ova-${Date.now()}`;
     const firstLessonId = `les-${Date.now()}-1`;
-    const initialBlocks: LessonBlock[] = [
-      {
-        id: `blk-${Date.now()}-1`,
-        type: 'heading',
-        title: '1. Contextualización y Conceptos Clave',
-        content: '',
-      },
-      {
-        id: `blk-${Date.now()}-2`,
-        type: 'text',
-        content:
-          'Desarrolla aquí el contenido de estudio para tus aprendices. Puedes incluir enlaces enriquecidos en el texto como [Documentación Técnica SENA](https://developer.mozilla.org/es/ "Enlace de referencia fundamental para comprender los estándares técnicos aplicados en esta unidad.") para que muestren un comentario al pasar el cursor.',
-      },
-      {
-        id: `blk-${Date.now()}-3`,
-        type: 'link',
-        title: 'Guía de Referencia Técnica y Estándares del Módulo',
-        url: 'https://developer.mozilla.org/es/',
-        domainOrSource: 'MDN Web Docs',
-        content: 'Recurso oficial de consulta para el aprendiz.',
-        relevanceComment:
-          'Este enlace contiene la especificación técnica necesaria para estructurar la primera evidencia de conocimiento.',
-      },
-      {
-        id: `blk-${Date.now()}-4`,
-        type: 'video',
-        title: 'Video Introductorio: Arquitectura y Ejemplo Práctico',
-        url: 'https://www.youtube.com/watch?v=7YcW25PHnAA',
-        domainOrSource: 'YouTube · Cápsula Formativa SENA',
-        videoTimestamp: 'Min 01:30 - 09:15',
-        content: 'Explicación audiovisual paso a paso del flujo de trabajo.',
-        relevanceComment:
-          'Observa del minuto 01:30 al 06:00 cómo se configura el entorno y se valida el primer caso de uso del proyecto formativo.',
-      },
-      {
-        id: `blk-${Date.now()}-5`,
-        type: 'code',
-        codeLanguage: 'typescript',
-        title: 'src/ejemploInicial.ts',
-        content: `export function inicializarModuloOva(fichaCode: string) {\n  console.log(\`Iniciando entorno práctico para Ficha SENA \${fichaCode}\`);\n  return { status: 'ready', fichaCode };\n}`,
-        relevanceComment:
-          'Plantilla inicial de código fuente que los aprendices pueden copiar y adaptar en su repositorio.',
-      },
-    ];
     const newOva: OVA = {
       id: newOvaId,
       code: `OVA-SENA-${new Date().getFullYear()}-0${ovas.length + 1}`,
       title: 'Nuevo Objeto Virtual de Aprendizaje (OVA)',
       fichaCode: '2874512',
       programName: 'Tecnólogo en Análisis y Desarrollo de Software (ADSO)',
-      competence:
-        '220501096 · Desarrollar la solución de software de acuerdo con el diseño',
-      learningOutcome:
-        'RAP 01 · Implementar componentes técnicos según requerimientos del proyecto formativo',
+      competence: '',
+      learningOutcome: '',
       status: 'published',
-      description:
-        'Descripción pedagógica del Objeto Virtual de Aprendizaje construido progresivamente con bloques de texto, enlaces, videos y código fuente.',
+      description: '',
       estimatedHours: 16,
       updatedAt: '2026-11-09',
       lessons: [
         {
           id: firstLessonId,
           order: 1,
-          title: 'Lección 1: Introducción Conceptual y Fundamentos',
+          title: 'Lección 1',
           durationMinutes: 45,
-          summary: 'Síntesis de los conceptos esenciales de esta unidad formativa.',
-          contentMarkdown: blocksToMarkdown(initialBlocks),
-          blocks: initialBlocks,
+          summary: '',
+          contentMarkdown: '',
+          blocks: [],
           linkedNodeIds: [],
-          quiz: [
-            {
-              id: `q-${Date.now()}`,
-              question: 'Pregunta de verificación de lectura de la lección 1:',
-              options: [
-                'Respuesta correcta fundamentada en la guía',
-                'Distractor conceptual A',
-                'Distractor conceptual B',
-              ],
-              correctIndex: 0,
-              explanation: 'Explicación pedagógica de la respuesta correcta.',
-            },
-          ],
-          activity: {
-            id: `act-${Date.now()}`,
-            title: 'Evidencia de Aprendizaje: Ejercicio Práctico Unidad 1',
-            evidenceCode: 'GA1-220501096-AA1-EV01',
-            evidenceType: 'Producto',
-            instructions:
-              'Realiza la entrega del artefacto solicitado siguiendo los criterios de evaluación de la guía.',
-            dueDate: '2026-11-16',
-            deliverableFormat: 'Enlace a repositorio o documento PDF',
-          },
+          quiz: [],
+          activity: undefined,
         },
       ],
     };
@@ -175,30 +107,17 @@ export const OvaBuilderView: React.FC<OvaBuilderViewProps> = ({
   const handleAddLesson = () => {
     if (!selectedOva) return;
     const nextOrder = selectedOva.lessons.length + 1;
-    const starterBlocks: LessonBlock[] = [
-      {
-        id: `blk-${Date.now()}-1`,
-        type: 'heading',
-        title: '1. Desarrollo Temático de la Lección',
-        content: '',
-      },
-      {
-        id: `blk-${Date.now()}-2`,
-        type: 'text',
-        content:
-          'Redacta aquí los conceptos clave, ejemplos y guías paso a paso para el aprendiz. Usa la barra superior o escribe "/" para agregar enlaces con previsualización, videos comentados o segmentos de código fuente.',
-      },
-    ];
     const newLesson: Lesson = {
       id: `les-${Date.now()}`,
       order: nextOrder,
-      title: `Lección ${nextOrder}: Nuevo Tema de Estudio`,
+      title: `Lección ${nextOrder}`,
       durationMinutes: 45,
-      summary: 'Resumen de los objetivos de aprendizaje de esta lección.',
-      contentMarkdown: blocksToMarkdown(starterBlocks),
-      blocks: starterBlocks,
+      summary: '',
+      contentMarkdown: '',
+      blocks: [],
       linkedNodeIds: [],
       quiz: [],
+      activity: undefined,
     };
 
     handleUpdateSelectedOva({
@@ -688,15 +607,20 @@ ${
 
         {/* Right Column (8 cols): SENA Curriculum Metadata & Active Lesson Editor */}
         <div className="lg:col-span-8 space-y-6">
-          {/* OVA SENA Identification Header Form */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
-                Ficha Técnica Curricular del OVA (Estructura SENA)
-              </h3>
+          {/* OVA SENA In-Place Header & Collapsible Curricular Metadata */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 text-[11px] font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded">
+                  {selectedOva.code}
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  Edición directa en el mismo lugar · Haz clic en cualquier título o texto para editar
+                </span>
+              </div>
               <div className="flex items-center gap-2">
                 <label className="text-xs font-medium text-slate-600">
-                  Visibilidad en Portal de Aprendices:
+                  Visibilidad:
                 </label>
                 <select
                   value={selectedOva.status}
@@ -713,136 +637,146 @@ ${
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Título del Objeto Virtual de Aprendizaje
-                </label>
-                <input
-                  type="text"
-                  value={selectedOva.title}
-                  onChange={(e) =>
-                    handleUpdateSelectedOva({ title: e.target.value })
-                  }
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Ficha de Caracterización SENA
-                </label>
-                <input
-                  type="text"
-                  value={selectedOva.fichaCode}
-                  onChange={(e) =>
-                    handleUpdateSelectedOva({ fichaCode: e.target.value })
-                  }
-                  className="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Programa de Formación
-                </label>
-                <input
-                  type="text"
-                  value={selectedOva.programName}
-                  onChange={(e) =>
-                    handleUpdateSelectedOva({ programName: e.target.value })
-                  }
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Competencia Asociada
-                </label>
-                <input
-                  type="text"
-                  value={selectedOva.competence}
-                  onChange={(e) =>
-                    handleUpdateSelectedOva({ competence: e.target.value })
-                  }
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Resultado de Aprendizaje (RAP)
-              </label>
+            {/* In-place OVA Title & Description */}
+            <div className="space-y-1.5">
               <input
                 type="text"
-                value={selectedOva.learningOutcome}
+                value={selectedOva.title}
                 onChange={(e) =>
-                  handleUpdateSelectedOva({ learningOutcome: e.target.value })
+                  handleUpdateSelectedOva({ title: e.target.value })
                 }
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800"
+                placeholder="Título del Objeto Virtual de Aprendizaje..."
+                className="w-full text-xl font-extrabold text-slate-900 bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-slate-50/50 rounded-lg px-2 py-1 -mx-2 focus:outline-none transition-colors"
+              />
+              <textarea
+                rows={2}
+                value={selectedOva.description}
+                onChange={(e) =>
+                  handleUpdateSelectedOva({ description: e.target.value })
+                }
+                placeholder="Descripción ejecutiva de la OVA..."
+                className="w-full text-xs text-slate-600 leading-relaxed bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-slate-50/50 rounded-lg px-2 py-1 -mx-2 focus:outline-none resize-y transition-colors"
               />
             </div>
+
+            <details className="group pt-2 border-t border-slate-100">
+              <summary className="cursor-pointer text-xs font-semibold text-slate-600 hover:text-indigo-600 select-none flex items-center justify-between">
+                <span>
+                  Ficha Técnica Curricular SENA (Ficha {selectedOva.fichaCode} · {selectedOva.programName})
+                </span>
+                <span className="text-[11px] font-normal text-slate-400 group-open:hidden">
+                  Mostrar metadatos curriculares ▾
+                </span>
+                <span className="text-[11px] font-normal text-slate-400 hidden group-open:inline">
+                  Ocultar metadatos ▴
+                </span>
+              </summary>
+              <div className="pt-3 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                      Ficha de Caracterización SENA
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedOva.fichaCode}
+                      onChange={(e) =>
+                        handleUpdateSelectedOva({ fichaCode: e.target.value })
+                      }
+                      className="w-full px-2.5 py-1.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                      Programa de Formación
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedOva.programName}
+                      onChange={(e) =>
+                        handleUpdateSelectedOva({ programName: e.target.value })
+                      }
+                      className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                      Competencia Asociada
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedOva.competence}
+                      onChange={(e) =>
+                        handleUpdateSelectedOva({ competence: e.target.value })
+                      }
+                      className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                      Resultado de Aprendizaje (RAP)
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedOva.learningOutcome}
+                      onChange={(e) =>
+                        handleUpdateSelectedOva({ learningOutcome: e.target.value })
+                      }
+                      className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800"
+                    />
+                  </div>
+                </div>
+              </div>
+            </details>
           </div>
 
           {/* Active Lesson Content, Linked Graph Nodes, Quiz & Activity Editor */}
           {selectedLesson && (
             <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-5">
-              <div className="border-b border-slate-200 pb-3 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-mono text-indigo-600">
-                    Editando Lección 0{selectedLesson.order}
+              {/* Unified In-Place Lesson Header (Title, Summary & Duration edited right where they display) */}
+              <div className="border-b border-slate-200 pb-4 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-mono font-bold text-indigo-600 uppercase tracking-wider">
+                    Lección 0{selectedLesson.order} · Documento Interactivo Editable In-Situ
                   </span>
-                  <h3 className="text-base font-bold text-slate-900">
-                    {selectedLesson.title}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-slate-500">
+                      Duración (min):
+                    </label>
+                    <input
+                      type="number"
+                      value={selectedLesson.durationMinutes}
+                      onChange={(e) =>
+                        handleUpdateSelectedLesson({
+                          durationMinutes: Math.max(10, Number(e.target.value)),
+                        })
+                      }
+                      className="w-20 px-2.5 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-slate-500">
-                    Duración (min):
-                  </label>
-                  <input
-                    type="number"
-                    value={selectedLesson.durationMinutes}
-                    onChange={(e) =>
-                      handleUpdateSelectedLesson({
-                        durationMinutes: Math.max(10, Number(e.target.value)),
-                      })
-                    }
-                    className="w-20 px-2.5 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Título de la Lección
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedLesson.title}
-                    onChange={(e) =>
-                      handleUpdateSelectedLesson({ title: e.target.value })
-                    }
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Resumen / Objetivo de la Lección
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedLesson.summary}
-                    onChange={(e) =>
-                      handleUpdateSelectedLesson({ summary: e.target.value })
-                    }
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
+                <input
+                  type="text"
+                  value={selectedLesson.title}
+                  onChange={(e) =>
+                    handleUpdateSelectedLesson({ title: e.target.value })
+                  }
+                  placeholder="Escribe aquí el título de la lección..."
+                  className="w-full text-lg font-bold text-slate-900 bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-slate-50/60 rounded-lg px-2 py-1 -mx-2 focus:outline-none transition-colors"
+                />
+
+                <input
+                  type="text"
+                  value={selectedLesson.summary}
+                  onChange={(e) =>
+                    handleUpdateSelectedLesson({ summary: e.target.value })
+                  }
+                  placeholder="Escribe aquí el resumen u objetivo pedagógico de la lección..."
+                  className="w-full text-xs text-slate-600 bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-slate-50/60 rounded-lg px-2 py-1 -mx-2 focus:outline-none transition-colors"
+                />
               </div>
 
               {/* Linked Nodes from Obsidian Canvas (Bidirectional Sync) */}
@@ -912,40 +846,55 @@ ${
                 onUpdateLesson={handleUpdateSelectedLesson}
               />
 
-              {/* SENA Activity / Evidence & Reminder Deadline Configurator */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900">
-                      Actividad Evaluable y Fecha Límite para Alertas de Envío
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      Configura la evidencia que alimenta los recordatorios
-                      automáticos y la matriz de aprendices.
-                    </p>
-                  </div>
-                  {!selectedLesson.activity ? (
+              {/* Optional Evaluative Elements Selector (Activity / Evidence & Self-Assessment Quiz are completely optional) */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-3">
+                <div className="text-xs text-slate-600">
+                  <strong className="text-slate-900">
+                    Elementos Evaluativos Opcionales:
+                  </strong>{' '}
+                  Agrega solo los componentes que necesites para esta lección.
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {!selectedLesson.activity && (
                     <button
                       type="button"
                       onClick={() =>
                         handleUpdateSelectedLesson({
                           activity: {
                             id: `act-${Date.now()}`,
-                            title: 'Nueva Evidencia de Aprendizaje',
-                            evidenceCode: 'GA1-220501096-AA1-EV01',
+                            title: '',
+                            evidenceCode: '',
                             evidenceType: 'Producto',
-                            instructions:
-                              'Describe los criterios de entrega para el aprendiz.',
+                            instructions: '',
                             dueDate: '2026-11-15',
-                            deliverableFormat: 'Repositorio Git o documento PDF',
+                            deliverableFormat: '',
                           },
                         })
                       }
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-lg transition-colors"
                     >
-                      + Asignar Evidencia a esta Lección
+                      <Plus className="w-3.5 h-3.5" />
+                      Agregar Actividad / Evidencia
                     </button>
-                  ) : (
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleAddQuizQuestion}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-white hover:bg-emerald-50 border border-emerald-200 rounded-lg transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Agregar Pregunta de Cuestionario
+                  </button>
+                </div>
+              </div>
+
+              {/* Optional SENA Activity / Evidence Configurator (Only shown if instructor added it) */}
+              {selectedLesson.activity && (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-900">
+                      Actividad Evaluable / Evidencia
+                    </h4>
                     <button
                       type="button"
                       onClick={() =>
@@ -955,10 +904,8 @@ ${
                     >
                       Quitar evidencia
                     </button>
-                  )}
-                </div>
+                  </div>
 
-                {selectedLesson.activity && (
                   <div className="space-y-3 pt-2 border-t border-slate-200">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div>
@@ -976,6 +923,7 @@ ${
                               },
                             })
                           }
+                          placeholder="Ej. GA1-220501096-AA1-EV01"
                           className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-200 rounded-lg"
                         />
                       </div>
@@ -1038,6 +986,7 @@ ${
                             },
                           })
                         }
+                        placeholder="Título de la actividad o entregable..."
                         className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
                       />
                     </div>
@@ -1057,103 +1006,113 @@ ${
                             },
                           })
                         }
+                        placeholder="Describe los criterios de entrega..."
                         className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
                       />
                     </div>
                   </div>
-                )}
-              </div>
-
-              {/* Self-Assessment Quiz Questions Editor */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-slate-900">
-                    Cuestionario de Autoevaluación de la Lección (
-                    {selectedLesson.quiz.length})
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={handleAddQuizQuestion}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Añadir Pregunta
-                  </button>
                 </div>
+              )}
 
-                {selectedLesson.quiz.map((q, qIdx) => (
-                  <div
-                    key={q.id}
-                    className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <input
-                        type="text"
-                        value={q.question}
-                        onChange={(e) => {
-                          const updatedQuiz = selectedLesson.quiz.map(
-                            (item, idx) =>
-                              idx === qIdx
-                                ? { ...item, question: e.target.value }
-                                : item
-                          );
-                          handleUpdateSelectedLesson({ quiz: updatedQuiz });
-                        }}
-                        className="flex-1 px-2.5 py-1.5 text-xs font-semibold bg-white border border-slate-200 rounded"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleUpdateSelectedLesson({
-                            quiz: selectedLesson.quiz.filter(
-                              (_, idx) => idx !== qIdx
-                            ),
-                          })
-                        }
-                        className="text-slate-400 hover:text-red-600 p-1"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {q.options.map((opt, optIdx) => (
-                        <div key={optIdx} className="flex items-center gap-1.5">
-                          <input
-                            type="radio"
-                            name={`correct-${q.id}`}
-                            checked={q.correctIndex === optIdx}
-                            onChange={() => {
-                              const updatedQuiz = selectedLesson.quiz.map(
-                                (item, idx) =>
-                                  idx === qIdx
-                                    ? { ...item, correctIndex: optIdx }
-                                    : item
-                              );
-                              handleUpdateSelectedLesson({ quiz: updatedQuiz });
-                            }}
-                          />
-                          <input
-                            type="text"
-                            value={opt}
-                            onChange={(e) => {
-                              const newOpts = [...q.options];
-                              newOpts[optIdx] = e.target.value;
-                              const updatedQuiz = selectedLesson.quiz.map(
-                                (item, idx) =>
-                                  idx === qIdx
-                                    ? { ...item, options: newOpts }
-                                    : item
-                              );
-                              handleUpdateSelectedLesson({ quiz: updatedQuiz });
-                            }}
-                            className="flex-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded"
-                          />
-                        </div>
-                      ))}
-                    </div>
+              {/* Optional Self-Assessment Quiz Questions Editor (Only shown if quiz questions exist) */}
+              {selectedLesson.quiz.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-900">
+                      Cuestionario de Autoevaluación (
+                      {selectedLesson.quiz.length})
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={handleAddQuizQuestion}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Añadir Pregunta
+                    </button>
                   </div>
-                ))}
-              </div>
+
+                  {selectedLesson.quiz.map((q, qIdx) => (
+                    <div
+                      key={q.id}
+                      className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <input
+                          type="text"
+                          value={q.question}
+                          onChange={(e) => {
+                            const updatedQuiz = selectedLesson.quiz.map(
+                              (item, idx) =>
+                                idx === qIdx
+                                  ? { ...item, question: e.target.value }
+                                  : item
+                            );
+                            handleUpdateSelectedLesson({ quiz: updatedQuiz });
+                          }}
+                          className="flex-1 px-2.5 py-1.5 text-xs font-semibold bg-white border border-slate-200 rounded"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUpdateSelectedLesson({
+                              quiz: selectedLesson.quiz.filter(
+                                (_, idx) => idx !== qIdx
+                              ),
+                            })
+                          }
+                          className="text-slate-400 hover:text-red-600 p-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {q.options.map((opt, optIdx) => (
+                          <div
+                            key={optIdx}
+                            className="flex items-center gap-1.5"
+                          >
+                            <input
+                              type="radio"
+                              name={`correct-${q.id}`}
+                              checked={q.correctIndex === optIdx}
+                              onChange={() => {
+                                const updatedQuiz = selectedLesson.quiz.map(
+                                  (item, idx) =>
+                                    idx === qIdx
+                                      ? { ...item, correctIndex: optIdx }
+                                      : item
+                                );
+                                handleUpdateSelectedLesson({
+                                  quiz: updatedQuiz,
+                                });
+                              }}
+                            />
+                            <input
+                              type="text"
+                              value={opt}
+                              onChange={(e) => {
+                                const newOpts = [...q.options];
+                                newOpts[optIdx] = e.target.value;
+                                const updatedQuiz = selectedLesson.quiz.map(
+                                  (item, idx) =>
+                                    idx === qIdx
+                                      ? { ...item, options: newOpts }
+                                      : item
+                                );
+                                handleUpdateSelectedLesson({
+                                  quiz: updatedQuiz,
+                                });
+                              }}
+                              className="flex-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

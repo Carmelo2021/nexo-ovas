@@ -68,7 +68,21 @@ export type LessonBlockType =
   | 'link'
   | 'video'
   | 'code'
-  | 'callout';
+  | 'callout'
+  | 'diagram'
+  | 'interactive';
+
+export type DiagramKind =
+  | 'var_let_const'
+  | 'data_types'
+  | 'if_else_flow'
+  | 'loops_flow'
+  | 'try_catch_flow';
+
+export type InteractiveKind =
+  | 'array_lab'
+  | 'array_functional'
+  | 'object_lab';
 
 export interface LessonBlock {
   id: string;
@@ -81,6 +95,8 @@ export interface LessonBlock {
   videoTimestamp?: string; // e.g. '04:10 - 12:30' or '18 min'
   codeLanguage?: string; // e.g. 'typescript', 'sql', 'bash', 'json', 'python', 'cisco'
   calloutTone?: 'info' | 'tip' | 'warning';
+  diagramKind?: DiagramKind;
+  interactiveKind?: InteractiveKind;
   sourceNodeId?: string; // Optional reference to a GraphNode for bidirectional Canvas <-> OVA sync
 }
 

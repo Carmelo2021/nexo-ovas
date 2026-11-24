@@ -12,6 +12,7 @@ import { InstructorLoginModal } from './components/InstructorLoginModal';
 import { KnowledgeGraphCanvas } from './components/KnowledgeGraphCanvas';
 import { LearnerProgressAndReminders } from './components/LearnerProgressAndReminders';
 import { MinimalLandingPage } from './components/MinimalLandingPage';
+import { MobileAppShell } from './components/MobileAppShell';
 import { OvaBuilderView } from './components/OvaBuilderView';
 import {
   blocksToMarkdown,
@@ -44,12 +45,12 @@ type InstructorTab = 'graph' | 'ovas' | 'learners' | 'reminders';
 type PublicSection = 'catalog' | 'evidences' | 'progress';
 
 const STORAGE_KEYS = {
-  NODES: 'nexoova_sena_nodes_v1',
-  EDGES: 'nexoova_sena_edges_v1',
-  REGIONS: 'nexoova_sena_regions_v1',
-  OVAS: 'nexoova_sena_ovas_v1',
-  LEARNERS: 'nexoova_sena_learners_v1',
-  LOGS: 'nexoova_sena_logs_v1',
+  NODES: 'nexoova_sena_nodes_v2_js',
+  EDGES: 'nexoova_sena_edges_v2_js',
+  REGIONS: 'nexoova_sena_regions_v2_js',
+  OVAS: 'nexoova_sena_ovas_v2_js',
+  LEARNERS: 'nexoova_sena_learners_v2_js',
+  LOGS: 'nexoova_sena_logs_v2_js',
   AUTH: 'nexoova_sena_instructor_auth_v1',
 };
 
@@ -83,6 +84,14 @@ export default function App() {
   const [showLandingPage, setShowLandingPage] = useState<boolean>(true);
   const [deepLinkOvaId, setDeepLinkOvaId] = useState<string | null>(null);
   const [deepLinkLessonId, setDeepLinkLessonId] = useState<string | null>(null);
+
+  // Mobile App Version State (Auto-enabled on mobile screens / Android APK WebView, or toggled from header)
+  const [isMobileAppMode, setIsMobileAppMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'mobile') return true;
+    return window.innerWidth < 768 || navigator.userAgent.includes('wv');
+  });
 
   // Core Reactive Persistent State
   const [nodes, setNodes] = useState<GraphNode[]>(() => {
@@ -568,16 +577,31 @@ export default function App() {
               href="#recordatorios"
               onClick={(e) => {
                 e.preventDefault();
+                setIsMobileAppMode(false);
                 setShowLandingPage(false);
                 setInstructorTab('reminders');
               }}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
-                !showLandingPage && instructorTab === 'reminders'
+                !isMobileAppMode && !showLandingPage && instructorTab === 'reminders'
                   ? 'text-indigo-600 underline underline-offset-8 decoration-2'
                   : ''
               }`}
             >
               Recordatorios
+            </a>
+            <a
+              href="#version-movil"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsMobileAppMode((v) => !v);
+              }}
+              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
+                isMobileAppMode
+                  ? 'text-[#d94e34] font-semibold underline underline-offset-8 decoration-2'
+                  : ''
+              }`}
+            >
+              Versión Móvil
             </a>
           </nav>
         ) : (
@@ -643,6 +667,20 @@ export default function App() {
               }`}
             >
               Mi Progreso
+            </a>
+            <a
+              href="#version-movil"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsMobileAppMode((v) => !v);
+              }}
+              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
+                isMobileAppMode
+                  ? 'text-[#d94e34] font-semibold underline underline-offset-8 decoration-2'
+                  : ''
+              }`}
+            >
+              Versión Móvil
             </a>
             <a
               href="#guia-pdf"
@@ -902,7 +940,18 @@ export default function App() {
 
       {/* Main Workspace Viewport */}
       <main className="no-print flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6">
-        {showLandingPage ? (
+        {isMobileAppMode ? (
+          <MobileAppShell
+            ovas={ovas}
+            learners={learners}
+            activeLearnerId={activeLearnerId}
+            isInstructorAuth={isInstructorAuth}
+            onUpdateOvas={setOvas}
+            onSubmitActivityEvidence={handleSubmitActivityEvidence}
+            onRequestInstructorLogin={() => setShowLoginModal(true)}
+            onExitMobilePreview={() => setIsMobileAppMode(false)}
+          />
+        ) : showLandingPage ? (
           <MinimalLandingPage
             ovas={ovas}
             nodes={nodes}

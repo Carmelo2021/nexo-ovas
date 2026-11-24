@@ -566,8 +566,8 @@ export const PublicLearnerPortal: React.FC<PublicLearnerPortalProps> = ({
                         <span className="font-mono font-semibold text-indigo-700">
                           Ficha {ova.fichaCode}
                         </span>
-                        <span className="font-mono tabular-nums font-semibold text-emerald-700">
-                          Avance: {pct}%
+                        <span className="font-mono text-slate-500">
+                          {ova.code}
                         </span>
                       </div>
                       <div className="text-sm font-bold leading-snug">
@@ -583,31 +583,17 @@ export const PublicLearnerPortal: React.FC<PublicLearnerPortalProps> = ({
               </div>
             </div>
 
-            {/* Lessons Navigation of Selected OVA */}
+            {/* Lessons Navigation of Selected OVA (Without Progress Bars) */}
             <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-slate-900">
-                  Contenido del OVA ({completedCount}/{totalLessons} completadas)
+                  Contenido del OVA ({totalLessons} lecciones)
                 </h3>
-                <span className="text-xs font-mono font-semibold text-emerald-700">
-                  {ovaProgressPct}%
-                </span>
-              </div>
-
-              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  style={{ width: `${ovaProgressPct}%` }}
-                  className="h-full bg-emerald-600 transition-all"
-                />
               </div>
 
               <div className="space-y-2 pt-1">
                 {currentOva.lessons.map((lesson) => {
                   const isSelected = currentLesson?.id === lesson.id;
-                  const isDone =
-                    learnerProgress?.completedLessonIds.includes(lesson.id) ??
-                    false;
-                  const qScore = learnerProgress?.quizScores?.[lesson.id];
 
                   return (
                     <button
@@ -628,41 +614,23 @@ export const PublicLearnerPortal: React.FC<PublicLearnerPortalProps> = ({
                         >
                           Lección 0{lesson.order} · {lesson.durationMinutes} min
                         </span>
-                        <span
-                          className={`font-semibold ${
-                            isDone
-                              ? isSelected
-                                ? 'text-emerald-300'
-                                : 'text-emerald-700'
-                              : isSelected
-                              ? 'text-slate-400'
-                              : 'text-slate-400'
-                          }`}
-                        >
-                          {isDone ? '✓ Completada' : 'Pendiente'}
-                        </span>
                       </div>
 
                       <div className="text-xs font-semibold leading-snug">
                         {lesson.title}
                       </div>
 
-                      <div
-                        className={`text-[11px] mt-1.5 flex items-center gap-2 ${
-                          isSelected ? 'text-slate-300' : 'text-slate-500'
-                        }`}
-                      >
-                        {qScore !== undefined && (
-                          <span className="font-mono">
-                            Autoevaluación: {qScore}%
-                          </span>
-                        )}
-                        {lesson.activity && (
+                      {lesson.activity && (
+                        <div
+                          className={`text-[11px] mt-1.5 flex items-center gap-2 ${
+                            isSelected ? 'text-slate-300' : 'text-slate-500'
+                          }`}
+                        >
                           <span>
-                            · Evidencia vence: {lesson.activity.dueDate}
+                            Evidencia vence: {lesson.activity.dueDate}
                           </span>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </button>
                   );
                 })}
@@ -749,34 +717,6 @@ export const PublicLearnerPortal: React.FC<PublicLearnerPortalProps> = ({
                       </div>
                     </div>
                   )}
-
-                  {/* Mark Lesson Completed Action */}
-                  <div className="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                    <div className="text-xs text-slate-500">
-                      Estado de estudio de esta lección para{' '}
-                      <strong>{activeLearner.name}</strong>:
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onToggleLessonCompleted(
-                          activeLearner.id,
-                          currentOva.id,
-                          currentLesson.id
-                        )
-                      }
-                      className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
-                        isCurrentLessonDone
-                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                          : 'bg-slate-900 text-white hover:bg-slate-800'
-                      }`}
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      {isCurrentLessonDone
-                        ? 'Lección Completada (Clic para desmarcar)'
-                        : 'Marcar Lección como Estudiada'}
-                    </button>
-                  </div>
                 </article>
 
                 {/* Interactive Self-Assessment Quiz */}

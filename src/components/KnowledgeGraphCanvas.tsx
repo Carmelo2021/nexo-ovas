@@ -1,17 +1,22 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   BookOpen,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Code2,
   Compass,
   ExternalLink,
   FileText,
   FolderGit2,
+  GripVertical,
   HelpCircle,
   Layers,
   Link2,
   Maximize2,
   Move,
+  PanelRightClose,
+  PanelRightOpen,
   Plus,
   RefreshCw,
   Search,
@@ -146,15 +151,45 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
   );
   const [promoteFeedback, setPromoteFeedback] = useState<string | null>(null);
 
-  // Dragging state for nodes, regions, or canvas pan
+  // Collapsible and Resizable Right Inspector Panel State
+  const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(true);
+  const [inspectorWidth, setInspectorWidth] = useState<number>(460);
+  const [ isResizingInspector, setIsResizingInspector ] = useState<boolean>(false);
+
+  // Dragging state for nodes, regions (with associated child nodes), region resize, or canvas pan
   const [dragState, setDragState] = useState<{
-    kind: 'node' | 'region' | 'pan';
+    kind: 'node' | 'region' | 'region_resize' | 'pan';
     id?: string;
     startClientX: number;
     startClientY: number;
     initialX: number;
     initialY: number;
+    childNodes?: Array<{ id: string; offsetX: number; offsetY: number }>;
   } | null>(null);
+
+  useEffect(() => {
+    if (!isResizingInspector) return;
+    const handleWindowPointerMove = (e: PointerEvent) => {
+      if (!containerRef.current) return;
+      const wrapperRect =
+        containerRef.current.parentElement?.parentElement?.getBoundingClientRect();
+      const rightEdge = wrapperRect ? wrapperRect.right : window.innerWidth;
+      const nextWidth = Math.min(
+        760,
+        Math.max(320, Math.round(rightEdge - e.clientX))
+      );
+      setInspectorWidth(nextWidth);
+    };
+    const handleWindowPointerUp = () => {
+      setIsResizingInspector(false);
+    };
+    window.addEventListener('pointermove', handleWindowPointerMove);
+    window.addEventListener('pointerup', handleWindowPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handleWindowPointerMove);
+      window.removeEventListener('pointerup', handleWindowPointerUp);
+    };
+  }, [isResizingInspector]);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null;
   const selectedRegion = regions.find((r) => r.id === selectedRegionId) ?? null;
@@ -219,10 +254,50 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
     });
   };
 
-  const handlePointerDownRegion = (e: React.PointerEvent<HTMLDivElement>, region: GraphRegion) => {
+  const findContainingRegionId = (
+    nodeX: number,
+    nodeY: number,
+    regionList: GraphRegion[]
+  ): string | undefined => {
+    const cx = nodeX + 140; // NODE_WIDTH / 2
+    const cy = nodeY + 75; // NODE_HEIGHT / 2
+    const matched = regionList.find(
+      (r) =>
+        cx >= r.x &&
+        cx <= r.x + r.width &&
+        cy >= r.y &&
+        cy <= r.y + r.height
+    );
+    return matched?.id;
+  };
+
+  const handlePointerDownRegion = (
+    e: React.PointerEvent<HTMLDivElement>,
+    region: GraphRegion
+  ) => {
     e.stopPropagation();
     setSelectedRegionId(region.id);
     setSelectedNodeId(null);
+
+    // Gather all smaller nodes associated with or geometrically inside this larger container region
+    const associatedChildren = nodes
+      .filter((n) => {
+        if (n.regionId === region.id) return true;
+        const cx = n.x + 140;
+        const cy = n.y + 75;
+        return (
+          cx >= region.x &&
+          cx <= region.x + region.width &&
+          cy >= region.y &&
+          cy <= region.y + region.height
+        );
+      })
+      .map((n) => ({
+        id: n.id,
+        offsetX: n.x - region.x,
+        offsetY: n.y - region.y,
+      }));
+
     setDragState({
       kind: 'region',
       id: region.id,
@@ -230,6 +305,24 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
       startClientY: e.clientY,
       initialX: region.x,
       initialY: region.y,
+      childNodes: associatedChildren,
+    });
+  };
+
+  const handlePointerDownRegionResize = (
+    e: React.PointerEvent<HTMLDivElement>,
+    region: GraphRegion
+  ) => {
+    e.stopPropagation();
+    setSelectedRegionId(region.id);
+    setSelectedNodeId(null);
+    setDragState({
+      kind: 'region_resize',
+      id: region.id,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      initialX: region.width,
+      initialY: region.height,
     });
   };
 
@@ -249,8 +342,14 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
     if (dragState.kind === 'node' && dragState.id) {
       const newX = Math.max(10, Math.round(dragState.initialX + dx));
       const newY = Math.max(10, Math.round(dragState.initialY + dy));
+      // Automatically associate the smaller node with whichever large region container it is placed inside
+      const containerRegionId = findContainingRegionId(newX, newY, regions);
       onUpdateNodes((prev) =>
-        prev.map((n) => (n.id === dragState.id ? { ...n, x: newX, y: newY } : n))
+        prev.map((n) =>
+          n.id === dragState.id
+            ? { ...n, x: newX, y: newY, regionId: containerRegionId }
+            : n
+        )
       );
     } else if (dragState.kind === 'region' && dragState.id) {
       const newX = Math.max(10, Math.round(dragState.initialX + dx));
@@ -258,6 +357,62 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
       onUpdateRegions((prev) =>
         prev.map((r) => (r.id === dragState.id ? { ...r, x: newX, y: newY } : r))
       );
+
+      // Move all associated child nodes together with their parent container region
+      if (dragState.childNodes && dragState.childNodes.length > 0) {
+        const childMap = new Map<string, { offsetX: number; offsetY: number }>(
+          dragState.childNodes.map((c) => [c.id, c])
+        );
+        onUpdateNodes((prev) =>
+          prev.map((n) => {
+            const childOffset = childMap.get(n.id);
+            if (!childOffset) return n;
+            return {
+              ...n,
+              regionId: dragState.id,
+              x: Math.max(10, Math.round(newX + childOffset.offsetX)),
+              y: Math.max(10, Math.round(newY + childOffset.offsetY)),
+            };
+          })
+        );
+      }
+    } else if (dragState.kind === 'region_resize' && dragState.id) {
+      const newWidth = Math.max(320, Math.round(dragState.initialX + dx));
+      const newHeight = Math.max(240, Math.round(dragState.initialY + dy));
+      const targetRegion = regions.find((r) => r.id === dragState.id);
+      onUpdateRegions((prev) =>
+        prev.map((r) =>
+          r.id === dragState.id
+            ? { ...r, width: newWidth, height: newHeight }
+            : r
+        )
+      );
+      if (targetRegion) {
+        const updatedRegion: GraphRegion = {
+          ...targetRegion,
+          width: newWidth,
+          height: newHeight,
+        };
+        // Associate any smaller nodes now covered by the resized container
+        onUpdateNodes((prev) =>
+          prev.map((n) => {
+            const cx = n.x + 140;
+            const cy = n.y + 75;
+            const inside =
+              cx >= updatedRegion.x &&
+              cx <= updatedRegion.x + updatedRegion.width &&
+              cy >= updatedRegion.y &&
+              cy <= updatedRegion.y + updatedRegion.height;
+            if (inside) {
+              return { ...n, regionId: updatedRegion.id };
+            }
+            if (n.regionId === updatedRegion.id && !inside) {
+              return { ...n, regionId: undefined };
+            }
+            return n;
+          })
+        );
+      }
     }
   };
 
@@ -272,27 +427,31 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
     presetKind?: 'link' | 'video' | 'code'
   ) => {
     const newId = `node-${Date.now()}`;
-    const offset = (nodes.length % 5) * 35;
+    const offset = (nodes.length % 5) * 30;
 
-    let starterBlocks: LessonBlock[];
+    // If a container region is selected, spawn the smaller node inside it; otherwise check geometric containment
+    const activeContainer =
+      selectedRegion ?? regions[0];
+    const spawnX = activeContainer
+      ? activeContainer.x + 35 + offset
+      : Math.round((180 - pan.x) / zoom + offset);
+    const spawnY = activeContainer
+      ? activeContainer.y + 80 + offset
+      : Math.round((140 - pan.y) / zoom + offset);
+    const detectedRegionId =
+      activeContainer?.id ?? findContainingRegionId(spawnX, spawnY, regions);
+
+    let starterBlocks: LessonBlock[] = [];
     if (presetKind === 'link') {
       starterBlocks = [
         {
           id: `${newId}-blk-1`,
-          type: 'text',
-          content:
-            'Contexto conceptual del recurso web investigado en el lienzo.',
-          sourceNodeId: newId,
-        },
-        {
-          id: `${newId}-blk-2`,
           type: 'link',
-          title: 'Documentación Oficial / Estándar Técnico de Referencia',
-          url: 'https://developer.mozilla.org/es/docs/Web/HTTP',
-          domainOrSource: 'MDN Web Docs',
-          content: 'Guía técnica de referencia para la lección del OVA.',
-          relevanceComment:
-            'Este enlace es clave porque detalla el contrato técnico que el aprendiz debe aplicar en su evidencia de proyecto.',
+          title: '',
+          url: '',
+          domainOrSource: '',
+          content: '',
+          relevanceComment: '',
           sourceNodeId: newId,
         },
       ];
@@ -300,21 +459,13 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
       starterBlocks = [
         {
           id: `${newId}-blk-1`,
-          type: 'text',
-          content:
-            'Síntesis de los puntos clave demostrados en la cápsula en video.',
-          sourceNodeId: newId,
-        },
-        {
-          id: `${newId}-blk-2`,
           type: 'video',
-          title: 'Video Explicativo: Implementación Técnica Paso a Paso',
-          url: 'https://www.youtube.com/watch?v=7YcW25PHnAA',
-          domainOrSource: 'YouTube · Cápsula Técnica SENA',
-          videoTimestamp: 'Min 02:15 - 09:40',
-          content: 'Demostración práctica del patrón arquitectónico.',
-          relevanceComment:
-            'Presta especial atención a partir del minuto 02:15 donde se explica la validación y estructura del componente.',
+          title: '',
+          url: '',
+          domainOrSource: '',
+          videoTimestamp: '',
+          content: '',
+          relevanceComment: '',
           sourceNodeId: newId,
         },
       ];
@@ -322,36 +473,11 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
       starterBlocks = [
         {
           id: `${newId}-blk-1`,
-          type: 'text',
-          content:
-            'Explicación del patrón de implementación y su integración en el proyecto formativo.',
-          sourceNodeId: newId,
-        },
-        {
-          id: `${newId}-blk-2`,
           type: 'code',
           codeLanguage: 'typescript',
-          title: 'src/services/moduloOva.service.ts',
-          content: `export async function procesarEvidenciaAprendiz(fichaCode: string, payload: unknown) {\n  if (!fichaCode) throw new Error('Código de ficha SENA requerido');\n  return { ok: true, fichaCode, timestamp: new Date().toISOString() };\n}`,
-          relevanceComment:
-            'Segmento de código fuente listo para copiar y adaptar en la capa de servicios del proyecto.',
-          sourceNodeId: newId,
-        },
-      ];
-    } else {
-      starterBlocks = [
-        {
-          id: `${newId}-blk-1`,
-          type: 'heading',
-          title: '1. Concepto y Fundamento Técnico',
+          title: '',
           content: '',
-          sourceNodeId: newId,
-        },
-        {
-          id: `${newId}-blk-2`,
-          type: 'text',
-          content:
-            'Documenta aquí tus hallazgos en el lienzo. Puedes agregar bloques de enlaces con previsualización, videos comentados o segmentos de código fuente que se sincronizarán directamente con el OVA.',
+          relevanceComment: '',
           sourceNodeId: newId,
         },
       ];
@@ -361,67 +487,37 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
       id: newId,
       title:
         presetKind === 'link'
-          ? 'Nuevo Enlace Técnico con Previsualización'
+          ? 'Nuevo Enlace'
           : presetKind === 'video'
-          ? 'Nuevo Video Educativo con Previsualización'
+          ? 'Nuevo Video'
           : type === 'code'
-          ? 'Nuevo Segmento de Código Fuente'
+          ? 'Nuevo Segmento de Código'
           : type === 'markdown'
-          ? 'Nuevo Concepto Modular (Bloques Notion)'
+          ? 'Nuevo Nodo de Contenido'
           : type === 'media'
-          ? 'Nuevo Recurso Multimedia / Video'
+          ? 'Nuevo Recurso Multimedia'
           : type === 'quiz'
-          ? 'Nuevo Cuestionario de Verificación'
-          : 'Nueva Evidencia de Aprendizaje RAP',
+          ? 'Nuevo Cuestionario'
+          : 'Nueva Evidencia RAP',
       type,
       researchStatus: 'draft',
-      x: Math.round((180 - pan.x) / zoom + offset),
-      y: Math.round((140 - pan.y) / zoom + offset),
-      regionId: regions[0]?.id,
+      x: spawnX,
+      y: spawnY,
+      regionId: detectedRegionId,
       content: blocksToMarkdown(starterBlocks),
       blocks: starterBlocks,
-      mediaUrl:
-        presetKind === 'link'
-          ? 'https://developer.mozilla.org/es/docs/Web/HTTP'
-          : presetKind === 'video' || type === 'media'
-          ? 'https://www.youtube.com/watch?v=7YcW25PHnAA'
-          : undefined,
-      mediaKind:
-        presetKind === 'link'
-          ? 'article'
-          : presetKind === 'video' || type === 'media'
-          ? 'video'
-          : undefined,
-      mediaComment: starterBlocks.find(
-        (b) => b.type === 'link' || b.type === 'video'
-      )?.relevanceComment,
       codeLanguage: type === 'code' ? 'typescript' : undefined,
-      quizQuestions:
-        type === 'quiz'
-          ? [
-              {
-                id: `q-${Date.now()}`,
-                question: '¿Cuál es el propósito central de este concepto técnico dentro del proyecto?',
-                options: [
-                  'Garantizar modularidad, mantenibilidad y cumplimiento de estándares',
-                  'Omitir las pruebas de integración del sistema',
-                  'Eliminar la capa de validación de datos',
-                  'Deshabilitar el control de versiones',
-                ],
-                correctIndex: 0,
-                explanation: 'Permite estructurar la solución siguiendo buenas prácticas de ingeniería de software.',
-              },
-            ]
-          : undefined,
+      quizQuestions: type === 'quiz' ? [] : undefined,
       dueDate: type === 'activity' ? '2026-11-18' : undefined,
       evidenceType: type === 'activity' ? 'Producto' : undefined,
-      tags: ['Lienzo', 'SENA'],
+      tags: ['Lienzo'],
       updatedAt: '2026-11-09',
     };
 
     onUpdateNodes((prev) => [...prev, newNode]);
     setSelectedNodeId(newId);
     setSelectedRegionId(null);
+    setIsInspectorOpen(true);
   };
 
   const handleCreateRegion = () => {
@@ -799,11 +895,35 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
               className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-indigo-500"
             >
               <option value="all">Todos los tipos</option>
-              <option value="markdown">Notas Markdown</option>
-              <option value="media">Videos / Recursos</option>
+              <option value="markdown">Notas / Bloques</option>
+              <option value="media">Enlaces / Videos</option>
+              <option value="code">Código Fuente</option>
               <option value="quiz">Cuestionarios</option>
               <option value="activity">Evidencias RAP</option>
             </select>
+
+            <button
+              type="button"
+              onClick={() => setIsInspectorOpen((v) => !v)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                isInspectorOpen
+                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+                  : 'bg-slate-900 text-white border-slate-900 hover:bg-slate-800'
+              }`}
+              title="Mostrar u ocultar el panel derecho"
+            >
+              {isInspectorOpen ? (
+                <>
+                  <PanelRightClose className="w-3.5 h-3.5" />
+                  <span>Ocultar Panel</span>
+                </>
+              ) : (
+                <>
+                  <PanelRightOpen className="w-3.5 h-3.5" />
+                  <span>Mostrar Panel</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
@@ -864,10 +984,18 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
             }}
             className="relative"
           >
-            {/* 1. Thematic Regions Layer */}
+            {/* 1. Thematic Regions Layer (Larger Parent Containers that carry their associated child nodes) */}
             {regions.map((region) => {
               const tone = REGION_TONE_STYLES[region.tone];
               const isSelected = selectedRegionId === region.id;
+              const childCount = nodes.filter(
+                (n) => n.regionId === region.id
+              ).length;
+              const isDropTarget =
+                dragState?.kind === 'node' &&
+                nodes.find((n) => n.id === dragState.id)?.regionId ===
+                  region.id;
+
               return (
                 <div
                   key={region.id}
@@ -880,17 +1008,34 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
                   }}
                   className={`absolute rounded-2xl border-2 transition-shadow ${tone.border} ${
                     canvasDark ? tone.bgDark : tone.bgLight
-                  } ${isSelected ? 'ring-2 ring-indigo-500' : ''}`}
+                  } ${
+                    isSelected
+                      ? 'ring-2 ring-indigo-500'
+                      : isDropTarget
+                      ? 'ring-2 ring-emerald-400'
+                      : ''
+                  }`}
                 >
                   <div className="px-4 py-3 border-b border-slate-500/20 flex items-center justify-between gap-2 cursor-move">
                     <div>
-                      <h4
-                        className={`text-sm font-semibold tracking-tight ${
-                          canvasDark ? tone.textDark : tone.textLight
-                        }`}
-                      >
-                        {region.title}
-                      </h4>
+                      <div className="flex items-center gap-2">
+                        <h4
+                          className={`text-sm font-semibold tracking-tight ${
+                            canvasDark ? tone.textDark : tone.textLight
+                          }`}
+                        >
+                          {region.title}
+                        </h4>
+                        <span
+                          className={`px-2 py-0.5 text-[10px] font-mono rounded-full border ${
+                            canvasDark
+                              ? 'bg-slate-900/80 text-slate-300 border-slate-700'
+                              : 'bg-white/80 text-slate-700 border-slate-300'
+                          }`}
+                        >
+                          {childCount} nodos asociados
+                        </span>
+                      </div>
                       <p
                         className={`text-xs ${
                           canvasDark ? 'text-slate-400' : 'text-slate-600'
@@ -904,6 +1049,19 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
                         canvasDark ? 'text-slate-500' : 'text-slate-400'
                       }`}
                     />
+                  </div>
+
+                  {/* Bottom-Right Resize Handle for the Container Region */}
+                  <div
+                    onPointerDown={(e) => handlePointerDownRegionResize(e, region)}
+                    title="Arrastrar para redimensionar este contenedor"
+                    className={`absolute right-1.5 bottom-1.5 w-6 h-6 rounded-md flex items-center justify-center cursor-nwse-resize border transition-colors ${
+                      canvasDark
+                        ? 'bg-slate-900/80 border-slate-700 text-slate-400 hover:text-white'
+                        : 'bg-white/90 border-slate-300 text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    <Maximize2 className="w-3 h-3 rotate-90" />
                   </div>
                 </div>
               );
@@ -1260,8 +1418,74 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
         </div>
       </div>
 
-      {/* Right Zone: Inspector & Bidirectional Notion-Style OVA Authoring Deck */}
-      <aside className="w-full lg:w-[480px] xl:w-[540px] border-t lg:border-t-0 lg:border-l border-slate-200 bg-slate-50/70 flex flex-col h-full overflow-y-auto">
+      {/* Right Zone: Resizable & Collapsible Inspector & Bidirectional Notion-Style OVA Authoring Deck */}
+      {isInspectorOpen && (
+        <aside
+          style={{ width: `${inspectorWidth}px`, maxWidth: '100%' }}
+          className="relative w-full lg:shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200 bg-slate-50/70 flex flex-col h-full overflow-y-auto"
+        >
+          {/* Interactive Left Border Drag Handle to Adjust Panel Width */}
+          <div
+            onPointerDown={(e) => {
+              e.preventDefault();
+              setIsResizingInspector(true);
+            }}
+            title="Arrastra el borde para ajustar el ancho del panel derecho"
+            className="hidden lg:flex absolute left-0 top-0 bottom-0 w-2 -ml-1 cursor-col-resize items-center justify-center group z-30 hover:bg-indigo-500/20"
+          >
+            <div className="w-0.5 h-12 rounded-full bg-slate-300 group-hover:bg-indigo-600 transition-colors" />
+          </div>
+
+          {/* Panel Width & Collapse Top Mini-Bar */}
+          <div className="px-4 py-2 bg-white border-b border-slate-200 flex items-center justify-between gap-2 text-[11px] text-slate-500 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <GripVertical className="w-3.5 h-3.5 text-slate-400" />
+              <span>Ancho del panel:</span>
+              <button
+                type="button"
+                onClick={() => setInspectorWidth(380)}
+                className={`px-1.5 py-0.5 rounded ${
+                  inspectorWidth <= 400
+                    ? 'bg-indigo-100 text-indigo-800 font-semibold'
+                    : 'hover:bg-slate-100'
+                }`}
+              >
+                Compacto
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectorWidth(480)}
+                className={`px-1.5 py-0.5 rounded ${
+                  inspectorWidth > 400 && inspectorWidth < 580
+                    ? 'bg-indigo-100 text-indigo-800 font-semibold'
+                    : 'hover:bg-slate-100'
+                }`}
+              >
+                Normal
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectorWidth(640)}
+                className={`px-1.5 py-0.5 rounded ${
+                  inspectorWidth >= 580
+                    ? 'bg-indigo-100 text-indigo-800 font-semibold'
+                    : 'hover:bg-slate-100'
+                }`}
+              >
+                Amplio
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsInspectorOpen(false)}
+              className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 font-semibold"
+              title="Plegar panel derecho"
+            >
+              <span>Plegar</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
         {selectedNode ? (
           <div className="p-5 space-y-5">
             <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
@@ -1347,18 +1571,40 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Región Temática
+                    Contenedor / Región Padre
                   </label>
                   <select
                     value={selectedNode.regionId ?? ''}
-                    onChange={(e) =>
-                      handleUpdateSelectedNode({
-                        regionId: e.target.value || undefined,
-                      })
-                    }
+                    onChange={(e) => {
+                      const nextRegId = e.target.value || undefined;
+                      const targetRegion = regions.find(
+                        (r) => r.id === nextRegId
+                      );
+                      if (targetRegion) {
+                        // Also place the smaller node visually inside the selected parent container if it is outside
+                        const cx = selectedNode.x + 140;
+                        const cy = selectedNode.y + 75;
+                        const isInside =
+                          cx >= targetRegion.x &&
+                          cx <= targetRegion.x + targetRegion.width &&
+                          cy >= targetRegion.y &&
+                          cy <= targetRegion.y + targetRegion.height;
+                        handleUpdateSelectedNode({
+                          regionId: nextRegId,
+                          ...(isInside
+                            ? {}
+                            : {
+                                x: targetRegion.x + 30,
+                                y: targetRegion.y + 75,
+                              }),
+                        });
+                      } else {
+                        handleUpdateSelectedNode({ regionId: undefined });
+                      }
+                    }}
                     className="w-full px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-600"
                   >
-                    <option value="">Sin región asignada</option>
+                    <option value="">Sin contenedor asignado</option>
                     {regions.map((r) => (
                       <option key={r.id} value={r.id}>
                         {r.title}
@@ -1856,6 +2102,7 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
           </div>
         )}
       </aside>
+      )}
     </div>
   );
 };

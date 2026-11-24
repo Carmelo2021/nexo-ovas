@@ -4,6 +4,7 @@ import {
   GraphRegion,
   InstructorCredentials,
   Learner,
+  LessonBlock,
   OVA,
   ReminderTemplate,
   SentReminderLog,
@@ -18,1104 +19,1182 @@ export const DEFAULT_INSTRUCTOR: InstructorCredentials = {
   email: 'cmendoza@sena.edu.co',
 };
 
+// ============================================================================
+// BLOQUES DE CONTENIDO DE LAS 3 OVAS DE JAVASCRIPT (COMPARTIDOS ENTRE CANVAS Y OVAS)
+// ============================================================================
+
+const BLOCKS_JS_101: LessonBlock[] = [
+  {
+    id: 'blk-js101-1',
+    type: 'heading',
+    title: '1. ¿Qué es JavaScript y cómo se ejecuta?',
+    content: '1. ¿Qué es JavaScript y cómo se ejecuta?',
+    sourceNodeId: 'node-js-101',
+  },
+  {
+    id: 'blk-js101-2',
+    type: 'text',
+    content:
+      'JavaScript (estandarizado bajo **ECMAScript**) es un lenguaje de programación multiparadigma, de **tipado dinámico** e interpretado/compilado al vuelo (**JIT - Just-In-Time**) por motores como **V8** (Chrome y Node.js) o **SpiderMonkey** (Firefox). Consulta la guía oficial en [MDN JavaScript Guide](https://developer.mozilla.org/es/docs/Web/JavaScript/Guide "Documentación oficial de Mozilla con la referencia completa de sintaxis y estándares ECMAScript.") para explorar su evolución desde ES6+.',
+    sourceNodeId: 'node-js-101',
+  },
+  {
+    id: 'blk-js101-3',
+    type: 'callout',
+    calloutTone: 'info',
+    title: 'Reglas Esenciales de Sintaxis en JavaScript',
+    content:
+      '• Case-Sensitive: Distingue mayúsculas y minúsculas (`aprendiz` ≠ `Aprendiz`).\n• Sentencias y Expresiones: Cada instrucción se cierra con punto y coma (`;`) por buena práctica.\n• Comentarios: Usa `//` para una línea y `/* ... */` para bloques.\n• Modo Estricto: Declarar `"use strict";` al inicio previene el uso de variables no declaradas.',
+    sourceNodeId: 'node-js-101',
+  },
+  {
+    id: 'blk-js101-4',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: '01_generalidades_sintaxis.js',
+    content: `'use strict';
+
+// 1. Comentario de una sola línea: Sentencia de salida en consola
+console.log('Iniciando módulo de Fundamentos JavaScript — SENA');
+
+/* 2. Diferencia entre Expresión (produce un valor) y Sentencia (ejecuta una acción) */
+const horasTeoria = 12;
+const horasPractica = 18;
+const totalHorasOva = horasTeoria + horasPractica; // Expresión aritmética -> 30
+
+// 3. Sensibilidad a mayúsculas (Case-Sensitive)
+const codigoFicha = '2874512';
+const CodigoFicha = '2901845';
+console.log('Ficha A:', codigoFicha, '| Ficha B:', CodigoFicha);`,
+    relevanceComment:
+      'Observa el uso de "use strict" en la primera línea para obligar a escribir código limpio y seguro.',
+    sourceNodeId: 'node-js-101',
+  },
+  {
+    id: 'blk-js101-5',
+    type: 'heading',
+    title: '2. Ejercicios Prácticos y Resueltos — Tema: Sintaxis',
+    content: '2. Ejercicios Prácticos y Resueltos — Tema: Sintaxis',
+    sourceNodeId: 'node-js-101',
+  },
+  {
+    id: 'blk-js101-6',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: 'ejercicios_tema1_sintaxis.js',
+    content: `// EJERCICIO 1 (Resuelto): Identifica y corrige los 3 errores de sintaxis
+// Código con errores:
+// const 1nombre = "Carlos"
+// Console.log(1nombre)
+
+// SOLUCIÓN CORRECTA:
+// 1) Un identificador no puede iniciar con número.
+// 2) el objeto global es 'console' en minúscula.
+const nombreInstructor = 'Carlos';
+console.log('Instructor:', nombreInstructor);
+
+// EJERCICIO 2 (Propuesto):
+// Escribe una expresión que calcule el porcentaje de asistencia de un aprendiz
+// que asistió a 18 sesiones de un total de 20 y muéstralo con console.log().
+const sesionesAsistidas = 18;
+const totalSesiones = 20;
+const porcentajeAsistencia = (sesionesAsistidas / totalSesiones) * 100;
+console.log('Asistencia:', porcentajeAsistencia + '%'); // 90%`,
+    relevanceComment:
+      'Ejercicios aplicados para dominar las reglas léxicas y de identificadores en JavaScript.',
+    sourceNodeId: 'node-js-101',
+  },
+];
+
+const BLOCKS_JS_102: LessonBlock[] = [
+  {
+    id: 'blk-js102-1',
+    type: 'heading',
+    title: '1. Declaración de Variables: var vs let vs const',
+    content: '1. Declaración de Variables: var vs let vs const',
+    sourceNodeId: 'node-js-102',
+  },
+  {
+    id: 'blk-js102-2',
+    type: 'text',
+    content:
+      'En JavaScript moderno (ES6+) contamos con tres palabras reservadas para declarar variables: **`const`** (referencia constante de ámbito de bloque, usada por defecto), **`let`** (variable reasignable de ámbito de bloque) y **`var`** (declaración heredada con ámbito de función y *hoisting*, que debe evitarse en proyectos nuevos).',
+    sourceNodeId: 'node-js-102',
+  },
+  {
+    id: 'blk-js102-3',
+    type: 'diagram',
+    diagramKind: 'var_let_const',
+    title: 'Comparativa Visual: Ámbito (Scope) y Mutabilidad de var, let y const',
+    content:
+      'Tanto let como const respetan los bloques delimitados por llaves { }, evitando fugas de variables fuera de condicionales o ciclos.',
+    sourceNodeId: 'node-js-102',
+  },
+  {
+    id: 'blk-js102-4',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: '02_variables_y_scope.js',
+    content: `// 1. const: Para valores cuya referencia no cambiará (Convención UPPER_SNAKE_CASE o camelCase)
+const NOTA_MINIMA_APROBACION = 70;
+const centroFormacion = 'CEET - SENA';
+
+// 2. let: Para variables cuyo valor se reasigna (contadores, acumuladores, estado)
+let intentosRealizados = 0;
+intentosRealizados = intentosRealizados + 1;
+
+// 3. Ámbito de Bloque (Block Scope)
+if (intentosRealizados === 1) {
+  let mensajeTemporal = 'Primer intento registrado';
+  console.log(mensajeTemporal); // Funciona dentro del bloque { }
+}
+// console.log(mensajeTemporal); // ReferenceError: mensajeTemporal is not defined`,
+    relevanceComment:
+      'Regla de oro en JS moderno: declara todo con const por defecto, y cambia a let únicamente cuando necesites reasignar la variable.',
+    sourceNodeId: 'node-js-102',
+  },
+  {
+    id: 'blk-js102-5',
+    type: 'heading',
+    title: '2. Ejercicios por Tema: Ámbito y Reasignación',
+    content: '2. Ejercicios por Tema: Ámbito y Reasignación',
+    sourceNodeId: 'node-js-102',
+  },
+  {
+    id: 'blk-js102-6',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: 'ejercicios_tema2_variables.js',
+    content: `// EJERCICIO 1 (Resuelto): ¿Por qué el siguiente código con const NO lanza error?
+const configOva = { version: 1, publicado: false };
+configOva.publicado = true; // ✓ Válido: muta una propiedad interna, no reasigna la referencia
+console.log(configOva);
+
+// EJERCICIO 2 (Resuelto): Intercambio de valores entre dos variables let
+let turnoManana = 'Ficha 2874512';
+let turnoTarde = 'Ficha 2901845';
+
+// Intercambio usando desestructuración o variable auxiliar:
+const auxiliar = turnoManana;
+turnoManana = turnoTarde;
+turnoTarde = auxiliar;
+console.log({ turnoManana, turnoTarde });`,
+    relevanceComment:
+      'Comprende la diferencia entre reasignar una variable (=) y mutar una propiedad interna.',
+    sourceNodeId: 'node-js-102',
+  },
+];
+
+const BLOCKS_JS_103: LessonBlock[] = [
+  {
+    id: 'blk-js103-1',
+    type: 'heading',
+    title: '1. Tipos de Datos Primitivos vs Tipos de Referencia',
+    content: '1. Tipos de Datos Primitivos vs Tipos de Referencia',
+    sourceNodeId: 'node-js-103',
+  },
+  {
+    id: 'blk-js103-2',
+    type: 'text',
+    content:
+      'JavaScript clasifica todos los valores en dos grandes familias: **7 Tipos Primitivos** (que se copian por valor directo y son inmutables) y **Tipos de Referencia u Objetos** (que se almacenan en el *Heap* de memoria y se manipulan mediante referencias). Revisa la tabla oficial en [MDN Estructuras y Tipos de Datos](https://developer.mozilla.org/es/docs/Web/JavaScript/Data_structures "Especificación detallada de los 7 tipos primitivos, el operador typeof y el comportamiento de null y NaN.").',
+    sourceNodeId: 'node-js-103',
+  },
+  {
+    id: 'blk-js103-3',
+    type: 'diagram',
+    diagramKind: 'data_types',
+    title: 'Esquema de Memoria: 7 Tipos Primitivos (Valor) vs Objetos (Referencia)',
+    content:
+      'Usa siempre el operador de igualdad estricta (===) para comparar tanto el valor como el tipo de dato sin conversiones automáticas inesperadas.',
+    sourceNodeId: 'node-js-103',
+  },
+  {
+    id: 'blk-js103-4',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: '03_tipos_datos_typeof.js',
+    content: `// 1. Tipos Primitivos y operador typeof
+const nombre = 'Valentina';          // typeof -> "string"
+const promedio = 94.5;               // typeof -> "number"
+const esEgresado = false;            // typeof -> "boolean"
+let fechaGrado;                      // typeof -> "undefined"
+const tutorAsignado = null;          // typeof -> "object" (peculiaridad histórica de JS)
+const idUnico = Symbol('id');        // typeof -> "symbol"
+const enteroGigante = 9007199254740991n; // typeof -> "bigint"
+
+// 2. Conversión Explícita vs Coerción Implícita
+const entradaFormulario = '85';
+const puntosExtra = 10;
+console.log(entradaFormulario + puntosExtra);         // "8510" (Concatenación string)
+console.log(Number(entradaFormulario) + puntosExtra); // 95 (Suma numérica real)
+
+// 3. Igualdad Estricta (===) vs Igualdad Débil (==)
+console.log(85 === '85'); // false (distinto tipo: number vs string)
+console.log(85 == '85');  // true  (coerción peligrosa, evitar ==)`,
+    relevanceComment:
+      'Convertir explícitamente con Number(), String() o Boolean() evita bugs silenciosos al sumar datos provenientes de formularios HTML.',
+    sourceNodeId: 'node-js-103',
+  },
+  {
+    id: 'blk-js103-5',
+    type: 'heading',
+    title: '2. Ejercicios por Tema: Verificación de Tipos y Conversión',
+    content: '2. Ejercicios por Tema: Verificación de Tipos y Conversión',
+    sourceNodeId: 'node-js-103',
+  },
+  {
+    id: 'blk-js103-6',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: 'ejercicios_tema3_tipos.js',
+    content: `// EJERCICIO 1 (Resuelto): Crea una función que sume dos valores solo si ambos son números válidos
+function sumarSeguro(a, b) {
+  const numA = Number(a);
+  const numB = Number(b);
+  if (Number.isNaN(numA) || Number.isNaN(numB)) {
+    return 'Error: Uno de los argumentos no es convertible a número';
+  }
+  return numA + numB;
+}
+
+console.log(sumarSeguro('40', 50));     // 90
+console.log(sumarSeguro('abc', 50));    // "Error: Uno de los argumentos no es convertible a número"`,
+    relevanceComment:
+      'Number.isNaN() verifica de forma segura si una conversión numérica falló.',
+    sourceNodeId: 'node-js-103',
+  },
+];
+
+// ============================================================================
+// OVA 2: ESTRUCTURAS DE CONTROL, EXPLICACIONES CON IMÁGENES Y EJERCICIOS RESUELTOS
+// ============================================================================
+
+const BLOCKS_JS_201: LessonBlock[] = [
+  {
+    id: 'blk-js201-1',
+    type: 'heading',
+    title: '1. Estructuras Condicionales: if / else if / else, Ternario y switch',
+    content: '1. Estructuras Condicionales: if / else if / else, Ternario y switch',
+    sourceNodeId: 'node-js-201',
+  },
+  {
+    id: 'blk-js201-2',
+    type: 'text',
+    content:
+      'Las estructuras condicionales permiten bifurcar el flujo de ejecución de un programa evaluando expresiones booleanas (`true` o `false`). Cuando existen múltiples rangos excluyentes utilizamos la escalera **`if / else if / else`**; para asignaciones breves de dos caminos usamos el **operador ternario (`? :`)**, y para comparar una variable contra valores discretos exactos usamos **`switch / case`**.',
+    sourceNodeId: 'node-js-201',
+  },
+  {
+    id: 'blk-js201-3',
+    type: 'diagram',
+    diagramKind: 'if_else_flow',
+    title: 'Imagen / Diagrama de Flujo: Toma de Decisiones con if / else if / else',
+    content:
+      'El motor evalúa la condición en el rombo: si resulta verdadera (true) ejecuta el bloque superior; si resulta falsa (false) toma la rama inferior hacia else if o else.',
+    sourceNodeId: 'node-js-201',
+  },
+  {
+    id: 'blk-js201-4',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: '01_condicionales_y_switch.js',
+    content: `// 1. Escalera if / else if / else para evaluar rangos numéricos
+function clasificarPuntajeSena(puntaje) {
+  if (puntaje >= 90) {
+    return 'Aprobado con Excelencia (A+)';
+  } else if (puntaje >= 70) {
+    return 'Aprobado (A)';
+  } else {
+    return 'No Aprobado — Requiere Plan de Mejoramiento (D)';
+  }
+}
+
+// 2. Operador Ternario (? :) para asignaciones directas en una línea
+const puntajeAprendiz = 84;
+const estadoCertificado = puntajeAprendiz >= 70 ? 'Habilitado' : 'Pendiente';
+
+// 3. Estructura switch / case para códigos exactos
+function obtenerHorarioModalidad(modalidad) {
+  switch (modalidad) {
+    case 'DIURNA':
+      return '06:00 a.m. - 12:00 p.m.';
+    case 'NOCTURNA':
+      return '06:00 p.m. - 10:00 p.m.';
+    case 'VIRTUAL':
+      return 'Plataforma 24/7 con sesiones sincrónicas';
+    default:
+      return 'Modalidad no registrada';
+  }
+}`,
+    relevanceComment:
+      'No olvides colocar return o break en cada bloque case de un switch para evitar el efecto fall-through (caída al siguiente caso).',
+    sourceNodeId: 'node-js-201',
+  },
+  {
+    id: 'blk-js201-5',
+    type: 'heading',
+    title: '2. Ejercicios Resueltos Paso a Paso — Condicionales',
+    content: '2. Ejercicios Resueltos Paso a Paso — Condicionales',
+    sourceNodeId: 'node-js-201',
+  },
+  {
+    id: 'blk-js201-6',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: 'ejercicios_resueltos_condicionales.js',
+    content: `/**
+ * EJERCICIO RESUELTO 1: Validador de Acceso y Rol con Cortocircuito y Nullish Coalescing (??)
+ * Enunciado: Dado un usuario que puede no tener nombre configurado, asignar "Aprendiz Invitado"
+ * por defecto y determinar si puede publicar un OVA.
+ */
+function verificarPermisoPublicacion(usuario) {
+  const nombreMostrar = usuario.nombre ?? 'Aprendiz Invitado';
+  if (!usuario.activo) {
+    return \`Acceso denegado para \${nombreMostrar}: cuenta inactiva.\`;
+  }
+  if (usuario.rol === 'instructor' || usuario.rol === 'coordinador') {
+    return \`Bienvenido \${nombreMostrar}: permiso de autoría concedido.\`;
+  }
+  return \`Hola \${nombreMostrar}: acceso en modo lectura y entrega de evidencias.\`;
+}
+
+console.log(verificarPermisoPublicacion({ nombre: null, activo: true, rol: 'aprendiz' }));
+// -> "Hola Aprendiz Invitado: acceso en modo lectura y entrega de evidencias."`,
+    relevanceComment:
+      'El operador ?? (Nullish Coalescing) solo reemplaza valores null o undefined, respetando cadenas vacías o el número 0.',
+    sourceNodeId: 'node-js-201',
+  },
+];
+
+const BLOCKS_JS_202: LessonBlock[] = [
+  {
+    id: 'blk-js202-1',
+    type: 'heading',
+    title: '1. Estructuras Repetitivas: Ciclos for, while y do...while',
+    content: '1. Estructuras Repetitivas: Ciclos for, while y do...while',
+    sourceNodeId: 'node-js-202',
+  },
+  {
+    id: 'blk-js202-2',
+    type: 'text',
+    content:
+      'Los ciclos permiten repetir un bloque de instrucciones mientras una condición lógica se mantenga verdadera. Usamos **`for`** cuando conocemos de antemano el número de iteraciones, **`while`** cuando la repetición depende de una condición dinámica evaluada al inicio, y **`do...while`** cuando necesitamos garantizar que el bloque se ejecute **al menos una vez**.',
+    sourceNodeId: 'node-js-202',
+  },
+  {
+    id: 'blk-js202-3',
+    type: 'diagram',
+    diagramKind: 'loops_flow',
+    title: 'Imagen / Diagrama de Flujo: Las 4 Etapas de un Ciclo Repetitivo (for / while)',
+    content:
+      'En cada vuelta del ciclo se evalúa la condición (2): si es true se ejecuta el cuerpo (3) y luego el incremento (4); si es false (o se invoca break) el ciclo termina.',
+    sourceNodeId: 'node-js-202',
+  },
+  {
+    id: 'blk-js202-4',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: '02_ciclos_for_while.js',
+    content: `// 1. Ciclo for clásico con continue (saltar iteración) y break (detener ciclo)
+for (let trimestre = 1; trimestre <= 6; trimestre++) {
+  if (trimestre === 3) {
+    continue; // Salta la impresión del trimestre 3 y pasa al 4
+  }
+  console.log('Cursando Trimestre Lectivo #' + trimestre);
+}
+
+// 2. Ciclo while: Búsqueda hasta cumplir condición
+let cuposDisponibles = 3;
+while (cuposDisponibles > 0) {
+  console.log('Cupo asignado. Restantes:', cuposDisponibles - 1);
+  cuposDisponibles--; // ¡Fundamental actualizar la variable para evitar un ciclo infinito!
+}`,
+    relevanceComment:
+      'continue salta únicamente la vuelta actual del ciclo; break aborta y sale del ciclo por completo.',
+    sourceNodeId: 'node-js-202',
+  },
+  {
+    id: 'blk-js202-5',
+    type: 'heading',
+    title: '2. Ejercicios Resueltos Paso a Paso — Ciclos',
+    content: '2. Ejercicios Resueltos Paso a Paso — Ciclos',
+    sourceNodeId: 'node-js-202',
+  },
+  {
+    id: 'blk-js202-6',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: 'ejercicios_resueltos_ciclos.js',
+    content: `/**
+ * EJERCICIO RESUELTO 1: Conteo de Evidencias Aprobadas y Promedio General
+ * Enunciado: Dado un listado de calificaciones, calcular con un ciclo for cuántas
+ * aprobaron (>= 70) y cuál es el promedio total del grupo.
+ */
+const calificacionesGrupo = [80, 65, 95, 72, 50, 88];
+let sumaTotal = 0;
+let totalAprobados = 0;
+
+for (let i = 0; i < calificacionesGrupo.length; i++) {
+  const notaActual = calificacionesGrupo[i];
+  sumaTotal += notaActual;
+  if (notaActual >= 70) {
+    totalAprobados++;
+  }
+}
+
+const promedioGrupo = (sumaTotal / calificacionesGrupo.length).toFixed(1);
+console.log(\`Aprobados: \${totalAprobados} de \${calificacionesGrupo.length} | Promedio: \${promedioGrupo}\`);
+// -> "Aprobados: 4 de 6 | Promedio: 75.0"`,
+    relevanceComment:
+      'Patrón clásico de acumulador (sumaTotal += notaActual) y contador condicional (totalAprobados++).',
+    sourceNodeId: 'node-js-202',
+  },
+];
+
+const BLOCKS_JS_203: LessonBlock[] = [
+  {
+    id: 'blk-js203-1',
+    type: 'heading',
+    title: '1. Iteración Moderna (for...of, for...in) y Manejo de Errores (try / catch)',
+    content: '1. Iteración Moderna (for...of, for...in) y Manejo de Errores (try / catch)',
+    sourceNodeId: 'node-js-203',
+  },
+  {
+    id: 'blk-js203-2',
+    type: 'text',
+    content:
+      'Para recorrer colecciones sin gestionar índices manuales, JavaScript ofrece **`for...of`** (itera directamente sobre los **valores** de un arreglo o cadena) y **`for...in`** (itera sobre las **claves/propiedades** de un objeto). Además, toda operación propensa a fallos externos (como parsear JSON o consultar una red) debe protegerse con **`try / catch / finally`**.',
+    sourceNodeId: 'node-js-203',
+  },
+  {
+    id: 'blk-js203-3',
+    type: 'diagram',
+    diagramKind: 'try_catch_flow',
+    title: 'Imagen / Diagrama de Flujo: Captura de Excepciones con try / catch / finally',
+    content:
+      'Si ocurre un error dentro de try, la ejecución salta inmediatamente a catch sin detener la aplicación, y finalmente ejecuta finally.',
+    sourceNodeId: 'node-js-203',
+  },
+  {
+    id: 'blk-js203-4',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: '03_for_of_try_catch_resuelto.js',
+    content: `/**
+ * EJERCICIO RESUELTO: Procesador Seguro de Entregas JSON con for...of y try/catch
+ * Enunciado: Recorrer una lista de cadenas JSON enviadas por aprendices; si alguna
+ * tiene formato inválido, capturar el error sin detener el procesamiento del resto.
+ */
+const enviosJson = [
+  '{"aprendiz": "Valentina", "nota": 95}',
+  '{JSON_CORRUPTO_SIN_COMILLAS}',
+  '{"aprendiz": "Mateo", "nota": 82}',
+];
+
+for (const cadena of enviosJson) {
+  try {
+    const registro = JSON.parse(cadena);
+    console.log('✓ Entrega procesada:', registro.aprendiz, '-> Nota:', registro.nota);
+  } catch (error) {
+    console.warn('⚠️ Envío descartado por sintaxis JSON inválida:', error.message);
+  } finally {
+    // Se ejecuta en cada iteración haya o no error
+  }
+}`,
+    relevanceComment:
+      'Observa cómo el segundo elemento falla en JSON.parse(), es capturado por catch y el ciclo continúa procesando a Mateo sin colapsar.',
+    sourceNodeId: 'node-js-203',
+  },
+];
+
+// ============================================================================
+// OVA 3: ARREGLOS Y OBJETOS EN JAVASCRIPT (GRÁFICOS INTERACTIVOS Y MICROANIMACIONES)
+// ============================================================================
+
+const BLOCKS_JS_301: LessonBlock[] = [
+  {
+    id: 'blk-js301-1',
+    type: 'heading',
+    title: '1. Arreglos (Arrays) en JavaScript: Estructura Indexada y Mutación',
+    content: '1. Arreglos (Arrays) en JavaScript: Estructura Indexada y Mutación',
+    sourceNodeId: 'node-js-301',
+  },
+  {
+    id: 'blk-js301-2',
+    type: 'text',
+    content:
+      'Un **Arreglo (`Array`)** es una colección ordenada de datos donde cada elemento ocupa una posición numérica llamada **índice** que inicia siempre en **`0`**. Interactúa con el siguiente gráfico animado para experimentar cómo los métodos **`.push()`**, **`.pop()`**, **`.unshift()`** y **`.shift()`** modifican la estructura en memoria.',
+    sourceNodeId: 'node-js-301',
+  },
+  {
+    id: 'blk-js301-3',
+    type: 'interactive',
+    interactiveKind: 'array_lab',
+    title: 'Gráfico Interactivo Animado: Operaciones en Memoria sobre un Array JS',
+    content:
+      'Escribe un elemento y pulsa .push() (final), .unshift() (inicio), .pop() o .shift() para ver cómo se desplazan los índices [0], [1], [2] con microanimaciones.',
+    sourceNodeId: 'node-js-301',
+  },
+  {
+    id: 'blk-js301-4',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: '01_arreglos_fundamentos_y_ejercicios.js',
+    content: `// 1. Declaración, acceso por índice [0] y último elemento con .at(-1)
+const modulosAdso = ['Algoritmia', 'Bases de Datos', 'Frontend JS', 'Backend Node'];
+console.log('Primer módulo [0]:', modulosAdso[0]);       // "Algoritmia"
+console.log('Último módulo:', modulosAdso.at(-1));       // "Backend Node"
+
+// 2. EJERCICIO RESUELTO: Gestión de Cola de Soporte de Aprendices (FIFO)
+const colaSoporte = ['Valentina', 'Mateo'];
+colaSoporte.push('Laura');               // Llega Laura al final -> ['Valentina', 'Mateo', 'Laura']
+const atendido = colaSoporte.shift();    // Sale el primero ('Valentina')
+console.log('Atendiendo a:', atendido, '| En espera:', colaSoporte);`,
+    relevanceComment:
+      'El método moderno .at(-1) permite leer el último elemento de cualquier arreglo sin tener que escribir arr[arr.length - 1].',
+    sourceNodeId: 'node-js-301',
+  },
+];
+
+const BLOCKS_JS_302: LessonBlock[] = [
+  {
+    id: 'blk-js302-1',
+    type: 'heading',
+    title: '1. Métodos Funcionales de Arreglos: map, filter, find y reduce',
+    content: '1. Métodos Funcionales de Arreglos: map, filter, find y reduce',
+    sourceNodeId: 'node-js-302',
+  },
+  {
+    id: 'blk-js302-2',
+    type: 'text',
+    content:
+      'En el desarrollo moderno con JavaScript y React evitamos mutar los arreglos originales. En su lugar, encadenamos métodos funcionales inmutables que reciben una función *callback*: **`.map()`** para transformar, **`.filter()`** para seleccionar, **`.find()`** para localizar un elemento único y **`.reduce()`** para totalizar.',
+    sourceNodeId: 'node-js-302',
+  },
+  {
+    id: 'blk-js302-3',
+    type: 'interactive',
+    interactiveKind: 'array_functional',
+    title: 'Simulador Visual Animado: Pipeline Funcional (.map, .filter, .find, .reduce)',
+    content:
+      'Haz clic en cada método funcional para visualizar qué elementos se transforman, cuáles superan el filtro (>= 70) y cómo se calcula el acumulador.',
+    sourceNodeId: 'node-js-302',
+  },
+  {
+    id: 'blk-js302-4',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: '02_ejercicios_map_filter_reduce.js',
+    content: `// EJERCICIO RESUELTO: Pipeline Funcional de Calificaciones SENA
+const entregas = [
+  { aprendiz: 'Valentina', puntaje: 95, entregada: true },
+  { aprendiz: 'Mateo', puntaje: 58, entregada: true },
+  { aprendiz: 'Laura', puntaje: 88, entregada: true },
+  { aprendiz: 'Juan', puntaje: 0, entregada: false },
+];
+
+// 1. Filtrar solo los aprendices que aprobaron (puntaje >= 70)
+const aprobados = entregas.filter((item) => item.entregada && item.puntaje >= 70);
+
+// 2. Extraer únicamente un arreglo con los nombres en mayúsculas usando .map()
+const nombresCuadroHonor = aprobados.map((item) => item.aprendiz.toUpperCase());
+
+// 3. Calcular el puntaje promedio de los aprobados usando .reduce()
+const promedioAprobados =
+  aprobados.reduce((acumulador, item) => acumulador + item.puntaje, 0) /
+  aprobados.length;
+
+console.log('Cuadro de Honor:', nombresCuadroHonor); // ["VALENTINA", "LAURA"]
+console.log('Promedio Aprobados:', promedioAprobados); // 91.5`,
+    relevanceComment:
+      'Encadenar .filter() seguido de .map() y .reduce() es el patrón más utilizado en aplicaciones web modernas.',
+    sourceNodeId: 'node-js-302',
+  },
+];
+
+const BLOCKS_JS_303: LessonBlock[] = [
+  {
+    id: 'blk-js303-1',
+    type: 'heading',
+    title: '1. Objetos en JavaScript: Pares Clave-Valor, Desestructuración y JSON',
+    content: '1. Objetos en JavaScript: Pares Clave-Valor, Desestructuración y JSON',
+    sourceNodeId: 'node-js-303',
+  },
+  {
+    id: 'blk-js303-2',
+    type: 'text',
+    content:
+      'Los **Objetos (`Object`)** permiten modelar entidades del mundo real agrupando propiedades (`clave: valor`) y comportamientos (métodos). Utiliza el siguiente inspector interactivo para experimentar con la notación de punto, notación de corchetes, desestructuración y `Object.keys()`.',
+    sourceNodeId: 'node-js-303',
+  },
+  {
+    id: 'blk-js303-3',
+    type: 'interactive',
+    interactiveKind: 'object_lab',
+    title: 'Gráfico Interactivo Animado: Inspector de Objetos Clave-Valor y Desestructuración',
+    content:
+      'Toca cualquier propiedad del objeto o agrega una nueva clave-valor para ver cómo se accede y muta la estructura en tiempo real.',
+    sourceNodeId: 'node-js-303',
+  },
+  {
+    id: 'blk-js303-4',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: '03_objetos_desestructuracion_ejercicios.js',
+    content: `// 1. Declaración de Objeto Literal, Desestructuración y Operador Spread (...)
+const proyectoFormativo = {
+  codigo: 'PRJ-ADSO-2026',
+  titulo: 'Sistema de Gestión de Inventario Cloud',
+  ficha: 2874512,
+  tecnologias: ['JavaScript', 'Node.js', 'PostgreSQL'],
+};
+
+// Desestructuración directa de propiedades en variables independientes
+const { titulo, ficha } = proyectoFormativo;
+
+// Clonación inmutable agregando una propiedad con Spread (...)
+const proyectoActualizado = {
+  ...proyectoFormativo,
+  estado: 'En Producción',
+};
+
+// 2. EJERCICIO RESUELTO: Recorrer claves y valores con Object.entries()
+for (const [clave, valor] of Object.entries(proyectoActualizado)) {
+  console.log(\`Propiedad [\${clave}] ->\`, valor);
+}`,
+    relevanceComment:
+      'El operador Spread ({ ...objeto, nuevaPropiedad }) crea una copia superficial sin alterar el objeto original.',
+    sourceNodeId: 'node-js-303',
+  },
+];
+
+// ============================================================================
+// CONTENEDORES GRANDES (REGIONES) Y NODOS ASOCIADOS EN EL LIENZO EN GRAFO (CANVAS)
+// ============================================================================
+
 export const INITIAL_REGIONS: GraphRegion[] = [
   {
-    id: 'reg-arquitectura',
-    title: 'Región 01 · Arquitectura Backend y Contratos REST',
-    subtitle: 'Fundamentos HTTP, diseño de endpoints y validación de esquemas',
-    x: 60,
-    y: 60,
-    width: 680,
-    height: 490,
-    tone: 'indigo',
-  },
-  {
-    id: 'reg-datos',
-    title: 'Región 02 · Persistencia Relacional y Optimización SQL',
-    subtitle: 'Modelado entidad-relación, índices B-Tree y transacciones ACID',
-    x: 800,
-    y: 60,
-    width: 660,
-    height: 490,
-    tone: 'emerald',
-  },
-  {
-    id: 'reg-seguridad',
-    title: 'Región 03 · Seguridad Aplicativa y Evidencias del Proyecto',
-    subtitle: 'Autenticación JWT, control de roles RBAC y entregas de producto SENA',
-    x: 340,
-    y: 600,
-    width: 820,
-    height: 390,
+    id: 'reg-js-1',
+    title: 'Contenedor OVA 01 · Generalidades, Sintaxis, Variables y Tipos de Datos JS',
+    subtitle: 'Fundamentos del motor JS, reglas léxicas, var/let/const y los 7 tipos primitivos vs referencias',
+    x: 50,
+    y: 50,
+    width: 1030,
+    height: 310,
     tone: 'amber',
+    linkedOvaId: 'ova-js-1',
+  },
+  {
+    id: 'reg-js-2',
+    title: 'Contenedor OVA 02 · Estructuras de Control, Diagramas de Flujo y Ejercicios Resueltos',
+    subtitle: 'Condicionales if/else/switch, ciclos for/while/do-while y manejo de errores try/catch/finally',
+    x: 50,
+    y: 400,
+    width: 1030,
+    height: 310,
+    tone: 'indigo',
+    linkedOvaId: 'ova-js-2',
+  },
+  {
+    id: 'reg-js-3',
+    title: 'Contenedor OVA 03 · Arreglos y Objetos en JavaScript (Gráficos Interactivos)',
+    subtitle: 'Arrays indexados, métodos funcionales map/filter/reduce, objetos clave-valor y desestructuración',
+    x: 50,
+    y: 750,
+    width: 1030,
+    height: 310,
+    tone: 'emerald',
+    linkedOvaId: 'ova-js-3',
   },
 ];
 
 export const INITIAL_NODES: GraphNode[] = [
+  // Nodos asociados a Región 1 (OVA 1)
   {
-    id: 'node-1',
-    title: 'Principios de Arquitectura RESTful y Semántica HTTP',
-    type: 'markdown',
-    researchStatus: 'in_ova',
-    x: 95,
-    y: 130,
-    regionId: 'reg-arquitectura',
-    linkedOvaId: 'ova-adso-1',
-    linkedLessonId: 'les-101',
-    tags: ['REST', 'HTTP', 'ADSO', 'Fase Ejecución'],
-    updatedAt: '2026-11-08',
-    content: `### Semántica de Verbos y Códigos de Estado
-Un servicio RESTful bien estructurado utiliza los métodos HTTP según su contrato de idempotencia:
-- **GET**: Lectura segura e idempotente de colecciones o recursos individuales.
-- **POST**: Creación de nuevos recursos subordinados (retorna \`201 Created\` + cabecera \`Location\`).
-- **PUT / PATCH**: Reemplazo completo o actualización parcial del estado de un recurso.
-- **DELETE**: Eliminación lógica o física del recurso.`,
-    blocks: [
-      {
-        id: 'n1-blk-1',
-        type: 'text',
-        content:
-          'Un servicio RESTful modela entidades como recursos URI manipulados con verbos HTTP según el estándar [RFC 9110: Semántica HTTP](https://httpwg.org/specs/rfc9110.html "Especificación oficial IETF que define la idempotencia de GET, PUT y DELETE frente a POST.").',
-        sourceNodeId: 'node-1',
-      },
-      {
-        id: 'n1-blk-2',
-        type: 'link',
-        title: 'Guía MDN: Métodos de Petición HTTP e Idempotencia',
-        url: 'https://developer.mozilla.org/es/docs/Web/HTTP/Methods',
-        domainOrSource: 'MDN Web Docs',
-        content: 'Tabla comparativa de métodos seguros e idempotentes.',
-        relevanceComment:
-          'Permite al aprendiz verificar qué verbos HTTP alteran estado y qué códigos de estado retornar en la matriz de endpoints del proyecto formativo.',
-        sourceNodeId: 'node-1',
-      },
-      {
-        id: 'n1-blk-3',
-        type: 'code',
-        codeLanguage: 'typescript',
-        title: 'src/routes/aprendices.routes.ts',
-        content: `router.get('/api/v1/aprendices', listarAprendices); // 200 OK (Idempotente)
-router.post('/api/v1/aprendices', crearAprendiz);   // 201 Created + Location`,
-        relevanceComment:
-          'Convención de rutas REST usando sustantivos en plural y separación clara de verbos HTTP.',
-        sourceNodeId: 'node-1',
-      },
-    ],
-  },
-  {
-    id: 'node-2',
-    title: 'Video Guía: Diseño de Contratos OpenAPI 3.1 y Validación DTO',
-    type: 'media',
-    researchStatus: 'in_ova',
-    x: 425,
-    y: 135,
-    regionId: 'reg-arquitectura',
-    linkedOvaId: 'ova-adso-1',
-    linkedLessonId: 'les-102',
-    mediaKind: 'video',
-    mediaUrl: 'https://www.youtube.com/watch?v=pRS9LRBgjYg',
-    mediaComment:
-      'En el minuto 04:10 demuestra cómo definir esquemas DTO reutilizables en OpenAPI 3.1 antes de codificar los controladores Express.',
-    tags: ['OpenAPI', 'DTO', 'Swagger', 'Documentación'],
-    updatedAt: '2026-11-08',
-    content: `Recurso audiovisual y especificación oficial para documentar APIs antes de codificar los controladores (enfoque *API-First*). Incluye plantilla de validación con esquemas tipados para evitar inyección de payloads malformados.`,
-    blocks: [
-      {
-        id: 'n2-blk-1',
-        type: 'text',
-        content:
-          'El enfoque **API-First** exige consensuar el contrato OpenAPI antes de escribir controladores o vistas frontend.',
-        sourceNodeId: 'node-2',
-      },
-      {
-        id: 'n2-blk-2',
-        type: 'video',
-        title: 'Taller Video: Contratos OpenAPI 3.1 y Validación de Esquemas DTO',
-        url: 'https://www.youtube.com/watch?v=pRS9LRBgjYg',
-        domainOrSource: 'YouTube · Ingeniería Software SENA',
-        videoTimestamp: 'Min 04:10 - 15:20',
-        content: 'Diseño de esquemas YAML y rechazo de payloads con 422.',
-        relevanceComment:
-          'Observa del minuto 04:10 al 11:00 cómo se centralizan los DTOs en #/components/schemas y se valida el patrón de 7 dígitos de la ficha SENA.',
-        sourceNodeId: 'node-2',
-      },
-      {
-        id: 'n2-blk-3',
-        type: 'link',
-        title: 'Especificación Oficial OpenAPI 3.1.0',
-        url: 'https://swagger.io/specification/',
-        domainOrSource: 'swagger.io',
-        content: 'Estándar oficial de documentación de APIs REST.',
-        relevanceComment:
-          'Referencia clave para documentar los códigos 201, 401, 403 y 422 exigidos en la evidencia de producto.',
-        sourceNodeId: 'node-2',
-      },
-    ],
-  },
-  {
-    id: 'node-3',
-    title: 'Cuestionario: Idempotencia y Códigos de Estado HTTP',
-    type: 'quiz',
-    researchStatus: 'in_ova',
-    x: 245,
-    y: 355,
-    regionId: 'reg-arquitectura',
-    linkedOvaId: 'ova-adso-1',
-    linkedLessonId: 'les-101',
-    tags: ['Evaluación', 'HTTP', 'Conocimiento'],
-    updatedAt: '2026-11-09',
-    content: 'Banco de preguntas de comprobación rápida sobre métodos HTTP, códigos 2xx/4xx/5xx y diseño de rutas REST.',
-    quizQuestions: [
-      {
-        id: 'q-node-1',
-        question: '¿Cuál de los siguientes métodos HTTP NO es idempotente por definición del estándar RFC 9110?',
-        options: ['GET', 'PUT', 'POST', 'DELETE'],
-        correctIndex: 2,
-        explanation: 'POST crea un nuevo recurso o ejecuta un proceso en cada invocación, alterando el estado del servidor múltiples veces.',
-      },
-      {
-        id: 'q-node-2',
-        question: '¿Qué código de estado es el más apropiado cuando un payload JSON incumple las reglas de validación semántica del dominio?',
-        options: ['200 OK', '422 Unprocessable Content', '502 Bad Gateway', '304 Not Modified'],
-        correctIndex: 1,
-        explanation: '422 indica que la sintaxis del cuerpo es válida, pero las reglas de negocio o validación de campos fallaron.',
-      },
-    ],
-  },
-  {
-    id: 'node-4',
-    title: 'Normalización 3FN y Modelado Entidad-Relación',
-    type: 'markdown',
-    researchStatus: 'in_ova',
-    x: 835,
-    y: 130,
-    regionId: 'reg-datos',
-    linkedOvaId: 'ova-adso-2',
-    linkedLessonId: 'les-201',
-    tags: ['SQL', '3FN', 'Modelo ER', 'PostgreSQL'],
-    updatedAt: '2026-11-07',
-    content: `### Reglas de Normalización Aplicadas
-- **1FN**: Atributos atómicos sin grupos repetidos ni arreglos serializados en texto.
-- **2FN**: Dependencia funcional completa respecto a llaves primarias compuestas.
-- **3FN**: Eliminación de dependencias transitivas entre columnas no clave.`,
-    blocks: [
-      {
-        id: 'n4-blk-1',
-        type: 'text',
-        content:
-          'Separar `programas_formacion`, `fichas_caracterizacion` y `aprendices` elimina dependencias transitivas y cumple **3FN** con integridad referencial en [Constraints DDL PostgreSQL](https://www.postgresql.org/docs/current/ddl-constraints.html "Explica cómo declarar llaves primarias, foráneas y restricciones CHECK en PostgreSQL.").',
-        sourceNodeId: 'node-4',
-      },
-      {
-        id: 'n4-blk-2',
-        type: 'video',
-        title: 'Video Caso Práctico: Normalización 1FN, 2FN y 3FN Paso a Paso',
-        url: 'https://www.youtube.com/watch?v=GFQaEYEc8_8',
-        domainOrSource: 'YouTube · Modelado Relacional',
-        videoTimestamp: 'Min 01:45 - 12:15',
-        content: 'Transformación de una tabla plana a un esquema relacional 3FN.',
-        relevanceComment:
-          'En el minuto 06:30 se ejemplifica cómo evitar anomalías de actualización al separar el catálogo maestro de las tablas transaccionales.',
-        sourceNodeId: 'node-4',
-      },
-      {
-        id: 'n4-blk-3',
-        type: 'code',
-        codeLanguage: 'sql',
-        title: 'sql/01_schema_3fn.sql',
-        content: `CREATE TABLE fichas_caracterizacion (
-  ficha_codigo CHAR(7) PRIMARY KEY CHECK (ficha_codigo ~ '^[0-9]{7}$'),
-  codigo_programa VARCHAR(16) NOT NULL REFERENCES programas_formacion(codigo_programa)
-);`,
-        relevanceComment:
-          'Definición DDL con validación CHECK por expresión regular y llave foránea estricta.',
-        sourceNodeId: 'node-4',
-      },
-    ],
-  },
-  {
-    id: 'node-5',
-    title: 'Índices Compuestos B-Tree y Análisis con EXPLAIN ANALYZE',
+    id: 'node-js-101',
+    title: 'Generalidades y Reglas de Sintaxis en JavaScript',
     type: 'code',
-    codeLanguage: 'sql',
+    codeLanguage: 'javascript',
     researchStatus: 'in_ova',
-    x: 1150,
-    y: 140,
-    regionId: 'reg-datos',
-    linkedOvaId: 'ova-adso-2',
-    linkedLessonId: 'les-202',
-    tags: ['Rendimiento', 'B-Tree', 'Consultas SQL'],
-    updatedAt: '2026-11-09',
-    content: `### Optimización de Consultas Frecuentes
-Un índice compuesto \`(ficha_codigo, fecha_entrega)\` acelera búsquedas por prefijo izquierdo.`,
-    blocks: [
-      {
-        id: 'n5-blk-1',
-        type: 'text',
-        content:
-          'Un índice compuesto `(ficha_codigo, fecha_entrega)` acelera consultas que filtran por el prefijo izquierdo sin aplicar funciones sobre la columna indexada.',
-        sourceNodeId: 'node-5',
-      },
-      {
-        id: 'n5-blk-2',
-        type: 'link',
-        title: 'Guía Oficial PostgreSQL: Interpretación de EXPLAIN ANALYZE',
-        url: 'https://www.postgresql.org/docs/current/using-explain.html',
-        domainOrSource: 'postgresql.org',
-        content: 'Comparativa entre Seq Scan, Index Scan y Bitmap Index Scan.',
-        relevanceComment:
-          'Relevante para demostrar con métricas reales en milisegundos la mejora de rendimiento de las consultas del proyecto formativo.',
-        sourceNodeId: 'node-5',
-      },
-      {
-        id: 'n5-blk-3',
-        type: 'code',
-        codeLanguage: 'sql',
-        title: 'sql/02_explain_btree.sql',
-        content: `CREATE INDEX idx_entregas_ficha_fecha ON entregas (ficha_codigo, fecha_entrega DESC);
-EXPLAIN ANALYZE SELECT * FROM entregas WHERE ficha_codigo = '2874512';`,
-        relevanceComment:
-          'Sentencia para comprobar que el motor utiliza Index Scan sobre el árbol B-Tree.',
-        sourceNodeId: 'node-5',
-      },
-    ],
+    x: 80,
+    y: 130,
+    regionId: 'reg-js-1',
+    linkedOvaId: 'ova-js-1',
+    linkedLessonId: 'les-js-101',
+    tags: ['JavaScript', 'Sintaxis', 'OVA 1'],
+    updatedAt: '2026-11-24',
+    content:
+      'Motor JIT V8, modo estricto "use strict", sensibilidad a mayúsculas, expresiones vs sentencias y ejercicios de sintaxis.',
+    blocks: BLOCKS_JS_101,
   },
   {
-    id: 'node-6',
-    title: 'Transacciones ACID y Niveles de Aislamiento en Concurrencia',
+    id: 'node-js-102',
+    title: 'Tipos de Variables: var, let, const y Ámbito (Scope)',
     type: 'markdown',
-    researchStatus: 'draft',
-    x: 990,
-    y: 355,
-    regionId: 'reg-datos',
-    tags: ['ACID', 'Concurrencia', 'Bloqueos'],
-    updatedAt: '2026-11-09',
-    content: `### Investigación en Curso para Próxima Lección
-Comparativa práctica entre \`READ COMMITTED\` y \`SERIALIZABLE\` cuando dos aprendices o cajeros descuentan stock del mismo lote simultáneamente.`,
-    blocks: [
-      {
-        id: 'n6-blk-1',
-        type: 'text',
-        content:
-          'Comparativa práctica entre `READ COMMITTED` y `SERIALIZABLE` para prevenir el fenómeno *Lost Update* en inventario concurrente.',
-        sourceNodeId: 'node-6',
-      },
-      {
-        id: 'n6-blk-2',
-        type: 'code',
-        codeLanguage: 'sql',
-        title: 'sql/03_transaccion_acid.sql',
-        content: `BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
-SELECT stock_actual FROM inventario WHERE id_item = 42 FOR UPDATE;
-UPDATE inventario SET stock_actual = stock_actual - 1 WHERE id_item = 42;
-COMMIT;`,
-        relevanceComment:
-          'Uso de bloqueo pesimista SELECT ... FOR UPDATE dentro de una transacción ACID.',
-        sourceNodeId: 'node-6',
-      },
-    ],
+    researchStatus: 'in_ova',
+    x: 415,
+    y: 130,
+    regionId: 'reg-js-1',
+    linkedOvaId: 'ova-js-1',
+    linkedLessonId: 'les-js-102',
+    tags: ['Variables', 'Scope', 'let/const'],
+    updatedAt: '2026-11-24',
+    content:
+      'Comparativa gráfica entre var, let y const, Block Scope { }, Hoisting, Temporal Dead Zone y ejercicios prácticos.',
+    blocks: BLOCKS_JS_102,
   },
   {
-    id: 'node-7',
-    title: 'Autenticación Stateless con JWT, Refresh Tokens y RBAC',
+    id: 'node-js-103',
+    title: 'Tipos de Datos Primitivos, Referencias y Coerción',
     type: 'code',
-    codeLanguage: 'typescript',
+    codeLanguage: 'javascript',
     researchStatus: 'in_ova',
-    x: 380,
-    y: 675,
-    regionId: 'reg-seguridad',
-    linkedOvaId: 'ova-adso-1',
-    linkedLessonId: 'les-103',
-    tags: ['JWT', 'Seguridad', 'OWASP', 'RBAC'],
-    updatedAt: '2026-11-08',
-    content: `### Estructura Segura de Tokens
-1. **Access Token** de vida corta (15 min) firmado con \`RS256\` o \`HS256\`.
-2. **Middleware de Roles**: Verificar el claim \`rol\` en el servidor antes de ejecutar casos de uso administrativos.`,
-    blocks: [
-      {
-        id: 'n7-blk-1',
-        type: 'text',
-        content:
-          'Los **Access Tokens** deben tener expiración corta (15-30 min) y validarse en un middleware RBAC antes de permitir operaciones sensibles.',
-        sourceNodeId: 'node-7',
-      },
-      {
-        id: 'n7-blk-2',
-        type: 'link',
-        title: 'OWASP Authentication & JWT Security Cheat Sheet',
-        url: 'https://cheatsheetseries.owasp.org/',
-        domainOrSource: 'OWASP Foundation',
-        content: 'Guía de endurecimiento de sesiones, hashing Argon2id y JWT.',
-        relevanceComment:
-          'Explica por qué jamás se debe guardar información sensible en el payload de un JWT y cómo mitigar ataques XSS/CSRF.',
-        sourceNodeId: 'node-7',
-      },
-      {
-        id: 'n7-blk-3',
-        type: 'video',
-        title: 'Video Guía: Implementación de Login JWT y Middleware de Roles en Express',
-        url: 'https://www.youtube.com/watch?v=mbsmsi7l3r4',
-        domainOrSource: 'YouTube · Seguridad Aplicativa',
-        videoTimestamp: 'Min 05:00 - 18:10',
-        content: 'Codificación paso a paso de firma y verificación de tokens.',
-        relevanceComment:
-          'A partir del minuto 05:00 se construye el middleware requireRole que diferencia entre aprendiz e instructor.',
-        sourceNodeId: 'node-7',
-      },
-      {
-        id: 'n7-blk-4',
-        type: 'code',
-        codeLanguage: 'typescript',
-        title: 'src/middlewares/requireRole.ts',
-        content: `const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtUserPayload;
-if (!allowedRoles.includes(payload.role)) {
-  return res.status(403).json({ error: 'Forbidden: Rol sin privilegios' });
-}`,
-        relevanceComment:
-          'Fragmento central de autorización RBAC requerido en la evidencia GA7-AA2-EV02.',
-        sourceNodeId: 'node-7',
-      },
-    ],
+    x: 750,
+    y: 130,
+    regionId: 'reg-js-1',
+    linkedOvaId: 'ova-js-1',
+    linkedLessonId: 'les-js-103',
+    tags: ['Tipos de Datos', 'typeof', '==='],
+    updatedAt: '2026-11-24',
+    content:
+      'Los 7 tipos primitivos en Stack vs Objetos en Heap, operador typeof, conversión explícita Number() e igualdad estricta ===.',
+    blocks: BLOCKS_JS_103,
   },
+
+  // Nodos asociados a Región 2 (OVA 2)
   {
-    id: 'node-8',
-    title: 'Evidencia Producto: API REST Documentada + Colección de Pruebas',
-    type: 'activity',
-    researchStatus: 'in_ova',
-    x: 760,
-    y: 675,
-    regionId: 'reg-seguridad',
-    linkedOvaId: 'ova-adso-1',
-    linkedLessonId: 'les-103',
-    dueDate: '2026-11-12',
-    evidenceType: 'Producto',
-    tags: ['Evidencia SENA', 'GA7-220501096', 'Entrega'],
-    updatedAt: '2026-11-09',
-    content: `Entrega del repositorio Git con endpoints protegidos por JWT, especificación OpenAPI y pruebas de integración automatizadas para el proyecto formativo de la Ficha.`,
-  },
-  {
-    id: 'node-9',
-    title: 'Pasarelas OAuth 2.0 / OpenID Connect y Mitigación CSRF',
+    id: 'node-js-201',
+    title: 'Condicionales: if / else, Ternario y switch (Con Diagrama)',
     type: 'markdown',
-    researchStatus: 'to_research',
-    x: 50,
-    y: 675,
-    tags: ['OAuth2', 'OIDC', 'Investigación Futura'],
-    updatedAt: '2026-11-09',
-    content: `### Pendiente por Investigar
-Documentar el flujo *Authorization Code with PKCE* para aplicaciones SPA y móviles que integrarán los aprendices en el último trimestre lectivo.`,
+    researchStatus: 'in_ova',
+    x: 80,
+    y: 480,
+    regionId: 'reg-js-2',
+    linkedOvaId: 'ova-js-2',
+    linkedLessonId: 'les-js-201',
+    tags: ['Condicionales', 'Diagrama', 'OVA 2'],
+    updatedAt: '2026-11-24',
+    content:
+      'Diagrama de flujo de decisión booleana, escaleras else-if, operador ternario, switch/case y ejercicios resueltos.',
+    blocks: BLOCKS_JS_201,
+  },
+  {
+    id: 'node-js-202',
+    title: 'Ciclos Repetitivos: for, while, do...while y Ejercicios Resueltos',
+    type: 'code',
+    codeLanguage: 'javascript',
+    researchStatus: 'in_ova',
+    x: 415,
+    y: 480,
+    regionId: 'reg-js-2',
+    linkedOvaId: 'ova-js-2',
+    linkedLessonId: 'les-js-202',
+    tags: ['Ciclos', 'for/while', 'Resueltos'],
+    updatedAt: '2026-11-24',
+    content:
+      'Esquema visual de las 4 etapas de un ciclo, control con break y continue, acumuladores y ejercicios resueltos paso a paso.',
+    blocks: BLOCKS_JS_202,
+  },
+  {
+    id: 'node-js-203',
+    title: 'Iteración Moderna (for...of) y Excepciones (try / catch)',
+    type: 'code',
+    codeLanguage: 'javascript',
+    researchStatus: 'in_ova',
+    x: 750,
+    y: 480,
+    regionId: 'reg-js-2',
+    linkedOvaId: 'ova-js-2',
+    linkedLessonId: 'les-js-203',
+    tags: ['for...of', 'try/catch', 'Errores'],
+    updatedAt: '2026-11-24',
+    content:
+      'Diagrama de flujo try/catch/finally, recorrido de valores con for...of y ejercicio resuelto de validación JSON.',
+    blocks: BLOCKS_JS_203,
+  },
+
+  // Nodos asociados a Región 3 (OVA 3)
+  {
+    id: 'node-js-301',
+    title: 'Arreglos (Arrays): Indexación y Gráfico Interactivo Animado',
+    type: 'markdown',
+    researchStatus: 'in_ova',
+    x: 80,
+    y: 830,
+    regionId: 'reg-js-3',
+    linkedOvaId: 'ova-js-3',
+    linkedLessonId: 'les-js-301',
+    tags: ['Arrays', 'Interactivo', 'OVA 3'],
+    updatedAt: '2026-11-24',
+    content:
+      'Laboratorio visual animado de arreglos (push, pop, shift, unshift, reverse), acceso por índice [0] y ejercicios.',
+    blocks: BLOCKS_JS_301,
+  },
+  {
+    id: 'node-js-302',
+    title: 'Métodos Funcionales: map, filter, find y reduce (Simulador)',
+    type: 'code',
+    codeLanguage: 'javascript',
+    researchStatus: 'in_ova',
+    x: 415,
+    y: 830,
+    regionId: 'reg-js-3',
+    linkedOvaId: 'ova-js-3',
+    linkedLessonId: 'les-js-302',
+    tags: ['map/filter', 'reduce', 'Animado'],
+    updatedAt: '2026-11-24',
+    content:
+      'Simulador animado de transformación inmutable con map, filter, find y reduce aplicado a calificaciones y colecciones.',
+    blocks: BLOCKS_JS_302,
+  },
+  {
+    id: 'node-js-303',
+    title: 'Objetos en JS: Clave-Valor, Desestructuración y JSON',
+    type: 'markdown',
+    researchStatus: 'in_ova',
+    x: 750,
+    y: 830,
+    regionId: 'reg-js-3',
+    linkedOvaId: 'ova-js-3',
+    linkedLessonId: 'les-js-303',
+    tags: ['Objetos', 'Destructuring', 'JSON'],
+    updatedAt: '2026-11-24',
+    content:
+      'Inspector interactivo animado de objetos clave-valor, notación de punto/corchetes, spread (...) y ejercicios.',
+    blocks: BLOCKS_JS_303,
   },
 ];
 
 export const INITIAL_EDGES: GraphEdge[] = [
   {
-    id: 'edge-1',
-    sourceId: 'node-1',
-    targetId: 'node-2',
-    label: 'se formaliza con',
+    id: 'edge-js-1',
+    sourceId: 'node-js-101',
+    targetId: 'node-js-102',
+    label: 'declara estado con',
   },
   {
-    id: 'edge-2',
-    sourceId: 'node-1',
-    targetId: 'node-3',
-    label: 'evalúa conceptos en',
+    id: 'edge-js-2',
+    sourceId: 'node-js-102',
+    targetId: 'node-js-103',
+    label: 'almacena tipos en',
   },
   {
-    id: 'edge-3',
-    sourceId: 'node-2',
-    targetId: 'node-7',
-    label: 'protege rutas con',
+    id: 'edge-js-3',
+    sourceId: 'node-js-103',
+    targetId: 'node-js-201',
+    label: 'evalúa condiciones en',
   },
   {
-    id: 'edge-4',
-    sourceId: 'node-1',
-    targetId: 'node-4',
-    label: 'persiste entidades en',
+    id: 'edge-js-4',
+    sourceId: 'node-js-201',
+    targetId: 'node-js-202',
+    label: 'itera bloques con',
   },
   {
-    id: 'edge-5',
-    sourceId: 'node-4',
-    targetId: 'node-5',
-    label: 'optimiza lecturas con',
+    id: 'edge-js-5',
+    sourceId: 'node-js-202',
+    targetId: 'node-js-203',
+    label: 'protege ejecución con',
   },
   {
-    id: 'edge-6',
-    sourceId: 'node-4',
-    targetId: 'node-6',
-    label: 'garantiza integridad con',
+    id: 'edge-js-6',
+    sourceId: 'node-js-202',
+    targetId: 'node-js-301',
+    label: 'recorre colecciones',
   },
   {
-    id: 'edge-7',
-    sourceId: 'node-7',
-    targetId: 'node-8',
-    label: 'se integra en evidencia',
+    id: 'edge-js-7',
+    sourceId: 'node-js-301',
+    targetId: 'node-js-302',
+    label: 'transforma datos con',
   },
   {
-    id: 'edge-8',
-    sourceId: 'node-5',
-    targetId: 'node-8',
-    label: 'alimenta consultas de',
-  },
-  {
-    id: 'edge-9',
-    sourceId: 'node-9',
-    targetId: 'node-7',
-    label: 'extiende arquitectura de',
+    id: 'edge-js-8',
+    sourceId: 'node-js-302',
+    targetId: 'node-js-303',
+    label: 'estructura entidades en',
   },
 ];
 
+// ============================================================================
+// LAS 3 OVAS DE JAVASCRIPT COMPLETAS
+// ============================================================================
+
 export const INITIAL_OVAS: OVA[] = [
   {
-    id: 'ova-adso-1',
-    code: 'OVA-ADSO-220501096-01',
-    title: 'Construcción de APIs RESTful Seguras y Contratos OpenAPI',
+    id: 'ova-js-1',
+    code: 'OVA-JS-220501096-01',
+    title: 'JavaScript I: Generalidades, Sintaxis, Tipos de Variables y Tipos de Datos',
     fichaCode: '2874512',
     programName: 'Tecnólogo en Análisis y Desarrollo de Software (ADSO)',
     competence: '220501096 · Desarrollar la solución de software de acuerdo con el diseño y metodologías de desarrollo',
-    learningOutcome: 'RAP 03 · Construir servicios backend aplicando estándares de codificación, validación de datos y seguridad por tokens',
+    learningOutcome: 'RAP 01 · Codificar algoritmos en JavaScript aplicando estándares de sintaxis ECMAScript, ámbito de variables y conversión segura de tipos de datos',
     status: 'published',
     description:
-      'Objeto Virtual de Aprendizaje orientado a que el aprendiz diseñe, codifique y asegure servicios web RESTful para su proyecto formativo, desde la semántica HTTP hasta la protección de rutas mediante JWT.',
-    estimatedHours: 24,
-    updatedAt: '2026-11-09',
-    lessons: [
-      {
-        id: 'les-101',
-        order: 1,
-        title: 'Fundamentos de Arquitectura REST y Semántica del Protocolo HTTP',
-        durationMinutes: 45,
-        summary: 'Comprende los principios de diseño orientado a recursos, verbos HTTP, idempotencia y códigos de respuesta.',
-        linkedNodeIds: ['node-1', 'node-3'],
-        mediaTitle: 'Guía MDN: Métodos de Petición y Códigos de Estado HTTP',
-        mediaUrl: 'https://developer.mozilla.org/es/docs/Web/HTTP/Methods',
-        mediaComment:
-          'Referencia oficial indispensable para verificar qué métodos HTTP son idempotentes y seguros al diseñar la matriz de endpoints de la evidencia GA7.',
-        contentMarkdown: `### 1. ¿Qué define a una API verdaderamente RESTful?
-La transferencia de estado representacional (**REST**) propone modelar un sistema como un conjunto de **recursos** identificables mediante URIs únicas y manipulables a través de representaciones estándar (como JSON), siguiendo el estándar [RFC 9110: HTTP Semantics](https://httpwg.org/specs/rfc9110.html "Estándar oficial IETF que define la semántica formal de métodos como GET, POST, PUT y DELETE y sus garantías de idempotencia.").
-
-### 2. Matriz de Métodos HTTP y Contrato de Idempotencia
-- **GET \`/api/v1/fichas\`**: Obtiene el listado de fichas. Es *seguro* (no altera datos) e *idempotente*.
-- **POST \`/api/v1/evidencias\`**: Registra un nuevo envío de evidencia. **No es idempotente**; debe responder con \`201 Created\`.
-- **PUT \`/api/v1/aprendices/{id}\`**: Reemplaza de forma íntegra el registro del aprendiz. Es *idempotente*.
-- **PATCH \`/api/v1/aprendices/{id}\`**: Modifica únicamente los campos enviados en el cuerpo de la petición.
-- **DELETE \`/api/v1/evidencias/{id}\`**: Elimina el recurso especificado. Es *idempotente*.
-
-### 3. Familias de Códigos de Respuesta Esenciales
-- **200 OK / 201 Created / 204 No Content**: Éxito en la operación solicitada.
-- **400 Bad Request / 401 Unauthorized / 403 Forbidden / 404 Not Found / 422 Unprocessable Content**: Errores originados en la solicitud del cliente.
-- **500 Internal Server Error / 503 Service Unavailable**: Fallos internos en la capa de servidor o base de datos.`,
-        blocks: [
-          {
-            id: 'blk-101-1',
-            type: 'heading',
-            title: '1. ¿Qué define a una API verdaderamente RESTful?',
-            content: '',
-          },
-          {
-            id: 'blk-101-2',
-            type: 'text',
-            content:
-              'La transferencia de estado representacional (**REST**) propone modelar un sistema como un conjunto de **recursos** identificables mediante URIs únicas y manipulables a través de representaciones estándar (como JSON). Puedes consultar la especificación en [RFC 9110: Semántica HTTP](https://httpwg.org/specs/rfc9110.html "Documento normativo del IETF que explica por qué GET, PUT y DELETE son idempotentes mientras que POST no lo es.") o revisar el [video:Resumen Visual de Métodos REST](https://www.youtube.com/watch?v=7YcW25PHnAA "Cápsula audiovisual de 10 minutos que ilustra el ciclo petición-respuesta, cabeceras HTTP y códigos de estado con ejemplos reales.").',
-          },
-          {
-            id: 'blk-101-3',
-            type: 'link',
-            title: 'Guía MDN: Métodos de Petición HTTP e Idempotencia',
-            url: 'https://developer.mozilla.org/es/docs/Web/HTTP/Methods',
-            domainOrSource: 'MDN Web Docs · Mozilla',
-            content: 'Documentación detallada sobre verbos HTTP, seguridad e idempotencia.',
-            relevanceComment:
-              'Lectura obligatoria para la Evidencia AA1-EV01: te permitirá justificar técnicamente cuándo usar PUT vs PATCH y qué códigos 2xx/4xx retornar en cada endpoint del proyecto formativo.',
-          },
-          {
-            id: 'blk-101-4',
-            type: 'video',
-            title: 'Video Explicativo: Diseño de Rutas RESTful, Paginación y Códigos 2xx / 4xx / 5xx',
-            url: 'https://www.youtube.com/watch?v=7YcW25PHnAA',
-            domainOrSource: 'YouTube · Arquitectura Backend ADSO',
-            videoTimestamp: 'Min 03:15 - 11:40',
-            content: 'Demostración práctica de diseño de URIs en plural y manejo de errores semánticos.',
-            relevanceComment:
-              'Presta especial atención entre el minuto 03:15 y 08:20: muestra cómo evitar antipatrones como /crearAprendiz en las rutas y cómo estructurar respuestas 201 Created con la cabecera Location.',
-          },
-          {
-            id: 'blk-101-5',
-            type: 'heading',
-            title: '2. Implementación de Controlador REST en TypeScript / Express',
-            content: '',
-          },
-          {
-            id: 'blk-101-6',
-            type: 'code',
-            codeLanguage: 'typescript',
-            title: 'src/controllers/evidencias.controller.ts',
-            content: `import { Request, Response } from 'express';
-
-// GET /api/v1/evidencias?limit=20&offset=0 (Seguro e Idempotente)
-export async function listarEvidencias(req: Request, res: Response) {
-  const limit = Math.min(Number(req.query.limit) || 20, 100);
-  const offset = Number(req.query.offset) || 0;
-  return res.status(200).json({ data: [], meta: { limit, offset } });
-}
-
-// POST /api/v1/evidencias (No Idempotente -> Retorna 201 Created)
-export async function registrarEvidencia(req: Request, res: Response) {
-  const { fichaCode, evidenceCode, repositoryUrl } = req.body;
-  if (!fichaCode || !evidenceCode || !repositoryUrl) {
-    return res.status(422).json({
-      error: 'Unprocessable Content',
-      message: 'Todos los campos del entregable SENA son obligatorios.',
-    });
-  }
-  const nuevaId = 'ev-' + Date.now();
-  return res
-    .status(201)
-    .location(\`/api/v1/evidencias/\${nuevaId}\`)
-    .json({ id: nuevaId, status: 'submitted' });
-}`,
-            relevanceComment:
-              'Observa cómo el método POST valida la semántica del dominio (retornando 422 si faltan campos) y responde con 201 Created adjuntando la cabecera Location hacia el nuevo recurso.',
-          },
-          {
-            id: 'blk-101-7',
-            type: 'callout',
-            calloutTone: 'tip',
-            title: 'Criterio de Evaluación para tu Proyecto Formativo SENA',
-            content:
-              'En tu matriz de endpoints evita verbos en las rutas (usa sustantivos en plural como `/api/v1/aprendices`) y documenta siempre al menos un código de éxito (`200`/`201`) y dos de error (`401`/`422`).',
-          },
-        ],
-        quiz: [
-          {
-            id: 'q-101-1',
-            question: '¿Cuál de los siguientes métodos HTTP NO es idempotente según el estándar HTTP?',
-            options: ['GET', 'PUT', 'POST', 'DELETE'],
-            correctIndex: 2,
-            explanation: 'POST crea un nuevo recurso o dispara un procesamiento distinto cada vez que se invoca.',
-          },
-          {
-            id: 'q-101-2',
-            question: 'Si un aprendiz intenta acceder a una ruta de administración con un token válido pero sin permisos de instructor, ¿qué código debe retornar la API?',
-            options: ['401 Unauthorized', '403 Forbidden', '404 Not Found', '400 Bad Request'],
-            correctIndex: 1,
-            explanation: '401 indica falta de autenticación; 403 Forbidden indica que el usuario está autenticado pero carece de permisos para ese recurso.',
-          },
-        ],
-        activity: {
-          id: 'act-101',
-          title: 'Mapa de Endpoints y Matriz de Códigos del Proyecto Formativo',
-          evidenceCode: 'GA7-220501096-AA1-EV01',
-          evidenceType: 'Conocimiento',
-          instructions:
-            'Elabora el cuadro de recursos REST de tu proyecto formativo (mínimo 5 entidades principales), indicando método HTTP, ruta URI, payload de entrada y códigos de estado esperados.',
-          dueDate: '2026-11-10',
-          deliverableFormat: 'Enlace a repositorio Git o documento técnico PDF/Markdown',
-        },
-      },
-      {
-        id: 'les-102',
-        order: 2,
-        title: 'Contratos OpenAPI 3.1 y Validación de Esquemas de Entrada (DTO)',
-        durationMinutes: 50,
-        summary: 'Aplica el enfoque API-First documentando contratos interactivos y validando tipos de datos antes de llegar a la base de datos.',
-        linkedNodeIds: ['node-2'],
-        mediaTitle: 'Especificación Oficial OpenAPI 3.1 y Ejemplos YAML',
-        mediaUrl: 'https://swagger.io/specification/',
-        mediaComment:
-          'Guía oficial de referencia para escribir el archivo openapi.yaml de tu proyecto formativo con esquemas reutilizables en components/schemas.',
-        contentMarkdown: `### 1. Enfoque API-First en Equipos de Desarrollo
-Antes de codificar las vistas del frontend o las tablas definitivas, el equipo define el **contrato de interfaz** usando OpenAPI (Swagger). Esto permite que el equipo frontend y backend trabajen en paralelo sin bloqueos.
-
-### 2. Uso de Objetos de Transferencia de Datos (DTO)
-Nunca pases directamente el objeto \`req.body\` hacia el ORM o consulta SQL. Implementa un esquema de validación estricto:
-1. Verifica tipos primitivos (cadenas, números, fechas ISO-8601).
-2. Limita longitudes máximas y formatos (correo electrónico, código de ficha de 7 dígitos).
-3. Rechaza propiedades no declaradas en el contrato devolviendo un error estructurado \`422 Unprocessable Content\`.`,
-        blocks: [
-          {
-            id: 'blk-102-1',
-            type: 'heading',
-            title: '1. Enfoque API-First y Contratos OpenAPI 3.1',
-            content: '',
-          },
-          {
-            id: 'blk-102-2',
-            type: 'text',
-            content:
-              'Antes de codificar las vistas del frontend o las tablas definitivas, el equipo define el **contrato de interfaz** usando OpenAPI. Puedes probar tus contratos en vivo con [Swagger Editor Online](https://editor.swagger.io/ "Herramienta interactiva en el navegador para validar sintaxis YAML de OpenAPI 3.x y previsualizar la documentación de endpoints.") antes de subirlos al repositorio.',
-          },
-          {
-            id: 'blk-102-3',
-            type: 'link',
-            title: 'Especificación Oficial OpenAPI 3.1.0 (Swagger)',
-            url: 'https://swagger.io/specification/',
-            domainOrSource: 'swagger.io · OpenAPI Initiative',
-            content: 'Referencia completa de tipos de datos, respuestas y esquemas.',
-            relevanceComment:
-              'Revisa la sección "Components Object" para aprender a centralizar tus DTOs en #/components/schemas y no repetir definiciones JSON en cada ruta.',
-          },
-          {
-            id: 'blk-102-4',
-            type: 'video',
-            title: 'Taller Práctico: Documentación de API REST con OpenAPI YAML y Validación Zod',
-            url: 'https://www.youtube.com/watch?v=pRS9LRBgjYg',
-            domainOrSource: 'YouTube · Ingeniería de Software SENA',
-            videoTimestamp: 'Min 04:10 - 15:20',
-            content: 'Cómo sincronizar tus esquemas de validación en TypeScript con el contrato OpenAPI.',
-            relevanceComment:
-              'Este video muestra cómo transformar un esquema DTO validado en servidor en documentación interactiva Swagger UI lista para sustentar ante el instructor.',
-          },
-          {
-            id: 'blk-102-5',
-            type: 'code',
-            codeLanguage: 'yaml',
-            title: 'openapi.yaml',
-            content: `openapi: 3.1.0
-info:
-  title: API Gestión de Evidencias SENA
-  version: 1.0.0
-paths:
-  /api/v1/evidencias:
-    post:
-      summary: Registrar entrega de evidencia de aprendiz
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CrearEvidenciaDTO'
-      responses:
-        '201':
-          description: Evidencia registrada exitosamente
-        '422':
-          description: Error de validación en los campos del DTO
-components:
-  schemas:
-    CrearEvidenciaDTO:
-      type: object
-      required: [fichaCode, evidenceCode, repositoryUrl]
-      properties:
-        fichaCode:
-          type: string
-          pattern: '^[0-9]{7}$'
-        evidenceCode:
-          type: string
-          example: GA7-220501096-AA1-EV01
-        repositoryUrl:
-          type: string
-          format: uri`,
-            relevanceComment:
-              'Plantilla base OpenAPI 3.1: nota cómo la expresión regular ^[0-9]{7}$ restringe el código de ficha SENA exactamente a 7 dígitos numéricos.',
-          },
-        ],
-        quiz: [
-          {
-            id: 'q-102-1',
-            question: '¿Cuál es el beneficio principal de validar el payload mediante un DTO en la capa de entrada del controlador?',
-            options: [
-              'Acelerar la velocidad de renderizado CSS en el navegador',
-              'Garantizar que la lógica de negocio y la base de datos reciban únicamente datos íntegros y tipados',
-              'Reemplazar por completo la necesidad de usar llaves primarias en SQL',
-              'Permitir conexiones sin usar protocolo HTTP',
-            ],
-            correctIndex: 1,
-            explanation: 'Los DTOs con validación protegen el dominio contra datos corruptos, campos faltantes o inyecciones inesperadas.',
-          },
-        ],
-      },
-      {
-        id: 'les-103',
-        order: 3,
-        title: 'Seguridad Stateless con JSON Web Tokens (JWT) y Control de Roles',
-        durationMinutes: 60,
-        summary: 'Implementa autenticación basada en tokens firmados, hashing de contraseñas con Argon2/Bcrypt y protección de rutas por rol.',
-        linkedNodeIds: ['node-7', 'node-8'],
-        mediaTitle: 'Guía OWASP: Buenas Prácticas de Autenticación y Manejo de Sesiones',
-        mediaUrl: 'https://cheatsheetseries.owasp.org/',
-        mediaComment:
-          'Listado de verificación de seguridad OWASP para evitar vulnerabilidades frecuentes al almacenar contraseñas y firmar tokens JWT.',
-        contentMarkdown: `### 1. Anatomía de un JSON Web Token (JWT)
-Un JWT consta de tres partes codificadas en Base64Url separadas por puntos (\`Header.Payload.Signature\`):
-- **Header**: Algoritmo de firma (\`HS256\` o \`RS256\`) y tipo de token.
-- **Payload (Claims)**: Identificador del usuario (\`sub\`), rol (\`role\`), fecha de emisión (\`iat\`) y fecha de expiración (\`exp\`).
-- **Signature**: Firma criptográfica que garantiza que el contenido no fue adulterado por el cliente.
-
-### 2. Reglas de Oro de Seguridad Aplicativa
-- **Jamás guardar contraseñas en texto plano**: Utilizar funciones de derivación con *salt* como **Argon2id** o **bcrypt** (factor de costo $\\ge 12$).
-- **Expiración corta**: Configurar \`exp\` entre 15 y 30 minutos para tokens de acceso.
-- **Principio de menor privilegio**: Validar en un middleware intermedio tanto la firma del token como el permiso específico del rol antes de ejecutar acciones sensibles.`,
-        blocks: [
-          {
-            id: 'blk-103-1',
-            type: 'heading',
-            title: '1. Anatomía de un JSON Web Token (JWT) y Control RBAC',
-            content: '',
-          },
-          {
-            id: 'blk-103-2',
-            type: 'text',
-            content:
-              'Un JWT consta de tres segmentos codificados en Base64Url (`Header.Payload.Signature`). Recuerda que el Payload está **firmado pero no cifrado**: puedes inspeccionar cualquier token en [Depurador Interactivo JWT.io](https://jwt.io/ "Herramienta para decodificar el Header y Payload de un JWT y verificar su firma criptográfica HS256/RS256.") para comprobar que nunca debes incluir contraseñas ni datos sensibles dentro de los claims.',
-          },
-          {
-            id: 'blk-103-3',
-            type: 'link',
-            title: 'OWASP Authentication & JWT Cheat Sheet Series',
-            url: 'https://cheatsheetseries.owasp.org/',
-            domainOrSource: 'OWASP Foundation',
-            content: 'Estándares internacionales de seguridad aplicativa para tokens y contraseñas.',
-            relevanceComment:
-              'Consulta este recurso antes de entregar la Evidencia AA2-EV02: explica cómo prevenir robo de tokens por XSS utilizando cookies HttpOnly y tiempos de expiración cortos.',
-          },
-          {
-            id: 'blk-103-4',
-            type: 'video',
-            title: 'Demostración: Hashing con Bcrypt/Argon2 y Middleware de Roles en Express',
-            url: 'https://www.youtube.com/watch?v=mbsmsi7l3r4',
-            domainOrSource: 'YouTube · Seguridad Aplicativa ADSO',
-            videoTimestamp: 'Min 05:00 - 18:10',
-            content: 'Implementación desde cero de login, firma de JWT y protección de endpoints por rol.',
-            relevanceComment:
-              'A partir del minuto 05:00 se codifica el middleware de autorización RBAC que distingue entre el rol "aprendiz" y el rol "instructor", requisito directo de tu entrega.',
-          },
-          {
-            id: 'blk-103-5',
-            type: 'code',
-            codeLanguage: 'typescript',
-            title: 'src/middlewares/requireRole.ts',
-            content: `import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-
-export interface JwtUserPayload {
-  sub: string;
-  role: 'instructor' | 'aprendiz';
-  fichaCode: string;
-}
-
-export function requireRole(allowedRoles: Array<'instructor' | 'aprendiz'>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Token de autenticación requerido' });
-    }
-    try {
-      const token = authHeader.slice(7);
-      const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtUserPayload;
-      if (!allowedRoles.includes(payload.role)) {
-        return res.status(403).json({ error: 'Permisos insuficientes para este rol' });
-      }
-      res.locals.user = payload;
-      return next();
-    } catch {
-      return res.status(401).json({ error: 'Token inválido o expirado' });
-    }
-  };
-}`,
-            relevanceComment:
-              'Middleware reutilizable que separa claramente el error 401 (no autenticado o token vencido) del error 403 (autenticado pero sin el rol requerido).',
-          },
-        ],
-        quiz: [
-          {
-            id: 'q-103-1',
-            question: '¿Por qué NUNCA se debe almacenar información confidencial (como contraseñas o claves privadas) dentro del Payload de un JWT estándar (JWS)?',
-            options: [
-              'Porque el Payload solo acepta números enteros',
-              'Porque el Payload está únicamente codificado en Base64Url (firmado pero no cifrado) y cualquiera que posea el token puede leerlo',
-              'Porque invalida automáticamente el certificado TLS del servidor',
-              'Porque los navegadores bloquean cadenas mayores a 20 caracteres',
-            ],
-            correctIndex: 1,
-            explanation: 'Un JWT firmado (JWS) garantiza autenticidad e integridad, pero su contenido es legible decodificando Base64Url.',
-          },
-        ],
-        activity: {
-          id: 'act-103',
-          title: 'Evidencia de Producto: API REST Protegida con JWT y Suite de Pruebas',
-          evidenceCode: 'GA7-220501096-AA2-EV02',
-          evidenceType: 'Producto',
-          instructions:
-            'Entrega el módulo de autenticación y autorización de tu proyecto formativo con registro de usuarios, login con JWT, middleware de roles y colección de pruebas exportada.',
-          dueDate: '2026-11-12',
-          deliverableFormat: 'URL del repositorio Git + archivo JSON de colección de pruebas',
-        },
-      },
-    ],
-  },
-  {
-    id: 'ova-adso-2',
-    code: 'OVA-ADSO-220501095-02',
-    title: 'Diseño de Bases de Datos Relacionales y Optimización de Consultas SQL',
-    fichaCode: '2874512',
-    programName: 'Tecnólogo en Análisis y Desarrollo de Software (ADSO)',
-    competence: '220501095 · Diseñar la solución de software de acuerdo con procedimientos y requisitos técnicos',
-    learningOutcome: 'RAP 02 · Construir el modelo de datos relacional aplicando formas normales y estrategias de indexación para alto rendimiento',
-    status: 'published',
-    description:
-      'Guía práctica y conceptual para transformar los requerimientos del proyecto formativo en un esquema relacional normalizado en 3FN, con integridad referencial e índices B-Tree optimizados.',
+      'Domina las bases del lenguaje JavaScript moderno: arquitectura del motor de ejecución, reglas de sintaxis, declaración de variables (var, let, const), ámbito de bloque, tipos de datos primitivos vs referencias, ejemplos comentados y ejercicios prácticos por cada tema.',
     estimatedHours: 18,
-    updatedAt: '2026-11-08',
+    updatedAt: '2026-11-24',
     lessons: [
       {
-        id: 'les-201',
+        id: 'les-js-101',
         order: 1,
-        title: 'Modelado Entidad-Relación y Normalización hasta Tercera Forma Normal (3FN)',
-        durationMinutes: 50,
-        summary: 'Elimina anomalías de inserción, actualización y borrado estructurando tablas limpias con integridad referencial.',
-        linkedNodeIds: ['node-4'],
-        mediaTitle: 'Documentación Oficial PostgreSQL: Definición de Datos y Constraints',
-        mediaUrl: 'https://www.postgresql.org/docs/current/ddl.html',
-        mediaComment:
-          'Manual oficial de PostgreSQL sobre llaves primarias, llaves foráneas (ON DELETE RESTRICT/CASCADE) y restricciones CHECK.',
-        contentMarkdown: `### 1. ¿Por qué normalizar el modelo de datos?
-Un esquema sin normalizar almacena datos redundantes en múltiples filas, provocando inconsistencias cuando se actualiza un dato (por ejemplo, el nombre de un programa de formación repetido en miles de matrículas).
-
-### 2. Paso a Paso hacia 3FN
-1. **Primera Forma Normal (1FN)**: Cada columna contiene un único valor atómico; no existen listas separadas por comas dentro de una celda.
-2. **Segunda Forma Normal (2FN)**: Cumple 1FN y todo atributo no primo depende por completo de la llave primaria completa (clave en tablas puente con llave compuesta).
-3. **Tercera Forma Normal (3FN)**: Cumple 2FN y ningún atributo no primo depende transitivamente de otro atributo no primo.`,
-        blocks: [
-          {
-            id: 'blk-201-1',
-            type: 'heading',
-            title: '1. ¿Por qué normalizar hasta Tercera Forma Normal (3FN)?',
-            content: '',
-          },
-          {
-            id: 'blk-201-2',
-            type: 'text',
-            content:
-              'Un esquema sin normalizar almacena datos redundantes en múltiples filas, provocando anomalías de inserción y actualización. Revisa las reglas de integridad referencial en [PostgreSQL DDL Constraints](https://www.postgresql.org/docs/current/ddl-constraints.html "Explica con ejemplos cómo declarar llaves primarias, foráneas, UNIQUE y CHECK en PostgreSQL para blindar la integridad del modelo.") antes de generar el script de tu evidencia.',
-          },
-          {
-            id: 'blk-201-3',
-            type: 'link',
-            title: 'Documentación Oficial PostgreSQL: Data Definition (DDL) y Llaves Foráneas',
-            url: 'https://www.postgresql.org/docs/current/ddl.html',
-            domainOrSource: 'postgresql.org · Documentación Oficial',
-            content: 'Guía completa de creación de tablas, tipos de datos y restricciones relacionales.',
-            relevanceComment:
-              'Imprescindible para la Evidencia GA4-AA1-EV01: muestra la sintaxis estándar de REFERENCES y cómo evitar registros huérfanos en tablas detalle.',
-          },
-          {
-            id: 'blk-201-4',
-            type: 'video',
-            title: 'Caso Práctico: De Tabla Desnormalizada a Modelo Relacional en 3FN',
-            url: 'https://www.youtube.com/watch?v=GFQaEYEc8_8',
-            domainOrSource: 'YouTube · Base de Datos Relacionales',
-            videoTimestamp: 'Min 01:45 - 12:15',
-            content: 'Descomposición paso a paso pasando por 1FN, 2FN y 3FN sin pérdida de información.',
-            relevanceComment:
-              'Observa en el minuto 06:30 cómo se separa la entidad "Fichas" de la tabla "Matrículas" para eliminar la dependencia transitiva del nombre del programa de formación.',
-          },
-          {
-            id: 'blk-201-5',
-            type: 'code',
-            codeLanguage: 'sql',
-            title: 'sql/01_schema_3fn.sql',
-            content: `CREATE TABLE programas_formacion (
-  codigo_programa VARCHAR(16) PRIMARY KEY,
-  nombre_programa VARCHAR(160) NOT NULL UNIQUE
-);
-
-CREATE TABLE fichas_caracterizacion (
-  ficha_codigo CHAR(7) PRIMARY KEY CHECK (ficha_codigo ~ '^[0-9]{7}$'),
-  codigo_programa VARCHAR(16) NOT NULL REFERENCES programas_formacion(codigo_programa),
-  fecha_inicio DATE NOT NULL
-);
-
-CREATE TABLE aprendices (
-  id_aprendiz SERIAL PRIMARY KEY,
-  documento VARCHAR(20) NOT NULL UNIQUE,
-  nombre_completo VARCHAR(120) NOT NULL,
-  ficha_codigo CHAR(7) NOT NULL REFERENCES fichas_caracterizacion(ficha_codigo)
-);`,
-            relevanceComment:
-              'Esquema normalizado en 3FN: el nombre del programa vive únicamente en programas_formacion y se vincula a través de fichas_caracterizacion.',
-          },
-        ],
-        quiz: [
-          {
-            id: 'q-201-1',
-            question: 'En una tabla "Matriculas(id_aprendiz, id_ficha, nombre_programa_ficha)", ¿qué forma normal se incumple principalmente?',
-            options: [
-              'Ninguna, está en 5FN',
-              'Segunda y Tercera Forma Normal por dependencia parcial/transitiva de nombre_programa_ficha respecto a id_ficha',
-              'Solo se incumple el uso de índices B-Tree',
-              'Primera Forma Normal por no usar JSON',
-            ],
-            correctIndex: 1,
-            explanation: 'El nombre del programa depende únicamente de la ficha (no de la combinación aprendiz+ficha), generando redundancia en cada matrícula.',
-          },
-        ],
-        activity: {
-          id: 'act-201',
-          title: 'Evidencia de Desempeño: Script DDL en 3FN y Diagrama Relacional',
-          evidenceCode: 'GA4-220501095-AA1-EV01',
-          evidenceType: 'Desempeño',
-          instructions:
-            'Presenta el diagrama Entidad-Relación y el script SQL DDL (CREATE TABLE con llaves primarias, foráneas y restricciones CHECK/UNIQUE) normalizado en 3FN.',
-          dueDate: '2026-11-08',
-          deliverableFormat: 'Archivo .sql + Diagrama ER en PDF',
-        },
-      },
-      {
-        id: 'les-202',
-        order: 2,
-        title: 'Indexación B-Tree y Lectura de Planes de Ejecución con EXPLAIN',
+        title: 'Generalidades de JavaScript, Motor de Ejecución y Reglas de Sintaxis',
         durationMinutes: 45,
-        summary: 'Identifica cuellos de botella en consultas SQL complejas y diseña índices compuestos eficientes.',
-        linkedNodeIds: ['node-5'],
-        contentMarkdown: `### 1. Cuándo crear un Índice B-Tree
-Los índices aceleran drásticamente las lecturas (\`SELECT ... WHERE / JOIN / ORDER BY\`) pero añaden un costo adicional en cada escritura (\`INSERT / UPDATE / DELETE\`).
-
-### 2. Regla del Prefijo Izquierdo en Índices Compuestos
-Si creas el índice \`CREATE INDEX idx_evidencias_ficha_estado ON evidencias (ficha_codigo, estado);\`:
-- Acelera consultas que filtran por \`ficha_codigo\`.
-- Acelera consultas que filtran por \`ficha_codigo AND estado\`.
-- **No** es óptimo si la consulta filtra únicamente por \`estado\` omitiendo \`ficha_codigo\`.`,
-        blocks: [
-          {
-            id: 'blk-202-1',
-            type: 'heading',
-            title: '1. Índices Compuestos B-Tree y Regla del Prefijo Izquierdo',
-            content: '',
-          },
-          {
-            id: 'blk-202-2',
-            type: 'text',
-            content:
-              'Los índices B-Tree aceleran drásticamente las búsquedas por igualdad y rango (`WHERE`, `JOIN`, `ORDER BY`). Consulta la guía oficial [Uso de EXPLAIN en PostgreSQL](https://www.postgresql.org/docs/current/using-explain.html "Explica cómo interpretar Seq Scan, Index Scan y Bitmap Heap Scan junto con los costos estimados y tiempos reales en milisegundos.") para comparar el rendimiento antes y después de indexar.',
-          },
-          {
-            id: 'blk-202-3',
-            type: 'code',
-            codeLanguage: 'sql',
-            title: 'sql/02_indices_explain.sql',
-            content: `-- 1. Crear índice compuesto siguiendo el orden de filtrado más selectivo
-CREATE INDEX idx_entregas_ficha_fecha
-  ON entregas_evidencias (ficha_codigo, fecha_entrega DESC);
-
--- 2. Verificar que el optimizador utilice Index Scan en lugar de Seq Scan
-EXPLAIN (ANALYZE, BUFFERS)
-SELECT id_entrega, aprendiz_id, estado, fecha_entrega
-FROM entregas_evidencias
-WHERE ficha_codigo = '2874512'
-  AND fecha_entrega >= '2026-11-01';`,
-            relevanceComment:
-              'Al filtrar primero por ficha_codigo (prefijo izquierdo del índice) y luego por rango de fecha_entrega, PostgreSQL resuelve la consulta mediante un Index Scan directo.',
-          },
-        ],
+        summary: 'Comprende cómo funciona JavaScript en el navegador y en Node.js, sus reglas léxicas, expresiones, sentencias y modo estricto.',
+        linkedNodeIds: ['node-js-101'],
+        contentMarkdown: '',
+        blocks: BLOCKS_JS_101,
         quiz: [
           {
-            id: 'q-202-1',
-            question: 'Dado un índice compuesto sobre las columnas (ficha_codigo, fecha_entrega), ¿cuál consulta aprovecha directamente el árbol del índice?',
+            id: 'q-js101-1',
+            question: '¿Cuál es el propósito de incluir la directiva "use strict"; al inicio de un archivo o función en JavaScript?',
             options: [
-              'SELECT * FROM entregas WHERE ficha_codigo = \'2874512\' AND fecha_entrega >= \'2026-11-01\';',
-              'SELECT * FROM entregas WHERE LOWER(ficha_codigo) = \'2874512\';',
-              'SELECT * FROM entregas;',
-              'SELECT * FROM entregas WHERE comentario LIKE \'%pendiente%\';',
+              'Activar el modo estricto de ECMAScript para impedir el uso de variables no declaradas y capturar errores silenciosos',
+              'Desactivar todas las funciones matemáticas del navegador',
+              'Obligar a que el código solo funcione sin conexión a internet',
             ],
             correctIndex: 0,
-            explanation: 'Filtra exactamente por el prefijo izquierdo del índice compuesto sin envolver la columna en funciones que inhabiliten el índice.',
+            explanation: 'El modo estricto convierte malas prácticas silenciosas (como asignar a una variable nunca declarada) en errores explícitos.',
+          },
+        ],
+        activity: {
+          id: 'act-js101',
+          title: 'Taller Práctico Tema 1: Depuración de Sintaxis y Expresiones en JS',
+          evidenceCode: 'GA7-220501096-JS1-EV01',
+          evidenceType: 'Conocimiento',
+          instructions:
+            'Resuelve los ejercicios de corrección léxica, expresiones aritméticas y modo estricto incluidos en la Lección 1.',
+          dueDate: '2026-11-28',
+          deliverableFormat: 'Archivo .js o enlace a repositorio GitHub',
+        },
+      },
+      {
+        id: 'les-js-102',
+        order: 2,
+        title: 'Declaración y Tipos de Variables (var, let, const) y Ámbito de Bloque',
+        durationMinutes: 50,
+        summary: 'Diferencia con precisión el ámbito de función vs ámbito de bloque, Hoisting, Temporal Dead Zone y cuándo usar const o let.',
+        linkedNodeIds: ['node-js-102'],
+        contentMarkdown: '',
+        blocks: BLOCKS_JS_102,
+        quiz: [
+          {
+            id: 'q-js102-1',
+            question: '¿Qué ocurre si declaras un objeto con const (ej. const usuario = { activo: false }) e intentas modificar usuario.activo = true?',
+            options: [
+              'Es completamente válido porque const protege la referencia de la variable, pero permite mutar las propiedades internas del objeto',
+              'Se formatea automáticamente el disco duro',
+              'Borra todas las demás variables del archivo',
+            ],
+            correctIndex: 0,
+            explanation: 'const impide reasignar la variable (usuario = otroObjeto), pero las propiedades internas de un objeto o arreglo sí pueden modificarse.',
+          },
+        ],
+      },
+      {
+        id: 'les-js-103',
+        order: 3,
+        title: 'Tipos de Datos Primitivos y de Referencia, typeof y Conversión de Tipos',
+        durationMinutes: 55,
+        summary: 'Identifica los 7 tipos primitivos y los tipos de referencia, evita trampas de coerción implícita y aplica igualdad estricta (===).',
+        linkedNodeIds: ['node-js-103'],
+        contentMarkdown: '',
+        blocks: BLOCKS_JS_103,
+        quiz: [
+          {
+            id: 'q-js103-1',
+            question: '¿Qué valor y tipo retorna la expresión Number("45") + 10 frente a "45" + 10 en JavaScript?',
+            options: [
+              'Number("45") + 10 retorna el número 55, mientras que "45" + 10 concatena y retorna el string "4510"',
+              'Ambas retornan undefined',
+              'Ambas lanzan un SyntaxError',
+            ],
+            correctIndex: 0,
+            explanation: 'El operador + concatena si cualquiera de los operandos es un string; Number("45") convierte explícitamente la cadena a número antes de sumar.',
           },
         ],
       },
     ],
   },
   {
-    id: 'ova-redes-1',
-    code: 'OVA-RED-220501104-01',
-    title: 'Segmentación VLAN, Enrutamiento Inter-VLAN y Endurecimiento de Switches',
-    fichaCode: '2901845',
-    programName: 'Tecnólogo en Gestión de Redes de Datos',
-    competence: '220501104 · Implementar la infraestructura de red de acuerdo con el diseño y estándares técnicos',
-    learningOutcome: 'RAP 01 · Configurar conmutación segura, enlaces troncales IEEE 802.1Q y control de tráfico entre subredes corporativas',
+    id: 'ova-js-2',
+    code: 'OVA-JS-220501096-02',
+    title: 'JavaScript II: Estructuras de Control, Diagramas de Flujo y Ejercicios Resueltos',
+    fichaCode: '2874512',
+    programName: 'Tecnólogo en Análisis y Desarrollo de Software (ADSO)',
+    competence: '220501096 · Desarrollar la solución de software de acuerdo con el diseño y metodologías de desarrollo',
+    learningOutcome: 'RAP 02 · Implementar lógica algorítmica mediante estructuras condicionales, ciclos repetitivos y manejo de excepciones en JavaScript',
     status: 'published',
     description:
-      'Material de estudio y laboratorio paso a paso para segmentar dominios de broadcast en redes empresariales, configurar enlaces troncales 802.1Q y mitigar ataques de capa 2.',
+      'Aprende a controlar el flujo de ejecución en JavaScript mediante explicaciones visuales con diagramas de flujo ilustrados, estructuras condicionales (if/else, switch, ternario), bucles (for, while, do...while, for...of), captura de errores (try/catch) y ejercicios resueltos paso a paso.',
     estimatedHours: 20,
-    updatedAt: '2026-11-09',
+    updatedAt: '2026-11-24',
     lessons: [
       {
-        id: 'les-301',
+        id: 'les-js-201',
         order: 1,
-        title: 'Segmentación Lógica con VLANs y Enlaces Troncales IEEE 802.1Q',
-        durationMinutes: 55,
-        summary: 'Diseña topologías segmentadas por departamento, voz y administración utilizando etiquetado de tramas 802.1Q.',
-        linkedNodeIds: [],
-        contentMarkdown: `### 1. Dominios de Broadcast y Segmentación Capa 2
-Una **VLAN (Virtual Local Area Network)** divide un switch físico en múltiples switches lógicos independientes, conteniendo el tráfico de broadcast y mejorando la seguridad entre áreas (ej. VLAN 10 Académica, VLAN 20 Instructores, VLAN 99 Gestión).
-
-### 2. Etiquetado IEEE 802.1Q y VLAN Nativa
-Cuando una trama atraviesa un enlace **Trunk** entre dos switches, el protocolo 802.1Q inserta una etiqueta de 4 bytes en la cabecera Ethernet con el **VLAN ID (12 bits, hasta 4094 VLANs)**.
-- Cambia siempre la **VLAN Nativa** por defecto (VLAN 1) a una VLAN dedicada sin puertos de usuario activos para prevenir ataques de *VLAN Hopping*.`,
-        blocks: [
-          {
-            id: 'blk-301-1',
-            type: 'heading',
-            title: '1. Dominios de Broadcast y Etiquetado IEEE 802.1Q',
-            content: '',
-          },
-          {
-            id: 'blk-301-2',
-            type: 'text',
-            content:
-              'Una **VLAN** divide un switch físico en múltiples dominios de broadcast lógicos independientes (ej. VLAN 10 Académica, VLAN 20 Instructores, VLAN 99 Gestión). Cuando una trama cruza un enlace troncal, el estándar **IEEE 802.1Q** inserta una etiqueta de 4 bytes identificando la VLAN de origen.',
-          },
-          {
-            id: 'blk-301-3',
-            type: 'video',
-            title: 'Laboratorio Guiado: Configuración de Trunk 802.1Q y Router-on-a-Stick',
-            url: 'https://www.youtube.com/watch?v=1XH2s2s9L8I',
-            domainOrSource: 'YouTube · Laboratorio Cisco SENA',
-            videoTimestamp: 'Min 02:10 - 14:00',
-            content: 'Configuración paso a paso en CLI de switches Capa 2 y subinterfaces de router.',
-            relevanceComment:
-              'Observa en el minuto 07:40 cómo se cambia la VLAN nativa a la VLAN 99 en ambos extremos del enlace troncal para evitar alertas de Native VLAN Mismatch en CDP/STP.',
-          },
-          {
-            id: 'blk-301-4',
-            type: 'code',
-            codeLanguage: 'cisco',
-            title: 'switch-core-sena.ios',
-            content: `! 1. Creación de VLANs corporativas SENA
-vlan 10
- name ACADEMICA_APRENDICES
-vlan 20
- name INSTRUCTORES
-vlan 99
- name GESTION_Y_NATIVA
-
-! 2. Configuración de Enlace Troncal 802.1Q endurecido
-interface GigabitEthernet0/1
- description TRUNK_HACIA_ROUTER_PRINCIPAL
- switchport mode trunk
- switchport trunk native vlan 99
- switchport trunk allowed vlan 10,20,99
- switchport nonegotiate`,
-            relevanceComment:
-              'El comando switchport nonegotiate desactiva tramas DTP en el puerto troncal, mitigando ataques de negociación automática de troncales (VLAN Hopping).',
-          },
-        ],
+        title: 'Estructuras Condicionales: if / else if / else, Ternario y switch',
+        durationMinutes: 50,
+        summary: 'Visualiza con diagramas de flujo cómo se ramifica la lógica de negocio y estudia ejercicios resueltos de clasificación y validación.',
+        linkedNodeIds: ['node-js-201'],
+        contentMarkdown: '',
+        blocks: BLOCKS_JS_201,
         quiz: [
           {
-            id: 'q-301-1',
-            question: '¿Qué estándar IEEE define el mecanismo de etiquetado de tramas Ethernet para enlaces troncales entre switches?',
-            options: ['IEEE 802.11ax', 'IEEE 802.1Q', 'IEEE 802.3af', 'IEEE 802.1X'],
-            correctIndex: 1,
-            explanation: 'IEEE 802.1Q especifica el formato de etiqueta VLAN en tramas Ethernet sobre enlaces troncales.',
+            id: 'q-js201-1',
+            question: 'En una estructura switch(rol), ¿qué sucede si olvidas colocar la instrucción break o return al final de un bloque case coincidente?',
+            options: [
+              'Ocurre "fall-through": JavaScript continúa ejecutando las instrucciones del siguiente case hacia abajo',
+              'El navegador cierra la pestaña automáticamente',
+              'El switch se convierte en un ciclo infinito',
+            ],
+            correctIndex: 0,
+            explanation: 'Sin break ni return, la ejecución cae (fall-through) hacia los casos subsiguientes hasta encontrar un break o terminar el switch.',
+          },
+        ],
+      },
+      {
+        id: 'les-js-202',
+        order: 2,
+        title: 'Estructuras Repetitivas: Ciclos for, while, do...while, break y continue',
+        durationMinutes: 55,
+        summary: 'Domina las 4 etapas de todo ciclo repetitivo con esquemas gráficos, contadores, acumuladores y ejercicios resueltos.',
+        linkedNodeIds: ['node-js-202'],
+        contentMarkdown: '',
+        blocks: BLOCKS_JS_202,
+        quiz: [
+          {
+            id: 'q-js202-1',
+            question: '¿Cuál es la diferencia exacta entre las instrucciones continue y break dentro de un ciclo for?',
+            options: [
+              'continue salta únicamente a la siguiente iteración del ciclo, mientras que break detiene y sale del ciclo por completo',
+              'Ambas hacen exactamente lo mismo',
+              'continue reinicia el computador y break borra el arreglo',
+            ],
+            correctIndex: 0,
+            explanation: 'continue omite el resto del cuerpo en la iteración actual y pasa al incremento (i++); break finaliza el bucle inmediatamente.',
           },
         ],
         activity: {
-          id: 'act-301',
-          title: 'Laboratorio Packet Tracer: Topología Multi-VLAN y Router-on-a-Stick',
-          evidenceCode: 'GA3-220501104-AA1-EV02',
+          id: 'act-js202',
+          title: 'Evidencia de Desempeño: Algoritmos de Control de Flujo y Ciclos en JS',
+          evidenceCode: 'GA7-220501096-JS2-EV01',
+          evidenceType: 'Desempeño',
+          instructions:
+            'Implementa y documenta 5 algoritmos en JavaScript que combinen condicionales, switch y ciclos for/while siguiendo la guía de ejercicios resueltos.',
+          dueDate: '2026-11-30',
+          deliverableFormat: 'Repositorio Git con scripts .js ejecutables',
+        },
+      },
+      {
+        id: 'les-js-203',
+        order: 3,
+        title: 'Iteración Moderna (for...of, for...in) y Manejo de Excepciones (try / catch)',
+        durationMinutes: 50,
+        summary: 'Recorre colecciones de forma declarativa y blinda tus programas frente a errores en tiempo de ejecución con try, catch y finally.',
+        linkedNodeIds: ['node-js-203'],
+        contentMarkdown: '',
+        blocks: BLOCKS_JS_203,
+        quiz: [
+          {
+            id: 'q-js203-1',
+            question: '¿Cuándo se ejecuta el bloque finally dentro de una estructura try / catch / finally?',
+            options: [
+              'Siempre, tanto si el bloque try terminó con éxito como si ocurrió una excepción capturada por catch',
+              'Únicamente cuando hay un error de sintaxis',
+              'Solo los días lunes',
+            ],
+            correctIndex: 0,
+            explanation: 'El bloque finally está garantizado para ejecutarse siempre al finalizar try/catch, ideal para liberar recursos o cerrar indicadores de carga.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'ova-js-3',
+    code: 'OVA-JS-220501096-03',
+    title: 'JavaScript III: Arreglos y Objetos con Gráficos Interactivos y Microanimaciones',
+    fichaCode: '2874512',
+    programName: 'Tecnólogo en Análisis y Desarrollo de Software (ADSO)',
+    competence: '220501096 · Desarrollar la solución de software de acuerdo con el diseño y metodologías de desarrollo',
+    learningOutcome: 'RAP 03 · Manipular colecciones de datos mediante arreglos, programación funcional (map, filter, reduce) y objetos clave-valor en JavaScript',
+    status: 'published',
+    description:
+      'Explora visualmente cómo funcionan los Arreglos y los Objetos en JavaScript a través de laboratorios gráficos interactivos con microanimaciones en tiempo real, métodos funcionales (.map, .filter, .find, .reduce), desestructuración, operador Spread, JSON y ejercicios aplicados.',
+    estimatedHours: 24,
+    updatedAt: '2026-11-24',
+    lessons: [
+      {
+        id: 'les-js-301',
+        order: 1,
+        title: 'Arreglos (Arrays) en JavaScript: Indexación, Mutación y Laboratorio Animado',
+        durationMinutes: 50,
+        summary: 'Experimenta en el gráfico interactivo cómo se indexan los arreglos en base 0 y cómo operan push, pop, shift, unshift y reverse.',
+        linkedNodeIds: ['node-js-301'],
+        contentMarkdown: '',
+        blocks: BLOCKS_JS_301,
+        quiz: [
+          {
+            id: 'q-js301-1',
+            question: '¿Qué método de un arreglo en JavaScript inserta un nuevo elemento al INICIO (índice 0) desplazando los demás elementos?',
+            options: ['.unshift()', '.push()', '.pop()', '.shift()'],
+            correctIndex: 0,
+            explanation: '.unshift(elemento) inserta al principio del arreglo (índice 0), mientras que .push(elemento) agrega al final.',
+          },
+        ],
+      },
+      {
+        id: 'les-js-302',
+        order: 2,
+        title: 'Métodos Funcionales de Arreglos: map, filter, find y reduce',
+        durationMinutes: 60,
+        summary: 'Domina la transformación inmutable de colecciones de datos utilizando el simulador visual animado de pipelines funcionales.',
+        linkedNodeIds: ['node-js-302'],
+        contentMarkdown: '',
+        blocks: BLOCKS_JS_302,
+        quiz: [
+          {
+            id: 'q-js302-1',
+            question: 'Si tienes un arreglo de 10 aprendices y quieres obtener un NUEVO arreglo únicamente con aquellos cuya nota sea >= 70, ¿qué método debes usar?',
+            options: ['.filter()', '.map()', '.find()', '.forEach()'],
+            correctIndex: 0,
+            explanation: '.filter() evalúa una condición booleana sobre cada elemento y retorna un nuevo arreglo solo con los elementos que cumplieron la condición.',
+          },
+        ],
+      },
+      {
+        id: 'les-js-303',
+        order: 3,
+        title: 'Objetos en JavaScript: Propiedades Clave-Valor, Desestructuración y JSON',
+        durationMinutes: 55,
+        summary: 'Modela entidades complejas mediante objetos literales, desestructuración, operador Spread (...) e inspección interactiva clave-valor.',
+        linkedNodeIds: ['node-js-303'],
+        contentMarkdown: '',
+        blocks: BLOCKS_JS_303,
+        quiz: [
+          {
+            id: 'q-js303-1',
+            question: '¿Qué retorna el método estático Object.keys(aprendiz) al aplicarlo sobre un objeto literal en JavaScript?',
+            options: [
+              'Un arreglo de strings con los nombres de todas las propiedades (claves) propias enumerables del objeto',
+              'Un único número con la cantidad de letras del objeto',
+              'Borra todas las claves del objeto',
+            ],
+            correctIndex: 0,
+            explanation: 'Object.keys(obj) devuelve un Array con las claves del objeto, permitiendo iterarlas o transformarlas con métodos de arreglos.',
+          },
+        ],
+        activity: {
+          id: 'act-js303',
+          title: 'Evidencia de Producto: Gestor de Catálogo con Arreglos de Objetos en JS',
+          evidenceCode: 'GA7-220501096-JS3-EV02',
           evidenceType: 'Producto',
           instructions:
-            'Configura tres VLANs (Datos, Voz y Gestión), enlaces troncales 802.1Q con cambio de VLAN nativa y subinterfaces 802.1Q en el router principal.',
-          dueDate: '2026-11-14',
-          deliverableFormat: 'Archivo de topología .pkt + memoria técnica de direccionamiento IP',
+            'Construye un módulo en JavaScript que gestione un arreglo de objetos (inserción, filtrado con .filter(), transformación con .map(), cálculo de totales con .reduce() y exportación JSON).',
+          dueDate: '2026-12-04',
+          deliverableFormat: 'Repositorio GitHub + archivo .js documentado',
         },
       },
     ],
@@ -1132,42 +1211,21 @@ export const INITIAL_LEARNERS: Learner[] = [
     fichaCode: '2874512',
     programName: 'Tecnólogo en Análisis y Desarrollo de Software (ADSO)',
     progressByOva: {
-      'ova-adso-1': {
-        ovaId: 'ova-adso-1',
-        completedLessonIds: ['les-101', 'les-102'],
-        quizScores: { 'les-101': 100, 'les-102': 100 },
+      'ova-js-1': {
+        ovaId: 'ova-js-1',
+        completedLessonIds: ['les-js-101', 'les-js-102'],
+        quizScores: { 'les-js-101': 100, 'les-js-102': 100 },
         submissions: {
-          'les-101': {
-            lessonId: 'les-101',
-            activityId: 'act-101',
+          'les-js-101': {
+            lessonId: 'les-js-101',
+            activityId: 'act-js101',
             status: 'submitted',
-            submittedAt: '2026-11-08',
-            deliveryLinkOrNote: 'https://github.com/vrojas-sena/adso-api-contratos/blob/main/MATRIZ_ENDPOINTS.md',
-            score: 95,
-          },
-          'les-103': {
-            lessonId: 'les-103',
-            activityId: 'act-103',
-            status: 'pending',
+            submittedAt: '2026-11-24',
+            deliveryLinkOrNote: 'https://github.com/vrojas-sena/js-fundamentos-sena',
+            score: 98,
           },
         },
-        lastAccessedAt: '2026-11-09 07:45',
-      },
-      'ova-adso-2': {
-        ovaId: 'ova-adso-2',
-        completedLessonIds: ['les-201', 'les-202'],
-        quizScores: { 'les-201': 100, 'les-202': 100 },
-        submissions: {
-          'les-201': {
-            lessonId: 'les-201',
-            activityId: 'act-201',
-            status: 'submitted',
-            submittedAt: '2026-11-07',
-            deliveryLinkOrNote: 'https://github.com/vrojas-sena/adso-db-3fn/tree/main/sql',
-            score: 100,
-          },
-        },
-        lastAccessedAt: '2026-11-08 18:20',
+        lastAccessedAt: '2026-11-24 14:30',
       },
     },
   },
@@ -1179,39 +1237,7 @@ export const INITIAL_LEARNERS: Learner[] = [
     phone: '573108451290',
     fichaCode: '2874512',
     programName: 'Tecnólogo en Análisis y Desarrollo de Software (ADSO)',
-    progressByOva: {
-      'ova-adso-1': {
-        ovaId: 'ova-adso-1',
-        completedLessonIds: ['les-101'],
-        quizScores: { 'les-101': 50 },
-        submissions: {
-          'les-101': {
-            lessonId: 'les-101',
-            activityId: 'act-101',
-            status: 'pending',
-          },
-          'les-103': {
-            lessonId: 'les-103',
-            activityId: 'act-103',
-            status: 'pending',
-          },
-        },
-        lastAccessedAt: '2026-11-07 14:10',
-      },
-      'ova-adso-2': {
-        ovaId: 'ova-adso-2',
-        completedLessonIds: [],
-        quizScores: {},
-        submissions: {
-          'les-201': {
-            lessonId: 'les-201',
-            activityId: 'act-201',
-            status: 'late',
-          },
-        },
-        lastAccessedAt: '2026-11-05 11:30',
-      },
-    },
+    progressByOva: {},
   },
   {
     id: 'apr-3',
@@ -1221,126 +1247,19 @@ export const INITIAL_LEARNERS: Learner[] = [
     phone: '573214908821',
     fichaCode: '2874512',
     programName: 'Tecnólogo en Análisis y Desarrollo de Software (ADSO)',
-    progressByOva: {
-      'ova-adso-1': {
-        ovaId: 'ova-adso-1',
-        completedLessonIds: ['les-101', 'les-102', 'les-103'],
-        quizScores: { 'les-101': 100, 'les-102': 100, 'les-103': 100 },
-        submissions: {
-          'les-101': {
-            lessonId: 'les-101',
-            activityId: 'act-101',
-            status: 'submitted',
-            submittedAt: '2026-11-08',
-            deliveryLinkOrNote: 'https://github.com/lpineda-adso/api-spec-sena',
-            score: 100,
-          },
-          'les-103': {
-            lessonId: 'les-103',
-            activityId: 'act-103',
-            status: 'submitted',
-            submittedAt: '2026-11-09',
-            deliveryLinkOrNote: 'https://github.com/lpineda-adso/jwt-auth-module',
-            score: 98,
-          },
-        },
-        lastAccessedAt: '2026-11-09 08:10',
-      },
-      'ova-adso-2': {
-        ovaId: 'ova-adso-2',
-        completedLessonIds: ['les-201'],
-        quizScores: { 'les-201': 100 },
-        submissions: {
-          'les-201': {
-            lessonId: 'les-201',
-            activityId: 'act-201',
-            status: 'submitted',
-            submittedAt: '2026-11-08',
-            deliveryLinkOrNote: 'https://github.com/lpineda-adso/modelo-relacional-3fn',
-            score: 92,
-          },
-        },
-        lastAccessedAt: '2026-11-08 16:00',
-      },
-    },
-  },
-  {
-    id: 'apr-4',
-    documentNumber: '1024598103',
-    name: 'Juan David Morales Pardo',
-    email: 'jdmorales@soy.sena.edu.co',
-    phone: '573157723410',
-    fichaCode: '2874512',
-    programName: 'Tecnólogo en Análisis y Desarrollo de Software (ADSO)',
-    progressByOva: {
-      'ova-adso-1': {
-        ovaId: 'ova-adso-1',
-        completedLessonIds: ['les-101'],
-        quizScores: { 'les-101': 100 },
-        submissions: {
-          'les-101': {
-            lessonId: 'les-101',
-            activityId: 'act-101',
-            status: 'pending',
-          },
-          'les-103': {
-            lessonId: 'les-103',
-            activityId: 'act-103',
-            status: 'pending',
-          },
-        },
-        lastAccessedAt: '2026-11-08 09:15',
-      },
-      'ova-adso-2': {
-        ovaId: 'ova-adso-2',
-        completedLessonIds: ['les-201'],
-        quizScores: { 'les-201': 100 },
-        submissions: {
-          'les-201': {
-            lessonId: 'les-201',
-            activityId: 'act-201',
-            status: 'late',
-          },
-        },
-        lastAccessedAt: '2026-11-06 19:40',
-      },
-    },
-  },
-  {
-    id: 'apr-5',
-    documentNumber: '1014290855',
-    name: 'Camila Andrea Vargas Soto',
-    email: 'cavargas@soy.sena.edu.co',
-    phone: '573006129874',
-    fichaCode: '2901845',
-    programName: 'Tecnólogo en Gestión de Redes de Datos',
-    progressByOva: {
-      'ova-redes-1': {
-        ovaId: 'ova-redes-1',
-        completedLessonIds: ['les-301'],
-        quizScores: { 'les-301': 100 },
-        submissions: {
-          'les-301': {
-            lessonId: 'les-301',
-            activityId: 'act-301',
-            status: 'pending',
-          },
-        },
-        lastAccessedAt: '2026-11-09 07:30',
-      },
-    },
+    progressByOva: {},
   },
 ];
 
 export const INITIAL_REMINDER_TEMPLATES: ReminderTemplate[] = [
   {
     id: 'tpl-wa-upcoming',
-    name: 'Recordatorio Preventivo WhatsApp (Evidencia Próxima)',
+    name: 'Recordatorio Preventivo WhatsApp (Evidencia JavaScript Próxima)',
     channel: 'whatsapp',
     urgency: 'upcoming',
-    subject: 'Recordatorio de Evidencia SENA — Ficha {{ficha}}',
+    subject: 'Recordatorio de Evidencia JavaScript — Ficha {{ficha}}',
     bodyTemplate:
-      'Hola {{aprendiz}}, cordial saludo desde formación SENA (Ficha {{ficha}}). Te recuerdo que la evidencia "{{evidencia}}" del OVA "{{ova}}" tiene fecha límite de entrega el {{fecha_limite}}. Actualmente tu avance en este OVA es del {{progreso}}%. Puedes consultar la guía de estudio y registrar tu entrega en el portal de aprendices. ¡Muchos éxitos!',
+      'Hola {{aprendiz}}, cordial saludo desde formación SENA (Ficha {{ficha}}). Te recuerdo que la evidencia "{{evidencia}}" del OVA "{{ova}}" tiene fecha límite de entrega el {{fecha_limite}}. ¡Muchos éxitos con tus ejercicios de JavaScript!',
   },
   {
     id: 'tpl-wa-overdue',
@@ -1349,7 +1268,7 @@ export const INITIAL_REMINDER_TEMPLATES: ReminderTemplate[] = [
     urgency: 'overdue',
     subject: 'Evidencia Pendiente de Entrega — Ficha {{ficha}}',
     bodyTemplate:
-      'Hola {{aprendiz}} (Ficha {{ficha}}). Notamos que la evidencia "{{evidencia}}" correspondiente al OVA "{{ova}}" venció el {{fecha_limite}} y aún figura pendiente de envío. Tu avance actual es del {{progreso}}%. Por favor realiza el cargue lo antes posible o escríbeme si presentaste algún inconveniente técnico.',
+      'Hola {{aprendiz}} (Ficha {{ficha}}). Notamos que la evidencia "{{evidencia}}" correspondiente al OVA "{{ova}}" figura pendiente de envío. Por favor registra tu entrega en el portal.',
   },
   {
     id: 'tpl-mail-formal',
@@ -1359,17 +1278,13 @@ export const INITIAL_REMINDER_TEMPLATES: ReminderTemplate[] = [
     subject: '[SENA Ficha {{ficha}}] Recordatorio de Entrega: {{evidencia}}',
     bodyTemplate: `Estimado(a) aprendiz {{aprendiz}},
 
-Recibe un cordial saludo. A través de este mensaje te recordamos el compromiso académico correspondiente al Objeto Virtual de Aprendizaje "{{ova}}":
+Te recordamos el compromiso académico correspondiente al Objeto Virtual de Aprendizaje "{{ova}}":
+• Ficha: {{ficha}}
+• Evidencia: {{evidencia}}
+• Fecha límite: {{fecha_limite}}
 
-• Ficha de Caracterización: {{ficha}}
-• Evidencia Requerida: {{evidencia}}
-• Fecha Límite Programada: {{fecha_limite}}
-• Progreso Individual Registrado: {{progreso}}%
-
-Recuerda que desde la Vista Pública del Aprendiz en NexoOVA Studio puedes descargar la Guía de Estudio en PDF, repasar las lecciones y registrar el enlace de tu entrega.
-
-Atentamente,
-Instructor Técnico SENA`,
+Cordialmente,
+Instructor SENA`,
   },
 ];
 
@@ -1379,10 +1294,11 @@ export const INITIAL_SENT_REMINDERS: SentReminderLog[] = [
     learnerId: 'apr-2',
     learnerName: 'Mateo Hernández Quiroga',
     fichaCode: '2874512',
-    ovaTitle: 'Diseño de Bases de Datos Relacionales y Optimización de Consultas SQL',
-    activityTitle: 'GA4-220501095-AA1-EV01 · Script DDL en 3FN y Diagrama Relacional',
+    ovaTitle: 'JavaScript I: Generalidades, Sintaxis, Tipos de Variables y Tipos de Datos',
+    activityTitle: 'Taller Práctico Tema 1: Depuración de Sintaxis y Expresiones en JS',
     channel: 'whatsapp',
-    sentAt: '2026-11-08 17:15',
-    messagePreview: 'Hola Mateo Hernández Quiroga (Ficha 2874512). Notamos que la evidencia "GA4-220501095-AA1-EV01" venció el 2026-11-08...',
+    sentAt: '2026-11-24 09:15',
+    messagePreview:
+      'Hola Mateo Hernández Quiroga, te recuerdo que la evidencia GA7-220501096-JS1-EV01 vence el 2026-11-28...',
   },
 ];

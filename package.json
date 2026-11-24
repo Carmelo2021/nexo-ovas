@@ -8,6 +8,9 @@
     "build": "vite build",
     "preview": "vite preview --host=0.0.0.0",
     "start": "vite preview --host=0.0.0.0",
+    "mobile:init": "npx @capacitor/cli add android",
+    "mobile:sync": "vite build && npx @capacitor/cli sync android",
+    "mobile:apk": "vite build && npx @capacitor/cli sync android && cd android && ./gradlew assembleDebug",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
   },
