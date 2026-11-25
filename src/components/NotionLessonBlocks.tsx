@@ -322,9 +322,9 @@ export const DiagramBlockView: React.FC<{
   const kind: DiagramKind = block.diagramKind ?? 'if_else_flow';
 
   return (
-    <div className="my-3 rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
+    <div className="my-3 rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xs min-w-0 max-w-full">
       {/* Header Bar */}
-      <div className="px-4 py-2.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
+      <div className="px-3.5 py-2.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2 min-w-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <GitBranch className="w-4 h-4 text-amber-400 shrink-0" />
           {editable && onUpdateBlock ? (
@@ -333,10 +333,10 @@ export const DiagramBlockView: React.FC<{
               value={block.title ?? ''}
               onChange={(e) => onUpdateBlock({ title: e.target.value })}
               placeholder="Título del gráfico o esquema visual..."
-              className="flex-1 bg-slate-800/90 text-white text-xs font-bold px-2.5 py-1 rounded border border-slate-700 focus:outline-none focus:border-amber-400"
+              className="flex-1 min-w-0 bg-slate-800/90 text-white text-xs font-bold px-2.5 py-1 rounded border border-slate-700 focus:outline-none focus:border-amber-400"
             />
           ) : (
-            <span className="text-xs font-bold truncate">
+            <span className="text-xs font-bold break-words">
               {block.title || 'Esquema Visual Explicativo'}
             </span>
           )}
@@ -348,7 +348,7 @@ export const DiagramBlockView: React.FC<{
             onChange={(e) =>
               onUpdateBlock({ diagramKind: e.target.value as DiagramKind })
             }
-            className="px-2 py-1 text-[11px] bg-slate-800 text-amber-300 border border-slate-700 rounded font-mono"
+            className="max-w-full px-2 py-1 text-[11px] bg-slate-800 text-amber-300 border border-slate-700 rounded font-mono truncate"
           >
             {DIAGRAM_KINDS.map((dk) => (
               <option key={dk.value} value={dk.value}>
@@ -357,14 +357,14 @@ export const DiagramBlockView: React.FC<{
             ))}
           </select>
         ) : (
-          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">
+          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 shrink-0">
             Esquema Ilustrado JS
           </span>
         )}
       </div>
 
-      {/* SVG Diagram Canvas */}
-      <div className="p-4 sm:p-6 bg-gradient-to-b from-slate-50 to-white flex justify-center overflow-x-auto">
+      {/* SVG Diagram Canvas (Responsive 100% width, zero horizontal scroll) */}
+      <div className="p-3 sm:p-6 bg-gradient-to-b from-slate-50 to-white flex justify-center overflow-hidden">
         {kind === 'if_else_flow' && (
           <svg
             viewBox="0 0 700 250"
@@ -1233,9 +1233,9 @@ export const InteractiveGraphicBlockView: React.FC<{
   };
 
   return (
-    <div className="my-3 rounded-2xl border border-indigo-200 bg-white overflow-hidden shadow-xs">
+    <div className="my-3 rounded-2xl border border-indigo-200 bg-white overflow-hidden shadow-xs min-w-0 max-w-full">
       {/* Top Interactive Bar */}
-      <div className="px-4 py-2.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
+      <div className="px-3.5 py-2.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-wrap items-center justify-between gap-2 min-w-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Cpu className="w-4 h-4 text-emerald-400 shrink-0" />
           {editable && onUpdateBlock ? (
@@ -1244,10 +1244,10 @@ export const InteractiveGraphicBlockView: React.FC<{
               value={block.title ?? ''}
               onChange={(e) => onUpdateBlock({ title: e.target.value })}
               placeholder="Título del laboratorio interactivo..."
-              className="flex-1 bg-slate-800/90 text-white text-xs font-bold px-2.5 py-1 rounded border border-slate-700 focus:outline-none focus:border-emerald-400"
+              className="flex-1 min-w-0 bg-slate-800/90 text-white text-xs font-bold px-2.5 py-1 rounded border border-slate-700 focus:outline-none focus:border-emerald-400"
             />
           ) : (
-            <span className="text-xs font-bold truncate">
+            <span className="text-xs font-bold break-words">
               {block.title || 'Laboratorio Visual Interactivo de JavaScript'}
             </span>
           )}
@@ -1261,7 +1261,7 @@ export const InteractiveGraphicBlockView: React.FC<{
                 interactiveKind: e.target.value as InteractiveKind,
               })
             }
-            className="px-2 py-1 text-[11px] bg-slate-800 text-emerald-300 border border-slate-700 rounded font-mono"
+            className="max-w-full px-2 py-1 text-[11px] bg-slate-800 text-emerald-300 border border-slate-700 rounded font-mono truncate"
           >
             {INTERACTIVE_KINDS.map((ik) => (
               <option key={ik.value} value={ik.value}>
@@ -1270,28 +1270,28 @@ export const InteractiveGraphicBlockView: React.FC<{
             ))}
           </select>
         ) : (
-          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-            Gráfico Interactivo · Microanimaciones
+          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shrink-0">
+            Interactivo JS
           </span>
         )}
       </div>
 
       {/* Interactive Playground Body */}
-      <div className="p-4 sm:p-5 space-y-4 bg-slate-50/70">
+      <div className="p-3.5 sm:p-5 space-y-4 bg-slate-50/70 min-w-0 max-w-full overflow-hidden">
         {kind === 'array_lab' && (
-          <div className="space-y-4">
+          <div className="space-y-3.5 min-w-0 max-w-full">
             {/* Animated Array Memory Cells */}
-            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-600 font-semibold">
-                  Memoria del Arreglo (`Array` indexado en base 0):
+            <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3 min-w-0 max-w-full">
+              <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs font-mono">
+                <span className="text-slate-600 font-semibold break-words">
+                  Memoria del Arreglo (base 0):
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-bold">
-                  lenguajes.length = {arrItems.length}
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-bold shrink-0">
+                  length = {arrItems.length}
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5 min-h-[76px] py-2">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 min-h-[72px] py-1">
                 <AnimatePresence mode="popLayout">
                   {arrItems.map((item, idx) => (
                     <motion.div
@@ -1305,160 +1305,163 @@ export const InteractiveGraphicBlockView: React.FC<{
                         stiffness: 420,
                         damping: 26,
                       }}
-                      className="group relative px-3.5 py-2.5 rounded-xl bg-slate-900 text-white border border-slate-700 shadow-sm flex flex-col items-center min-w-[92px]"
+                      className="group relative px-2.5 py-2 rounded-xl bg-slate-900 text-white border border-slate-700 shadow-sm flex flex-col items-center min-w-0 sm:min-w-[88px]"
                     >
                       <span className="text-[10px] font-mono text-amber-400 font-bold">
                         índice [{idx}]
                       </span>
-                      <span className="text-xs font-mono font-semibold text-emerald-300 mt-0.5">
+                      <span className="text-xs font-mono font-semibold text-emerald-300 mt-0.5 truncate max-w-full">
                         &apos;{item}&apos;
                       </span>
                     </motion.div>
                   ))}
                 </AnimatePresence>
                 {arrItems.length === 0 && (
-                  <div className="text-xs font-mono text-slate-400 italic">
+                  <div className="col-span-2 text-xs font-mono text-slate-400 italic">
                     [ ] Arreglo vacío (length: 0)
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Micro-interactive Controls */}
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="text"
-                value={customArrInput}
-                onChange={(e) => setCustomArrInput(e.target.value)}
-                placeholder="Nuevo elemento..."
-                className="w-36 px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg"
-              />
-              <motion.button
-                whileTap={{ scale: 0.94 }}
-                type="button"
-                onClick={() => {
-                  const val = customArrInput.trim() || 'Item';
-                  const next = [...arrItems, val];
-                  setArrItems(next);
-                  setLastArrOp(
-                    `lenguajes.push('${val}'); // Añade al final -> nueva longitud: ${next.length}`
-                  );
-                }}
-                className="px-3 py-1.5 text-xs font-mono font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg"
-              >
-                .push(&apos;{customArrInput || 'Item'}&apos;)
-              </motion.button>
+            {/* Micro-interactive Controls (Responsive Grid on Mobile, zero horizontal overflow) */}
+            <div className="space-y-2 min-w-0 max-w-full">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={customArrInput}
+                  onChange={(e) => setCustomArrInput(e.target.value)}
+                  placeholder="Nuevo elemento..."
+                  className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setArrItems(['JavaScript', 'HTML5', 'CSS3']);
+                    setLastArrOp(
+                      "let lenguajes = ['JavaScript', 'HTML5', 'CSS3']; // Reiniciado"
+                    );
+                  }}
+                  className="px-2.5 py-1.5 text-xs font-mono text-slate-600 bg-white border border-slate-300 hover:text-slate-900 rounded-lg shrink-0 inline-flex items-center gap-1"
+                  title="Reiniciar arreglo"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset</span>
+                </button>
+              </div>
 
-              <motion.button
-                whileTap={{ scale: 0.94 }}
-                type="button"
-                onClick={() => {
-                  if (arrItems.length === 0) return;
-                  const removed = arrItems[arrItems.length - 1];
-                  setArrItems(arrItems.slice(0, -1));
-                  setLastArrOp(
-                    `lenguajes.pop(); // Eliminó '${removed}' del final`
-                  );
-                }}
-                className="px-3 py-1.5 text-xs font-mono font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg"
-              >
-                .pop()
-              </motion.button>
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
+                <motion.button
+                  whileTap={{ scale: 0.94 }}
+                  type="button"
+                  onClick={() => {
+                    const val = customArrInput.trim() || 'Item';
+                    const next = [...arrItems, val];
+                    setArrItems(next);
+                    setLastArrOp(
+                      `lenguajes.push('${val}'); // Añade al final -> length: ${next.length}`
+                    );
+                  }}
+                  className="px-2.5 py-2 text-xs font-mono font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg truncate"
+                >
+                  .push()
+                </motion.button>
 
-              <motion.button
-                whileTap={{ scale: 0.94 }}
-                type="button"
-                onClick={() => {
-                  const val = customArrInput.trim() || 'Inicio';
-                  const next = [val, ...arrItems];
-                  setArrItems(next);
-                  setLastArrOp(
-                    `lenguajes.unshift('${val}'); // Insertó en el índice [0] y desplazó el resto`
-                  );
-                }}
-                className="px-3 py-1.5 text-xs font-mono font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg"
-              >
-                .unshift()
-              </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.94 }}
+                  type="button"
+                  onClick={() => {
+                    if (arrItems.length === 0) return;
+                    const removed = arrItems[arrItems.length - 1];
+                    setArrItems(arrItems.slice(0, -1));
+                    setLastArrOp(
+                      `lenguajes.pop(); // Eliminó '${removed}' del final`
+                    );
+                  }}
+                  className="px-2.5 py-2 text-xs font-mono font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg truncate"
+                >
+                  .pop()
+                </motion.button>
 
-              <motion.button
-                whileTap={{ scale: 0.94 }}
-                type="button"
-                onClick={() => {
-                  if (arrItems.length === 0) return;
-                  const removed = arrItems[0];
-                  setArrItems(arrItems.slice(1));
-                  setLastArrOp(
-                    `lenguajes.shift(); // Extrajo '${removed}' del índice [0]`
-                  );
-                }}
-                className="px-3 py-1.5 text-xs font-mono font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg"
-              >
-                .shift()
-              </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.94 }}
+                  type="button"
+                  onClick={() => {
+                    const val = customArrInput.trim() || 'Inicio';
+                    const next = [val, ...arrItems];
+                    setArrItems(next);
+                    setLastArrOp(
+                      `lenguajes.unshift('${val}'); // Insertó en [0]`
+                    );
+                  }}
+                  className="px-2.5 py-2 text-xs font-mono font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg truncate"
+                >
+                  .unshift()
+                </motion.button>
 
-              <motion.button
-                whileTap={{ scale: 0.94 }}
-                type="button"
-                onClick={() => {
-                  setArrItems([...arrItems].reverse());
-                  setLastArrOp(
-                    `lenguajes.reverse(); // Invirtió el orden de los índices in-place`
-                  );
-                }}
-                className="px-3 py-1.5 text-xs font-mono font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg"
-              >
-                .reverse()
-              </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.94 }}
+                  type="button"
+                  onClick={() => {
+                    if (arrItems.length === 0) return;
+                    const removed = arrItems[0];
+                    setArrItems(arrItems.slice(1));
+                    setLastArrOp(
+                      `lenguajes.shift(); // Extrajo '${removed}' de [0]`
+                    );
+                  }}
+                  className="px-2.5 py-2 text-xs font-mono font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg truncate"
+                >
+                  .shift()
+                </motion.button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setArrItems(['JavaScript', 'HTML5', 'CSS3']);
-                  setLastArrOp(
-                    "let lenguajes = ['JavaScript', 'HTML5', 'CSS3']; // Reiniciado"
-                  );
-                }}
-                className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg"
-                title="Reiniciar arreglo"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
+                <motion.button
+                  whileTap={{ scale: 0.94 }}
+                  type="button"
+                  onClick={() => {
+                    setArrItems([...arrItems].reverse());
+                    setLastArrOp(
+                      `lenguajes.reverse(); // Invirtió el orden de índices`
+                    );
+                  }}
+                  className="col-span-2 sm:col-span-1 px-2.5 py-2 text-xs font-mono font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg truncate"
+                >
+                  .reverse()
+                </motion.button>
+              </div>
             </div>
 
-            {/* Live JS Console Output */}
-            <div className="px-3.5 py-2 bg-slate-950 text-emerald-300 rounded-lg font-mono text-xs flex items-center gap-2">
-              <Terminal className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="truncate">{lastArrOp}</span>
+            {/* Live JS Console Output (Wrapped cleanly, zero overflow) */}
+            <div className="px-3 py-2 bg-slate-950 text-emerald-300 rounded-lg font-mono text-[11px] flex items-start gap-2 min-w-0 max-w-full">
+              <Terminal className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+              <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] min-w-0">
+                {lastArrOp}
+              </span>
             </div>
           </div>
         )}
 
         {kind === 'array_functional' && (
-          <div className="space-y-4">
-            {/* Method Switcher */}
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="space-y-3.5 min-w-0 max-w-full">
+            {/* Method Switcher (2x2 Grid on Mobile) */}
+            <div className="grid grid-cols-2 gap-1.5">
               {(
                 [
                   {
                     id: 'map',
-                    label: '.map(n => Math.min(100, n + 5))',
-                    desc: 'Transforma cada elemento 1 a 1 y retorna un NUEVO arreglo del mismo tamaño.',
+                    label: '.map(n => n + 5)',
                   },
                   {
                     id: 'filter',
                     label: '.filter(n => n >= 70)',
-                    desc: 'Filtra y conserva solo los elementos cuyo callback retorne true (Aprobados >= 70).',
                   },
                   {
                     id: 'find',
                     label: '.find(n => n > 90)',
-                    desc: 'Detiene la búsqueda y retorna el PRIMER elemento que cumpla la condición.',
                   },
                   {
                     id: 'reduce',
-                    label: '.reduce((acc, n) => acc + n, 0)',
-                    desc: 'Acumula todos los elementos en un único valor final (Suma total = 397).',
+                    label: '.reduce((a, n) => a + n)',
                   },
                 ] as const
               ).map((m) => (
@@ -1466,7 +1469,7 @@ export const InteractiveGraphicBlockView: React.FC<{
                   key={m.id}
                   type="button"
                   onClick={() => setFnMode(m.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+                  className={`px-2.5 py-2 rounded-lg text-[11px] font-mono font-semibold transition-all text-center break-words ${
                     fnMode === m.id
                       ? 'bg-indigo-600 text-white shadow-xs'
                       : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
@@ -1478,13 +1481,13 @@ export const InteractiveGraphicBlockView: React.FC<{
             </div>
 
             {/* Visual Transformation Pipeline */}
-            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-4">
+            <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3.5 min-w-0 max-w-full">
               <div className="space-y-1.5">
-                <div className="text-[11px] font-mono text-slate-500">
-                  Arreglo Original (Inmutable):{' '}
-                  <code>const notas = [85, 55, 92, 65, 100];</code>
+                <div className="text-[11px] font-mono text-slate-500 break-words">
+                  Original (Inmutable):{' '}
+                  <code className="break-all">notas = [85, 55, 92, 65, 100]</code>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {baseScores.map((score, i) => {
                     const passes =
                       fnMode === 'map' ||
@@ -1495,10 +1498,10 @@ export const InteractiveGraphicBlockView: React.FC<{
                       <motion.div
                         key={i}
                         animate={{
-                          scale: passes ? 1.03 : 0.92,
+                          scale: passes ? 1.02 : 0.94,
                           opacity: passes ? 1 : 0.38,
                         }}
-                        className={`px-3 py-2 rounded-lg font-mono text-xs border ${
+                        className={`px-2.5 py-1.5 rounded-lg font-mono text-xs border ${
                           passes
                             ? 'bg-slate-900 text-white border-slate-800'
                             : 'bg-slate-100 text-slate-400 border-slate-200 line-through'
@@ -1511,20 +1514,20 @@ export const InteractiveGraphicBlockView: React.FC<{
                 </div>
               </div>
 
-              <div className="border-t border-dashed border-slate-200 pt-3 space-y-2">
+              <div className="border-t border-dashed border-slate-200 pt-3 space-y-2 min-w-0">
                 <div className="text-[11px] font-mono font-semibold text-indigo-700">
                   Resultado retornado por <code>.{fnMode}()</code>:
                 </div>
 
                 {fnMode === 'map' && (
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {baseScores.map((s, i) => (
                       <motion.div
                         key={`map-${i}`}
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.06 }}
-                        className="px-3 py-2 rounded-lg bg-emerald-600 text-white font-mono text-xs font-bold"
+                        className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-mono text-xs font-bold"
                       >
                         [{i}]: {Math.min(100, s + 5)}
                       </motion.div>
@@ -1533,7 +1536,7 @@ export const InteractiveGraphicBlockView: React.FC<{
                 )}
 
                 {fnMode === 'filter' && (
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {baseScores
                       .filter((s) => s >= 70)
                       .map((s, i) => (
@@ -1541,9 +1544,9 @@ export const InteractiveGraphicBlockView: React.FC<{
                           key={`fil-${i}`}
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          className="px-3 py-2 rounded-lg bg-emerald-600 text-white font-mono text-xs font-bold"
+                          className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-mono text-xs font-bold"
                         >
-                          [{i}]: {s} (Aprobado)
+                          [{i}]: {s} ✓
                         </motion.div>
                       ))}
                   </div>
@@ -1553,7 +1556,7 @@ export const InteractiveGraphicBlockView: React.FC<{
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="inline-block px-4 py-2 rounded-lg bg-amber-500 text-slate-950 font-mono text-xs font-bold"
+                    className="w-full px-3 py-2 rounded-lg bg-amber-500 text-slate-950 font-mono text-xs font-bold break-words"
                   >
                     Valor único retornado: 92 (Primer elemento &gt; 90)
                   </motion.div>
@@ -1563,7 +1566,7 @@ export const InteractiveGraphicBlockView: React.FC<{
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="inline-block px-4 py-2 rounded-lg bg-indigo-700 text-white font-mono text-xs font-bold"
+                    className="w-full px-3 py-2 rounded-lg bg-indigo-700 text-white font-mono text-xs font-bold break-words"
                   >
                     Acumulador Total = 397 (Promedio: 79.4)
                   </motion.div>
@@ -1574,19 +1577,19 @@ export const InteractiveGraphicBlockView: React.FC<{
         )}
 
         {kind === 'object_lab' && (
-          <div className="space-y-4">
+          <div className="space-y-3.5 min-w-0 max-w-full">
             {/* Animated Key-Value Object Inspector */}
-            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono">
+            <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-2.5 min-w-0 max-w-full">
+              <div className="flex flex-wrap items-center justify-between gap-1 text-xs font-mono">
                 <span className="font-bold text-slate-800">
                   const aprendiz = {`{`}
                 </span>
-                <span className="text-slate-500">
-                  {objProps.length} propiedades clave: valor
+                <span className="text-[11px] text-slate-500">
+                  {objProps.length} propiedades
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <AnimatePresence mode="popLayout">
                   {objProps.map((prop) => (
                     <motion.div
@@ -1595,7 +1598,7 @@ export const InteractiveGraphicBlockView: React.FC<{
                       initial={{ opacity: 0, scale: 0.85 }}
                       animate={{
                         opacity: 1,
-                        scale: prop.highlight ? 1.03 : 1,
+                        scale: prop.highlight ? 1.02 : 1,
                       }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       onClick={() =>
@@ -1604,13 +1607,13 @@ export const InteractiveGraphicBlockView: React.FC<{
                           `aprendiz.${prop.key} // Retorna -> ${prop.value}`
                         )
                       }
-                      className={`p-2.5 rounded-xl border font-mono text-xs cursor-pointer transition-colors flex items-center justify-between ${
+                      className={`p-2.5 rounded-xl border font-mono text-xs cursor-pointer transition-colors flex items-center justify-between gap-2 min-w-0 ${
                         prop.highlight
                           ? 'bg-indigo-950 text-white border-indigo-500 ring-2 ring-indigo-400'
                           : 'bg-slate-50 text-slate-800 border-slate-200 hover:border-indigo-400'
                       }`}
                     >
-                      <div>
+                      <div className="min-w-0 break-all">
                         <span
                           className={
                             prop.highlight
@@ -1642,7 +1645,7 @@ export const InteractiveGraphicBlockView: React.FC<{
                             `delete aprendiz.${prop.key}; // Propiedad eliminada`
                           );
                         }}
-                        className="text-slate-400 hover:text-rose-500 text-[10px] px-1"
+                        className="text-slate-400 hover:text-rose-500 text-[10px] px-1 shrink-0"
                         title="delete aprendiz.propiedad"
                       >
                         ✕
@@ -1657,17 +1660,17 @@ export const InteractiveGraphicBlockView: React.FC<{
               </div>
             </div>
 
-            {/* Interactive Object Operations */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Interactive Object Operations (Responsive 2-column grid on mobile) */}
+            <div className="grid grid-cols-2 gap-1.5">
               <button
                 type="button"
                 onClick={() =>
                   triggerHighlightKey(
                     'nombre',
-                    'aprendiz.nombre; // Notación de punto -> "Valentina Rojas"'
+                    'aprendiz.nombre; // Notación punto -> "Valentina Rojas"'
                   )
                 }
-                className="px-2.5 py-1.5 text-xs font-mono font-semibold bg-white border border-slate-300 hover:border-indigo-500 rounded-lg text-slate-800"
+                className="px-2.5 py-2 text-[11px] font-mono font-semibold bg-white border border-slate-300 hover:border-indigo-500 rounded-lg text-slate-800 truncate"
               >
                 aprendiz.nombre
               </button>
@@ -1676,10 +1679,10 @@ export const InteractiveGraphicBlockView: React.FC<{
                 onClick={() =>
                   triggerHighlightKey(
                     'ficha',
-                    'aprendiz["ficha"]; // Notación de corchetes -> 2874512'
+                    'aprendiz["ficha"]; // Corchetes -> 2874512'
                   )
                 }
-                className="px-2.5 py-1.5 text-xs font-mono font-semibold bg-white border border-slate-300 hover:border-indigo-500 rounded-lg text-slate-800"
+                className="px-2.5 py-2 text-[11px] font-mono font-semibold bg-white border border-slate-300 hover:border-indigo-500 rounded-lg text-slate-800 truncate"
               >
                 aprendiz[&quot;ficha&quot;]
               </button>
@@ -1687,12 +1690,12 @@ export const InteractiveGraphicBlockView: React.FC<{
                 type="button"
                 onClick={() =>
                   setObjConsole(
-                    `const { nombre, ficha } = aprendiz; // Desestructuración directa`
+                    `const { nombre, ficha } = aprendiz; // Desestructuración`
                   )
                 }
-                className="px-2.5 py-1.5 text-xs font-mono font-semibold bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg"
+                className="px-2.5 py-2 text-[11px] font-mono font-semibold bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg truncate"
               >
-                const {`{ nombre, ficha }`} = aprendiz
+                {`{ nombre, ficha }`}
               </button>
               <button
                 type="button"
@@ -1703,27 +1706,27 @@ export const InteractiveGraphicBlockView: React.FC<{
                       .join(', ')}]`
                   )
                 }
-                className="px-2.5 py-1.5 text-xs font-mono font-semibold bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg"
+                className="px-2.5 py-2 text-[11px] font-mono font-semibold bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg truncate"
               >
                 Object.keys()
               </button>
             </div>
 
             {/* Add / Mutate Key-Value Pair */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
               <input
                 type="text"
                 value={newKey}
                 onChange={(e) => setNewKey(e.target.value)}
                 placeholder="clave..."
-                className="w-28 px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg"
+                className="w-full sm:w-28 min-w-0 px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg"
               />
               <input
                 type="text"
                 value={newVal}
                 onChange={(e) => setNewVal(e.target.value)}
                 placeholder="valor..."
-                className="w-28 px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg"
+                className="w-full sm:w-28 min-w-0 px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg"
               />
               <button
                 type="button"
@@ -1747,15 +1750,17 @@ export const InteractiveGraphicBlockView: React.FC<{
                   });
                   setObjConsole(`aprendiz.${k} = ${v}; // Propiedad asignada`);
                 }}
-                className="px-3 py-1.5 text-xs font-mono font-semibold text-white bg-slate-900 hover:bg-indigo-600 rounded-lg"
+                className="col-span-2 sm:col-span-1 px-3 py-2 text-xs font-mono font-semibold text-white bg-slate-900 hover:bg-indigo-600 rounded-lg"
               >
                 + Asignar Propiedad
               </button>
             </div>
 
-            <div className="px-3.5 py-2 bg-slate-950 text-emerald-300 rounded-lg font-mono text-xs flex items-center gap-2">
-              <Terminal className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="truncate">{objConsole}</span>
+            <div className="px-3 py-2 bg-slate-950 text-emerald-300 rounded-lg font-mono text-[11px] flex items-start gap-2 min-w-0 max-w-full">
+              <Terminal className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+              <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] min-w-0">
+                {objConsole}
+              </span>
             </div>
           </div>
         )}
@@ -1861,13 +1866,13 @@ export const HoverPreviewTrigger: React.FC<{
         </a>
       ) : (
         <div
-          className={`group p-3.5 rounded-xl border transition-all cursor-pointer ${
+          className={`group p-3.5 rounded-xl border transition-all cursor-pointer min-w-0 max-w-full overflow-hidden ${
             kind === 'video'
               ? 'bg-gradient-to-r from-rose-50/60 via-white to-slate-50 border-rose-200/90 hover:border-rose-400 hover:shadow-md'
               : 'bg-gradient-to-r from-indigo-50/60 via-white to-slate-50 border-indigo-200/90 hover:border-indigo-400 hover:shadow-md'
           }`}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
             <div className="flex items-start gap-3 min-w-0">
               <div
                 className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
@@ -1883,52 +1888,47 @@ export const HoverPreviewTrigger: React.FC<{
                 )}
               </div>
 
-              <div className="min-w-0 space-y-0.5">
-                <div className="flex flex-wrap items-center gap-2 text-[11px]">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                   <span
                     className={`font-bold uppercase tracking-wider ${
                       kind === 'video' ? 'text-rose-700' : 'text-indigo-700'
                     }`}
                   >
                     {kind === 'video'
-                      ? 'Video Educativo con Previsualización'
-                      : 'Enlace Web con Previsualización'}
+                      ? 'Video Educativo'
+                      : 'Enlace Web'}
                   </span>
                   <span aria-hidden="true" className="text-slate-300">
                     ·
                   </span>
-                  <span className="font-mono text-slate-500 truncate">
+                  <span className="font-mono text-slate-500 truncate max-w-full">
                     {domain}
                   </span>
                   {videoTimestamp && (
-                    <>
-                      <span aria-hidden="true" className="text-slate-300">
-                        ·
-                      </span>
-                      <span className="inline-flex items-center gap-1 font-mono text-rose-700 bg-rose-100/80 px-1.5 py-0.5 rounded text-[10px]">
-                        <Clock className="w-2.5 h-2.5" />
-                        {videoTimestamp}
-                      </span>
-                    </>
+                    <span className="inline-flex items-center gap-1 font-mono text-rose-700 bg-rose-100/80 px-1.5 py-0.5 rounded text-[10px]">
+                      <Clock className="w-2.5 h-2.5 shrink-0" />
+                      <span className="truncate">{videoTimestamp}</span>
+                    </span>
                   )}
                 </div>
 
-                <div className="text-sm font-bold text-slate-900 group-hover:text-indigo-700 transition-colors flex items-center gap-1.5">
-                  <span className="truncate">{title || 'Sin título'}</span>
+                <div className="text-sm font-bold text-slate-900 group-hover:text-indigo-700 transition-colors flex items-center gap-1.5 min-w-0">
+                  <span className="break-words min-w-0">{title || 'Sin título'}</span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 </div>
 
-                <div className="text-xs text-slate-500 flex items-center gap-1.5 pt-0.5">
-                  <MessageSquareQuote className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                  <span className="truncate italic">
+                <div className="text-xs text-slate-500 flex items-start gap-1.5 pt-0.5 min-w-0">
+                  <MessageSquareQuote className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                  <span className="line-clamp-2 italic break-words min-w-0">
                     {relevanceComment ||
-                      'Pasa el cursor aquí para previsualizar el comentario de relevancia...'}
+                      'Toca o pasa el cursor aquí para previsualizar el comentario de relevancia...'}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               {kind === 'video' && onToggleEmbed && (
                 <button
                   type="button"
@@ -2108,10 +2108,10 @@ export const CodeSegmentBlockView: React.FC<{
     (block.codeLanguage ?? 'JavaScript').toUpperCase();
 
   return (
-    <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100 shadow-sm my-2">
+    <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100 shadow-sm my-2 min-w-0 max-w-full">
       {/* Top IDE Bar (Editable directly in place when editable=true) */}
-      <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+      <div className="px-3.5 py-2.5 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
@@ -2125,14 +2125,14 @@ export const CodeSegmentBlockView: React.FC<{
                 value={block.title ?? ''}
                 onChange={(e) => onUpdateBlock({ title: e.target.value })}
                 placeholder="archivo.js"
-                className="px-2 py-0.5 text-xs font-mono font-semibold text-slate-100 bg-slate-800 border border-slate-700 rounded focus:outline-none focus:border-indigo-400 w-44"
+                className="px-2 py-0.5 text-xs font-mono font-semibold text-slate-100 bg-slate-800 border border-slate-700 rounded focus:outline-none focus:border-indigo-400 w-36 max-w-full min-w-0"
               />
               <select
                 value={block.codeLanguage ?? 'javascript'}
                 onChange={(e) =>
                   onUpdateBlock({ codeLanguage: e.target.value })
                 }
-                className="px-2 py-0.5 text-[11px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded focus:outline-none"
+                className="px-2 py-0.5 text-[11px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded focus:outline-none max-w-full truncate"
               >
                 {CODE_LANGUAGES.map((lang) => (
                   <option
@@ -2148,12 +2148,12 @@ export const CodeSegmentBlockView: React.FC<{
           ) : (
             <>
               {block.title && (
-                <span className="text-xs font-mono font-semibold text-slate-200 truncate flex items-center gap-1.5">
+                <span className="text-xs font-mono font-semibold text-slate-200 truncate flex items-center gap-1.5 min-w-0">
                   <FileCode2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                  {block.title}
+                  <span className="truncate">{block.title}</span>
                 </span>
               )}
-              <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0">
                 {langLabel}
               </span>
             </>
@@ -2163,25 +2163,25 @@ export const CodeSegmentBlockView: React.FC<{
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors shrink-0"
         >
           {copied ? (
             <>
               <Check className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-emerald-300">¡Código copiado!</span>
+              <span className="text-emerald-300">¡Copiado!</span>
             </>
           ) : (
             <>
               <Copy className="w-3.5 h-3.5 text-slate-400" />
-              <span>Copiar código</span>
+              <span>Copiar</span>
             </>
           )}
         </button>
       </div>
 
-      {/* Code Surface: Directly editable in place inside the IDE frame when editable=true */}
+      {/* Code Surface: Wraps lines cleanly so there is zero horizontal scroll on Android */}
       {editable && onUpdateBlock ? (
-        <div className="p-3 bg-slate-950">
+        <div className="p-3 bg-slate-950 min-w-0 max-w-full">
           <textarea
             rows={Math.max(4, lines.length)}
             value={block.content}
@@ -2191,28 +2191,29 @@ export const CodeSegmentBlockView: React.FC<{
           />
         </div>
       ) : (
-        <div className="p-4 overflow-x-auto font-mono text-xs leading-relaxed">
-          <table className="w-full border-collapse">
-            <tbody>
-              {lines.map((line, idx) => (
-                <tr key={idx} className="hover:bg-slate-900/70">
-                  <td className="select-none pr-4 text-right text-slate-600 w-8 align-top">
-                    {idx + 1}
-                  </td>
-                  <td className="text-slate-100 whitespace-pre font-mono">
-                    {line || ' '}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="p-3 sm:p-4 font-mono text-xs leading-relaxed min-w-0 max-w-full overflow-hidden">
+          <div className="space-y-0.5 min-w-0 max-w-full">
+            {lines.map((line, idx) => (
+              <div
+                key={idx}
+                className="flex items-start gap-2.5 hover:bg-slate-900/70 rounded px-1 min-w-0"
+              >
+                <span className="select-none text-right text-slate-600 w-6 shrink-0 font-mono text-[11px]">
+                  {idx + 1}
+                </span>
+                <span className="text-slate-100 whitespace-pre-wrap break-words [overflow-wrap:anywhere] font-mono min-w-0 flex-1">
+                  {line || ' '}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Instructor Commentary / Code Explanation Footer (Editable in place) */}
       {(editable || block.relevanceComment) && (
-        <div className="px-4 py-2.5 bg-slate-900/90 border-t border-slate-800 text-xs text-slate-300 flex items-center gap-2">
-          <Terminal className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+        <div className="px-3.5 py-2.5 bg-slate-900/90 border-t border-slate-800 text-xs text-slate-300 flex items-start gap-2 min-w-0">
+          <Terminal className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
           {editable && onUpdateBlock ? (
             <input
               type="text"
@@ -2221,10 +2222,10 @@ export const CodeSegmentBlockView: React.FC<{
                 onUpdateBlock({ relevanceComment: e.target.value })
               }
               placeholder="Añade aquí una nota o explicación técnica del código..."
-              className="flex-1 bg-slate-800/80 text-slate-200 px-2.5 py-1 rounded border border-slate-700 text-xs focus:outline-none focus:border-emerald-400"
+              className="flex-1 min-w-0 bg-slate-800/80 text-slate-200 px-2.5 py-1 rounded border border-slate-700 text-xs focus:outline-none focus:border-emerald-400"
             />
           ) : (
-            <div>
+            <div className="min-w-0 break-words">
               <strong className="text-emerald-300">
                 Explicación del código:
               </strong>{' '}
@@ -2337,17 +2338,19 @@ export const LessonBlocksRenderer: React.FC<{
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 max-w-full overflow-hidden">
       {blocks.map((block) => {
         switch (block.type) {
           case 'heading':
             return (
               <h3
                 key={block.id}
-                className="text-base font-bold text-slate-900 pt-3 border-b border-slate-100 pb-1.5 flex items-center gap-2"
+                className="text-base font-bold text-slate-900 pt-3 border-b border-slate-100 pb-1.5 flex items-center gap-2 min-w-0"
               >
-                <span className="w-1.5 h-4 rounded-full bg-indigo-600 inline-block" />
-                <span>{block.title || block.content}</span>
+                <span className="w-1.5 h-4 rounded-full bg-indigo-600 inline-block shrink-0" />
+                <span className="break-words min-w-0">
+                  {block.title || block.content}
+                </span>
               </h3>
             );
 
@@ -2355,7 +2358,7 @@ export const LessonBlocksRenderer: React.FC<{
             return (
               <div
                 key={block.id}
-                className="text-sm text-slate-700 leading-relaxed whitespace-pre-line"
+                className="text-sm text-slate-700 leading-relaxed whitespace-pre-line break-words [overflow-wrap:anywhere] min-w-0 max-w-full"
               >
                 {renderRichTextWithInlinePreviews(block.content)}
               </div>
@@ -2372,7 +2375,7 @@ export const LessonBlocksRenderer: React.FC<{
             return (
               <div
                 key={block.id}
-                className={`p-4 rounded-xl border flex items-start gap-3 ${styles}`}
+                className={`p-3.5 sm:p-4 rounded-xl border flex items-start gap-3 min-w-0 max-w-full ${styles}`}
               >
                 {tone === 'tip' ? (
                   <Lightbulb className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -2381,11 +2384,13 @@ export const LessonBlocksRenderer: React.FC<{
                 ) : (
                   <Info className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
                 )}
-                <div className="space-y-1 text-xs leading-relaxed">
+                <div className="space-y-1 text-xs leading-relaxed min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
                   {block.title && (
-                    <div className="font-bold text-sm">{block.title}</div>
+                    <div className="font-bold text-sm break-words">
+                      {block.title}
+                    </div>
                   )}
-                  <div className="whitespace-pre-line">
+                  <div className="whitespace-pre-line break-words">
                     {renderRichTextWithInlinePreviews(block.content)}
                   </div>
                 </div>
@@ -2666,13 +2671,13 @@ export const NotionLessonBlockEditor: React.FC<{
   };
 
   return (
-    <div className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-2xs">
+    <div className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-2xs min-w-0 max-w-full">
       {/* Top In-Place Add Element Bar */}
-      <div className="bg-slate-50 border-b border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="bg-slate-50 border-b border-slate-200 px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2.5 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 min-w-0 w-full sm:w-auto">
           <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Edición Directa en el Mismo Lugar:</span>
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <span>Edición In-Situ:</span>
           </span>
           <select
             aria-label="Seleccionar tipo de elemento a agregar"
@@ -2680,31 +2685,31 @@ export const NotionLessonBlockEditor: React.FC<{
             onChange={(e) =>
               setNewElementType(e.target.value as LessonBlockType)
             }
-            className="px-2.5 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-600"
+            className="min-w-0 flex-1 sm:flex-initial max-w-full px-2.5 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-600 truncate"
           >
             <option value="text">📝 Texto / Párrafo / Ejercicio</option>
             <option value="heading">📌 Subtítulo de Sección</option>
             <option value="code">💻 Código Fuente (IDE In-Situ)</option>
             <option value="diagram">📊 Diagrama / Esquema Visual SVG</option>
             <option value="interactive">
-              ⚡ Gráfico Interactivo Animado (Arrays / Objetos)
+              ⚡ Gráfico Interactivo (Arrays / Objetos)
             </option>
-            <option value="link">🔗 Enlace con Previsualización Hover</option>
-            <option value="video">🎬 Video con Previsualización Hover</option>
+            <option value="link">🔗 Enlace con Previsualización</option>
+            <option value="video">🎬 Video con Previsualización</option>
             <option value="callout">💡 Nota / Callout Destacado</option>
           </select>
           <button
             type="button"
             onClick={() => handleAddBlockAt(newElementType)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
-            Agregar Elemento
+            <span>Agregar</span>
           </button>
         </div>
 
         {/* Quick 1-Click Element Pills */}
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1 min-w-0">
           <button
             type="button"
             onClick={() => handleAddBlockAt('text')}
@@ -2731,7 +2736,7 @@ export const NotionLessonBlockEditor: React.FC<{
             onClick={() => handleAddBlockAt('interactive')}
             className="px-2 py-1 text-[11px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-md"
           >
-            + Gráfico Interactivo
+            + Interactivo
           </button>
           <button
             type="button"
@@ -2751,7 +2756,7 @@ export const NotionLessonBlockEditor: React.FC<{
       </div>
 
       {/* Unified Document Canvas: Edit Texts and Content Directly In-Place */}
-      <div className="p-5 space-y-4">
+      <div className="p-3.5 sm:p-5 space-y-4 min-w-0 max-w-full overflow-hidden">
         {blocks.length === 0 && (
           <div className="p-8 bg-slate-50/70 border border-dashed border-slate-300 rounded-xl text-center space-y-3">
             <p className="text-xs text-slate-500">

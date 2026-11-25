@@ -500,9 +500,13 @@ export default function App() {
     ovas.find((o) => o.id === printGuideOvaId) ?? ovas[0];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-      {/* STRICT 3-ZONE TOP BAR CONTRACT */}
-      <header className="no-print flex items-center justify-between gap-8 px-6 py-3.5 bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-slate-50 text-slate-900">
+      {/* STRICT 3-ZONE TOP BAR CONTRACT (Hidden on native mobile when MobileAppShell is active) */}
+      <header
+        className={`no-print items-center justify-between gap-4 sm:gap-8 px-4 sm:px-6 py-3.5 bg-white border-b border-slate-200 sticky top-0 z-30 ${
+          isMobileAppMode ? 'hidden md:flex' : 'flex'
+        }`}
+      >
         {/* Zone 1: Single text element wordmark */}
         <a
           href="#top"
@@ -717,8 +721,12 @@ export default function App() {
         </div>
       </header>
 
-      {/* Workspace Mode & SENA Context Bar (Below the Top Bar Contract) */}
-      <div className="no-print bg-slate-100/80 border-b border-slate-200 px-6 py-2.5 flex flex-wrap items-center justify-between gap-4 text-xs">
+      {/* Workspace Mode & SENA Context Bar (Hidden on native mobile when MobileAppShell is active) */}
+      <div
+        className={`no-print bg-slate-100/80 border-b border-slate-200 px-4 sm:px-6 py-2.5 flex-wrap items-center justify-between gap-4 text-xs ${
+          isMobileAppMode ? 'hidden md:flex' : 'flex'
+        }`}
+      >
         <div className="flex flex-wrap items-center gap-2 text-slate-600">
           <span className="font-semibold text-slate-900">
             Formación Profesional Integral SENA
@@ -800,7 +808,7 @@ export default function App() {
               </button>
             </>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="text-slate-500">
                 Modo actual: <strong>Vista Pública de Aprendiz</strong> (Sin
                 contraseña requerida)
@@ -808,18 +816,19 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setShowLoginModal(true)}
-                className="inline-flex items-center gap-1 text-indigo-700 font-semibold hover:underline whitespace-nowrap"
+                className="inline-flex items-center gap-1 text-indigo-700 font-semibold hover:underline"
               >
-                <Lock className="w-3.5 h-3.5" />
-                ¿Eres el Instructor? Inicia sesión aquí
+                <Lock className="w-3.5 h-3.5 shrink-0" />
+                <span>¿Eres el Instructor? Inicia sesión aquí</span>
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Mobile Navigation Bar */}
-      <div className="no-print md:hidden bg-white border-b border-slate-200 px-4 py-2 flex items-center gap-2 overflow-x-auto text-xs font-medium">
+      {/* Secondary Mobile Navigation Bar (Only shown when not in dedicated MobileAppShell mode) */}
+      {!isMobileAppMode && (
+        <div className="no-print md:hidden bg-white border-b border-slate-200 px-4 py-2 flex flex-wrap items-center gap-1.5 text-xs font-medium">
         <button
           type="button"
           onClick={() => setShowLandingPage(true)}
@@ -936,10 +945,17 @@ export default function App() {
             </button>
           </>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Main Workspace Viewport */}
-      <main className="no-print flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6">
+      <main
+        className={`no-print flex-1 w-full max-w-full overflow-x-hidden mx-auto ${
+          isMobileAppMode
+            ? 'p-0 md:max-w-[1440px] md:px-6 md:py-6'
+            : 'max-w-[1440px] px-4 sm:px-6 py-6'
+        }`}
+      >
         {isMobileAppMode ? (
           <MobileAppShell
             ovas={ovas}
@@ -1047,8 +1063,12 @@ export default function App() {
         )}
       </main>
 
-      {/* Quiet Footer */}
-      <footer className="no-print border-t border-slate-200 bg-white px-6 py-4 text-xs text-slate-500 flex flex-wrap items-center justify-between gap-4">
+      {/* Quiet Footer (Hidden on native mobile when MobileAppShell is active) */}
+      <footer
+        className={`no-print border-t border-slate-200 bg-white px-6 py-4 text-xs text-slate-500 flex-wrap items-center justify-between gap-4 ${
+          isMobileAppMode ? 'hidden md:flex' : 'flex'
+        }`}
+      >
         <div>
           NexoOVA Studio · Plataforma de Autoría de Objetos Virtuales de
           Aprendizaje y Mapas Conceptuales para Formación SENA

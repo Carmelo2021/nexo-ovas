@@ -237,18 +237,18 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
       : null;
 
   return (
-    <div className="w-full flex flex-col items-center">
+    <div className="w-full max-w-full overflow-x-hidden flex flex-col items-center">
       {/* Desktop Preview Control Bar (hidden on native mobile screens) */}
       {onExitMobilePreview && (
         <div className="hidden md:flex w-full max-w-4xl mb-4 px-4 py-2.5 bg-white border border-stone-300 rounded-xl items-center justify-between text-xs text-stone-700 shadow-2xs">
           <div className="flex items-center gap-2">
             <Smartphone className="w-4 h-4 text-[#d94e34]" />
             <span className="font-bold text-stone-900">
-              Vista de Aplicación Móvil (NexoOVA APK / PWA)
+              Vista de Aplicación Móvil (NexoOVA APK / Android)
             </span>
             <span className="text-stone-400">·</span>
             <span className="text-stone-500">
-              Optimizada para uso con el pulgar y previsualización táctil
+              Sin scroll horizontal · Optimizada para pantallas táctiles Android
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -272,26 +272,28 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
         </div>
       )}
 
-      {/* Mobile Viewport Shell */}
+      {/* Mobile Viewport Shell: Full-bleed 100dvh on Android / mobile, framed on desktop */}
       <div
-        className={`w-full bg-[#f6f5f0] text-stone-900 flex flex-col overflow-hidden transition-all ${
+        className={`w-full max-w-full bg-[#f6f5f0] text-stone-900 flex flex-col overflow-x-hidden overflow-y-hidden transition-all h-dvh md:h-auto ${
           framedOnDesktop
             ? 'md:max-w-[412px] md:h-[820px] md:rounded-[36px] md:border-[8px] md:border-stone-900 md:shadow-2xl'
-            : 'min-h-[calc(100vh-8rem)] rounded-2xl border border-stone-300'
+            : 'md:min-h-[calc(100vh-8rem)] md:rounded-2xl md:border md:border-stone-300'
         }`}
       >
-        {/* 1. NATIVE MOBILE TOP APP BAR */}
-        <header className="px-4 pt-3.5 pb-3 bg-white/95 backdrop-blur-xs border-b border-stone-200/90 flex items-center justify-between gap-2 shrink-0 sticky top-0 z-20">
-          <div className="flex items-center gap-2 min-w-0">
+        {/* 1. NATIVE ANDROID TOP APP BAR */}
+        <header className="px-3.5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2.5 bg-white/95 backdrop-blur-xs border-b border-stone-200/90 flex items-center justify-between gap-2 shrink-0 z-20">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#d94e34] shrink-0" />
-            <span className="text-sm font-bold tracking-tight text-stone-950 font-display truncate">
-              NexoOVA
-            </span>
-            {currentOva && activeTab === 'reader' && (
-              <span className="px-2 py-0.5 text-[10px] font-mono bg-stone-900 text-white rounded shrink-0">
-                #{currentOva.fichaCode}
-              </span>
-            )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-bold tracking-tight text-stone-950 font-display truncate">
+                  NexoOVA
+                </span>
+                <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider bg-stone-900 text-white rounded shrink-0">
+                  SENA JS
+                </span>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -300,7 +302,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
               aria-label="Filtrar por ficha"
               value={selectedFicha}
               onChange={(e) => setSelectedFicha(e.target.value)}
-              className="px-2 py-1 text-[11px] font-mono bg-stone-100 border border-stone-300/80 rounded-lg text-stone-800 focus:outline-none"
+              className="max-w-[128px] px-2 py-1 text-[11px] font-mono bg-stone-100 border border-stone-300/80 rounded-lg text-stone-800 focus:outline-none truncate"
             >
               <option value="all">Todas las Fichas</option>
               {allFichas.map((f) => (
@@ -309,56 +311,103 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                 </option>
               ))}
             </select>
+
+            {/* Quick Instructor Access Pill */}
+            <button
+              type="button"
+              onClick={() => {
+                if (isInstructorAuth) {
+                  setActiveTab('builder');
+                } else {
+                  onRequestInstructorLogin();
+                }
+              }}
+              title={
+                isInstructorAuth
+                  ? 'Sesión Docente Activa'
+                  : 'Acceso Exclusivo Instructor'
+              }
+              className={`p-1.5 rounded-lg border text-[10px] font-semibold transition-colors shrink-0 ${
+                isInstructorAuth
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                  : 'bg-stone-100 border-stone-300/80 text-stone-700'
+              }`}
+            >
+              <Lock className="w-3.5 h-3.5" />
+            </button>
           </div>
         </header>
 
-        {/* 2. SCROLLABLE MOBILE BODY */}
-        <div className="flex-1 overflow-y-auto">
+        {/* 2. SCROLLABLE MOBILE BODY (Strictly Vertical Scroll Only, Zero Horizontal Scroll) */}
+        <div className="flex-1 min-w-0 max-w-full overflow-y-auto overflow-x-hidden overscroll-x-none">
           {/* TAB 1: HOME — CLEAN MINIMALIST OVA FEED */}
           {activeTab === 'home' && (
-            <div className="p-4 space-y-4">
-              {/* Mobile Search Input */}
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar OVA..."
-                  className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-stone-300/90 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900"
-                />
+            <div className="p-3.5 space-y-3.5 min-w-0 max-w-full">
+              {/* Mobile Search Input + Quick Stats Banner */}
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar OVA de JavaScript, tema o ficha..."
+                    className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-stone-300/90 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900 shadow-2xs"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-1 px-1 text-[11px] text-stone-500 font-mono">
+                  <span>{visibleOvas.length} OVAs interactivas disponibles</span>
+                  <span>Toque cualquier tarjeta para estudiar</span>
+                </div>
               </div>
 
               {/* Clean OVA Publication Cards (Top-right info, Title, Description, Enter Button) */}
-              <div className="space-y-3">
-                {visibleOvas.map((ova) => (
+              <div className="space-y-3 min-w-0 max-w-full">
+                {visibleOvas.map((ova, ovaIdx) => (
                   <motion.article
                     key={ova.id}
                     whileTap={{ scale: 0.99 }}
-                    className="p-4 bg-white border border-stone-200/90 rounded-2xl shadow-2xs space-y-2.5"
+                    className="p-3.5 bg-white border border-stone-200/90 rounded-2xl shadow-2xs space-y-2.5 min-w-0 max-w-full overflow-hidden"
                   >
-                    {/* Top-right metadata */}
-                    <div className="flex items-center justify-end gap-1.5 text-[10px] font-mono text-stone-500">
-                      <span className="px-1.5 py-0.5 bg-stone-900 text-white rounded font-semibold">
-                        Ficha {ova.fichaCode}
+                    {/* Top-right metadata with flex-wrap so it never overflows narrow screens */}
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10px] font-mono text-stone-500">
+                      <span className="px-2 py-0.5 bg-amber-500/15 text-amber-900 border border-amber-400/40 rounded-md font-bold">
+                        Módulo 0{ovaIdx + 1} · {ova.code}
                       </span>
-                      <span>·</span>
-                      <span>{ova.lessons.length} lec</span>
-                      <span>·</span>
-                      <span>{ova.estimatedHours}h</span>
-                      <span>·</span>
-                      <span>{ova.updatedAt}</span>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="px-1.5 py-0.5 bg-stone-900 text-white rounded font-semibold">
+                          Ficha {ova.fichaCode}
+                        </span>
+                        <span>·</span>
+                        <span>{ova.lessons.length} lec</span>
+                        <span>·</span>
+                        <span>{ova.estimatedHours}h</span>
+                      </div>
                     </div>
 
                     {/* Title */}
-                    <h2 className="text-base font-bold text-stone-950 leading-snug font-display">
+                    <h2 className="text-[15px] font-bold text-stone-950 leading-snug font-display break-words">
                       {ova.title}
                     </h2>
 
                     {/* Description */}
-                    <p className="text-xs text-stone-600 leading-relaxed">
+                    <p className="text-xs text-stone-600 leading-relaxed break-words">
                       {ova.description}
                     </p>
+
+                    {/* Quick Lesson Preview Pills (Wrapped, no horizontal scroll) */}
+                    <div className="pt-0.5 flex flex-wrap gap-1.5">
+                      {ova.lessons.map((les) => (
+                        <button
+                          key={les.id}
+                          type="button"
+                          onClick={() => handleOpenOvaInReader(ova.id, les.id)}
+                          className="px-2 py-1 text-[10px] font-mono bg-stone-100 hover:bg-stone-200 active:bg-stone-300 text-stone-800 rounded-lg text-left transition-colors max-w-full truncate"
+                        >
+                          L0{les.order}: {les.title}
+                        </button>
+                      ))}
+                    </div>
 
                     {/* Enter OVA Button */}
                     <div className="pt-1">
@@ -370,7 +419,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                         className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-stone-900 active:bg-[#d94e34] hover:bg-[#d94e34] rounded-xl transition-colors flex items-center justify-center gap-1.5"
                       >
                         <span>Entrar a la OVA</span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
+                        <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
                       </button>
                     </div>
                   </motion.article>
@@ -379,31 +428,42 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
             </div>
           )}
 
-          {/* TAB 2: READER — CLEAN MOBILE LESSON VIEWER (NO PROGRESS BARS) */}
+          {/* TAB 2: READER — CLEAN MOBILE LESSON VIEWER (ZERO HORIZONTAL SCROLL) */}
           {activeTab === 'reader' && currentOva && (
-            <div className="p-4 space-y-4">
-              {/* OVA Switcher & Horizontal Lesson Pills */}
-              <div className="space-y-2.5">
+            <div className="p-3.5 space-y-3.5 min-w-0 max-w-full overflow-x-hidden">
+              {/* OVA Switcher & Wrapped Lesson Grid (No horizontal scroll) */}
+              <div className="bg-white border border-stone-200/90 rounded-2xl p-3.5 space-y-2.5 shadow-2xs min-w-0 max-w-full">
                 <div className="flex items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => setActiveTab('home')}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-stone-600 hover:text-stone-950"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-stone-100 text-xs font-semibold text-stone-700 active:bg-stone-200 shrink-0"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Catálogo</span>
                   </button>
-                  <span className="text-[10px] font-mono text-stone-500">
-                    {currentOva.code}
-                  </span>
+
+                  {/* Compact OVA Switcher Dropdown */}
+                  <select
+                    aria-label="Cambiar OVA activa"
+                    value={currentOva.id}
+                    onChange={(e) => handleOpenOvaInReader(e.target.value)}
+                    className="min-w-0 flex-1 max-w-[210px] px-2 py-1 text-[11px] font-mono font-semibold bg-stone-100 border border-stone-200 rounded-lg text-stone-800 truncate"
+                  >
+                    {publishedOvas.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.code} · {o.title}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <h2 className="text-sm font-bold text-stone-900 leading-snug">
+                <h2 className="text-xs font-bold text-stone-900 leading-snug break-words">
                   {currentOva.title}
                 </h2>
 
-                {/* Horizontal Scrollable Lesson Selector */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                {/* Wrapped Grid Lesson Selector (Eliminates horizontal scrolling) */}
+                <div className="grid grid-cols-3 gap-1.5 pt-0.5">
                   {currentOva.lessons.map((lesson) => {
                     const active = currentLesson?.id === lesson.id;
                     return (
@@ -415,10 +475,10 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                           setQuizAnswers({});
                           setQuizSubmitted(false);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap shrink-0 transition-colors ${
+                        className={`px-2 py-2 rounded-xl text-[11px] font-mono text-center transition-colors min-w-0 truncate ${
                           active
-                            ? 'bg-stone-900 text-white font-semibold'
-                            : 'bg-white text-stone-700 border border-stone-300/80'
+                            ? 'bg-stone-900 text-white font-bold shadow-2xs'
+                            : 'bg-stone-100 text-stone-700 border border-stone-200/80 active:bg-stone-200'
                         }`}
                       >
                         Lección 0{lesson.order}
@@ -430,38 +490,39 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
 
               {/* Active Lesson Content Card */}
               {currentLesson && (
-                <div className="bg-white border border-stone-200/90 rounded-2xl p-4 space-y-4 shadow-2xs">
-                  <div className="border-b border-stone-100 pb-3 space-y-1">
-                    <div className="text-[10px] font-mono text-[#d94e34] uppercase tracking-wider font-semibold">
+                <div className="bg-white border border-stone-200/90 rounded-2xl p-3.5 space-y-4 shadow-2xs min-w-0 max-w-full overflow-hidden">
+                  <div className="border-b border-stone-100 pb-3 space-y-1 min-w-0">
+                    <div className="text-[10px] font-mono text-[#d94e34] uppercase tracking-wider font-semibold break-words">
                       Lección 0{currentLesson.order} ·{' '}
-                      {currentLesson.durationMinutes} min · Toca enlaces/videos
-                      para previsualizar
+                      {currentLesson.durationMinutes} min · Interactiva
                     </div>
-                    <h3 className="text-base font-bold text-stone-950 leading-snug">
+                    <h3 className="text-base font-bold text-stone-950 leading-snug break-words">
                       {currentLesson.title}
                     </h3>
                     {currentLesson.summary && (
-                      <p className="text-xs text-stone-500">
+                      <p className="text-xs text-stone-500 leading-relaxed break-words">
                         {currentLesson.summary}
                       </p>
                     )}
                   </div>
 
-                  {/* Notion-Style Blocks with Tap-to-Preview Bottom Sheet on Mobile */}
-                  <LessonBlocksRenderer lesson={currentLesson} />
+                  {/* Notion-Style Blocks (Diagrams, Interactive JS Labs, Code & Text all fit 100% width) */}
+                  <div className="min-w-0 max-w-full overflow-hidden">
+                    <LessonBlocksRenderer lesson={currentLesson} />
+                  </div>
 
                   {/* Optional Self-Assessment Quiz */}
                   {currentLesson.quiz.length > 0 && (
-                    <div className="pt-4 border-t border-stone-200 space-y-3">
+                    <div className="pt-4 border-t border-stone-200 space-y-3 min-w-0 max-w-full">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-stone-700">
                         Autoevaluación de la Lección
                       </h4>
                       {currentLesson.quiz.map((q, qIdx) => (
                         <div
                           key={q.id}
-                          className="p-3 bg-stone-50 border border-stone-200 rounded-xl space-y-2 text-xs"
+                          className="p-3 bg-stone-50 border border-stone-200 rounded-xl space-y-2 text-xs min-w-0 max-w-full"
                         >
-                          <div className="font-bold text-stone-900">
+                          <div className="font-bold text-stone-900 break-words">
                             {qIdx + 1}. {q.question}
                           </div>
                           <div className="space-y-1.5">
@@ -478,7 +539,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                                       [q.id]: optIdx,
                                     }))
                                   }
-                                  className={`w-full text-left p-2.5 rounded-lg border text-xs transition-colors ${
+                                  className={`w-full text-left p-2.5 rounded-lg border text-xs transition-colors break-words ${
                                     quizSubmitted
                                       ? isRight
                                         ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-semibold'
@@ -496,7 +557,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                             })}
                           </div>
                           {quizSubmitted && (
-                            <p className="text-[11px] text-stone-600 pt-1">
+                            <p className="text-[11px] text-stone-600 pt-1 break-words">
                               <strong>Explicación:</strong> {q.explanation}
                             </p>
                           )}
@@ -505,7 +566,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                       <button
                         type="button"
                         onClick={() => setQuizSubmitted(true)}
-                        className="w-full py-2 text-xs font-semibold text-white bg-indigo-600 rounded-xl"
+                        className="w-full py-2.5 text-xs font-semibold text-white bg-indigo-600 active:bg-indigo-700 rounded-xl"
                       >
                         Verificar Respuestas
                       </button>
@@ -514,19 +575,19 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
 
                   {/* Optional Activity / Evidence Submission */}
                   {currentLesson.activity && (
-                    <div className="pt-4 border-t border-stone-200 space-y-2.5">
-                      <div className="flex items-center justify-between text-[11px] font-mono">
-                        <span className="text-indigo-700 font-bold">
+                    <div className="pt-4 border-t border-stone-200 space-y-2.5 min-w-0 max-w-full">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-mono">
+                        <span className="text-indigo-700 font-bold break-all">
                           {currentLesson.activity.evidenceCode}
                         </span>
                         <span className="text-amber-800">
                           Vence: {currentLesson.activity.dueDate}
                         </span>
                       </div>
-                      <div className="text-xs font-bold text-stone-900">
+                      <div className="text-xs font-bold text-stone-900 break-words">
                         {currentLesson.activity.title}
                       </div>
-                      <p className="text-xs text-stone-600">
+                      <p className="text-xs text-stone-600 leading-relaxed break-words">
                         {currentLesson.activity.instructions}
                       </p>
                       {evidenceNotice && (
@@ -550,36 +611,36 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                           setEvidenceNotice('Evidencia enviada correctamente.');
                           setTimeout(() => setEvidenceNotice(null), 3500);
                         }}
-                        className="flex gap-2 pt-1"
+                        className="flex flex-col sm:flex-row gap-2 pt-1"
                       >
                         <input
                           type="text"
                           value={evidenceUrl}
                           onChange={(e) => setEvidenceUrl(e.target.value)}
-                          placeholder="URL de entrega (Git / Drive)..."
-                          className="flex-1 px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl"
+                          placeholder="URL de entrega (GitHub / Drive)..."
+                          className="w-full sm:flex-1 px-3 py-2.5 text-xs bg-stone-50 border border-stone-300 rounded-xl min-w-0"
                         />
                         <button
                           type="submit"
-                          className="px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 rounded-xl inline-flex items-center gap-1"
+                          className="w-full sm:w-auto px-4 py-2.5 text-xs font-semibold text-white bg-emerald-600 active:bg-emerald-700 rounded-xl inline-flex items-center justify-center gap-1.5 shrink-0"
                         >
                           <Send className="w-3.5 h-3.5" />
-                          Enviar
+                          <span>Enviar Evidencia</span>
                         </button>
                       </form>
                     </div>
                   )}
 
                   {/* Prev / Next Lesson Thumb Navigation */}
-                  <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-2">
+                  <div className="pt-3 border-t border-stone-100 grid grid-cols-2 gap-2">
                     {prevLesson ? (
                       <button
                         type="button"
                         onClick={() => setSelectedLessonId(prevLesson.id)}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-stone-700 bg-stone-100 rounded-xl"
+                        className="inline-flex items-center justify-center gap-1 px-3 py-2.5 text-xs font-semibold text-stone-700 bg-stone-100 active:bg-stone-200 rounded-xl truncate"
                       >
-                        <ArrowLeft className="w-3.5 h-3.5" />
-                        Lección 0{prevLesson.order}
+                        <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
+                        <span>Lección 0{prevLesson.order}</span>
                       </button>
                     ) : (
                       <div />
@@ -588,10 +649,10 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                       <button
                         type="button"
                         onClick={() => setSelectedLessonId(nextLesson.id)}
-                        className="inline-flex items-center gap-1 px-3.5 py-2 text-xs font-semibold text-white bg-stone-900 rounded-xl"
+                        className="inline-flex items-center justify-center gap-1 px-3 py-2.5 text-xs font-semibold text-white bg-stone-900 active:bg-[#d94e34] rounded-xl truncate"
                       >
-                        Lección 0{nextLesson.order}
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <span>Lección 0{nextLesson.order}</span>
+                        <ArrowRight className="w-3.5 h-3.5 shrink-0" />
                       </button>
                     )}
                   </div>
@@ -602,11 +663,11 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
 
           {/* TAB 3: ANNOUNCEMENTS — SLIM MOBILE DEADLINES & RECENT PUBLICATIONS */}
           {activeTab === 'announcements' && (
-            <div className="p-4 space-y-5">
+            <div className="p-3.5 space-y-5 min-w-0 max-w-full overflow-x-hidden">
               <div className="space-y-2.5">
                 <div className="text-xs font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-[#d94e34]" />
-                  <span>Fechas de Evidencias</span>
+                  <Calendar className="w-3.5 h-3.5 text-[#d94e34] shrink-0" />
+                  <span>Fechas de Evidencias ({evidenceDeadlines.length})</span>
                 </div>
                 {evidenceDeadlines.map((ev) => (
                   <div
@@ -614,20 +675,20 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                     onClick={() =>
                       handleOpenOvaInReader(ev.ova.id, ev.lesson.id)
                     }
-                    className="p-3.5 bg-white border border-stone-200/90 rounded-xl space-y-1 cursor-pointer active:bg-stone-50"
+                    className="p-3.5 bg-white border border-stone-200/90 rounded-xl space-y-1 cursor-pointer active:bg-stone-50 min-w-0 max-w-full overflow-hidden"
                   >
-                    <div className="flex items-center justify-between text-[10px] font-mono">
-                      <span className="font-semibold text-stone-600">
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] font-mono">
+                      <span className="font-semibold text-stone-600 break-all">
                         Ficha {ev.ova.fichaCode} · {ev.evidenceCode}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-[#d94e34]/15 text-[#b8371f] font-bold">
+                      <span className="px-2 py-0.5 rounded bg-[#d94e34]/15 text-[#b8371f] font-bold shrink-0">
                         {ev.dueDate}
                       </span>
                     </div>
-                    <div className="text-xs font-bold text-stone-950">
+                    <div className="text-xs font-bold text-stone-950 break-words">
                       {ev.title}
                     </div>
-                    <div className="text-[11px] text-stone-500">
+                    <div className="text-[11px] text-stone-500 break-words">
                       {ev.ova.title} · Lección 0{ev.lesson.order}
                     </div>
                   </div>
@@ -636,7 +697,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
 
               <div className="space-y-2.5">
                 <div className="text-xs font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#1c5d43]" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#1c5d43] shrink-0" />
                   <span>Publicaciones Recientes</span>
                 </div>
                 {publishedOvas.map((ova) => (
@@ -645,9 +706,9 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                     onClick={() =>
                       handleOpenOvaInReader(ova.id, ova.lessons[0]?.id)
                     }
-                    className="p-3.5 bg-white border border-stone-200/90 rounded-xl space-y-1 cursor-pointer active:bg-stone-50"
+                    className="p-3.5 bg-white border border-stone-200/90 rounded-xl space-y-1 cursor-pointer active:bg-stone-50 min-w-0 max-w-full overflow-hidden"
                   >
-                    <div className="flex items-center justify-between text-[10px] font-mono">
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] font-mono">
                       <span className="text-[#1c5d43] font-semibold">
                         Publicado · {ova.updatedAt}
                       </span>
@@ -655,7 +716,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                         Ficha {ova.fichaCode}
                       </span>
                     </div>
-                    <div className="text-xs font-bold text-stone-900">
+                    <div className="text-xs font-bold text-stone-900 break-words">
                       {ova.title}
                     </div>
                   </div>
@@ -664,19 +725,19 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
             </div>
           )}
 
-          {/* TAB 4: BUILDER — MOBILE OVA AUTHORING (NO DEFAULT ELEMENTS, ADD ON DEMAND) */}
+          {/* TAB 4: BUILDER — MOBILE OVA AUTHORING IN-SITU (ZERO HORIZONTAL SCROLL) */}
           {activeTab === 'builder' && (
-            <div className="p-4 space-y-4">
+            <div className="p-3.5 space-y-3.5 min-w-0 max-w-full overflow-x-hidden">
               {!isInstructorAuth ? (
                 <div className="p-6 bg-white border border-stone-200 rounded-2xl text-center space-y-3">
                   <Lock className="w-8 h-8 text-stone-400 mx-auto" />
                   <h3 className="text-sm font-bold text-stone-900">
                     Autoría Móvil de OVAs (Modo Instructor)
                   </h3>
-                  <p className="text-xs text-stone-500">
-                    Inicia sesión como docente para crear OVAs limpias y
-                    agregar bloques de texto, enlaces, videos o código desde tu
-                    dispositivo móvil.
+                  <p className="text-xs text-stone-500 leading-relaxed">
+                    Inicia sesión como docente para crear OVAs y editar textos,
+                    código, diagramas y gráficos interactivos en el mismo lugar
+                    desde tu dispositivo Android.
                   </p>
                   <button
                     type="button"
@@ -688,7 +749,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2 min-w-0">
                     <select
                       value={currentOva?.id ?? ''}
                       onChange={(e) => {
@@ -696,7 +757,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                         setSelectedOvaId(e.target.value);
                         setSelectedLessonId(next?.lessons[0]?.id ?? '');
                       }}
-                      className="flex-1 px-3 py-2 text-xs font-semibold bg-white border border-stone-300 rounded-xl text-stone-900"
+                      className="min-w-0 flex-1 px-3 py-2 text-xs font-semibold bg-white border border-stone-300 rounded-xl text-stone-900 truncate"
                     >
                       {ovas.map((o) => (
                         <option key={o.id} value={o.id}>
@@ -710,12 +771,12 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                       className="px-3 py-2 text-xs font-semibold text-white bg-stone-900 rounded-xl shrink-0 inline-flex items-center gap-1"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      Nueva OVA
+                      <span>Nueva</span>
                     </button>
                   </div>
 
                   {currentOva && (
-                    <div className="p-3.5 bg-white border border-stone-200 rounded-2xl space-y-2.5">
+                    <div className="p-3.5 bg-white border border-stone-200 rounded-2xl space-y-2.5 min-w-0 max-w-full">
                       <input
                         type="text"
                         value={currentOva.title}
@@ -729,7 +790,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                           )
                         }
                         placeholder="Título de la OVA..."
-                        className="w-full px-3 py-1.5 text-xs font-bold bg-stone-50 border border-stone-200 rounded-lg"
+                        className="w-full px-3 py-1.5 text-xs font-bold bg-stone-50 border border-stone-200 rounded-lg min-w-0"
                       />
                       <textarea
                         rows={2}
@@ -744,17 +805,17 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                           )
                         }
                         placeholder="Descripción breve de la OVA..."
-                        className="w-full px-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg"
+                        className="w-full px-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg min-w-0"
                       />
 
-                      {/* Lesson Pills + Add Clean Lesson */}
-                      <div className="flex items-center gap-1.5 overflow-x-auto pt-1">
+                      {/* Wrapped Lesson Pills + Add Clean Lesson (Zero horizontal scroll) */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
                         {currentOva.lessons.map((l) => (
                           <button
                             key={l.id}
                             type="button"
                             onClick={() => setSelectedLessonId(l.id)}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-mono whitespace-nowrap ${
+                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-mono max-w-full truncate ${
                               currentLesson?.id === l.id
                                 ? 'bg-indigo-600 text-white font-semibold'
                                 : 'bg-stone-100 text-stone-700'
@@ -766,7 +827,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                         <button
                           type="button"
                           onClick={handleAddCleanMobileLesson}
-                          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-indigo-700 bg-indigo-50 whitespace-nowrap"
+                          className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-indigo-700 bg-indigo-50"
                         >
                           + Lección vacía
                         </button>
@@ -775,7 +836,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                   )}
 
                   {currentLesson && (
-                    <div className="space-y-3">
+                    <div className="space-y-3 min-w-0 max-w-full overflow-hidden">
                       <input
                         type="text"
                         value={currentLesson.title}
@@ -783,7 +844,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
                           handleUpdateCurrentLesson({ title: e.target.value })
                         }
                         placeholder="Título de la lección..."
-                        className="w-full px-3 py-2 text-xs font-bold bg-white border border-stone-200 rounded-xl"
+                        className="w-full px-3 py-2 text-xs font-bold bg-white border border-stone-200 rounded-xl min-w-0"
                       />
 
                       <NotionLessonBlockEditor
@@ -798,8 +859,8 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
           )}
         </div>
 
-        {/* 3. NATIVE BOTTOM TAB NAVIGATION BAR */}
-        <nav className="bg-white border-t border-stone-200 px-2 py-2 grid grid-cols-4 gap-1 shrink-0">
+        {/* 3. NATIVE ANDROID BOTTOM TAB NAVIGATION BAR */}
+        <nav className="bg-white border-t border-stone-200 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] grid grid-cols-4 gap-1 shrink-0 z-20">
           <button
             type="button"
             onClick={() => setActiveTab('home')}
@@ -829,7 +890,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('announcements')}
-            className={`flex flex-col items-center justify-center py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${
+            className={`relative flex flex-col items-center justify-center py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${
               activeTab === 'announcements'
                 ? 'text-[#d94e34] bg-[#d94e34]/10'
                 : 'text-stone-500 hover:text-stone-900'
@@ -849,7 +910,7 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
             }`}
           >
             <FileEdit className="w-4 h-4 mb-0.5" />
-            <span>Construir</span>
+            <span>Editar</span>
           </button>
         </nav>
       </div>

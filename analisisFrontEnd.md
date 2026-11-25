@@ -1,4 +1,4 @@
-l# Análisis Especializado de Frontend: UI/UX, Contenido Adaptativo, Accesibilidad y Correcciones — NexoOVA Studio
+# Análisis Especializado de Frontend: UI/UX, Contenido Adaptativo, Accesibilidad y Correcciones — NexoOVA Studio
 
 > **Documento:** `analisisFrontEnd.md`  
 > **Proyecto:** NexoOVA Studio (SENA)  
