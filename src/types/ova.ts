@@ -70,7 +70,9 @@ export type LessonBlockType =
   | 'code'
   | 'callout'
   | 'diagram'
-  | 'interactive';
+  | 'interactive'
+  | 'quote'
+  | 'exercise';
 
 export type DiagramKind =
   | 'var_let_const'
@@ -84,19 +86,29 @@ export type InteractiveKind =
   | 'array_functional'
   | 'object_lab';
 
+export type ExerciseDifficulty = 'Básico' | 'Intermedio' | 'Avanzado';
+
+export type ExerciseCategory = 'corto' | 'desarrollo';
+
 export interface LessonBlock {
   id: string;
   type: LessonBlockType;
-  title?: string; // Section title, link label, video title, filename, or callout title
-  content: string; // Paragraph markdown, code source, or summary description
+  title?: string; // Section title, link label, video title, filename, book title, or exercise title
+  content: string; // Paragraph markdown, code source, book quote, or exercise problem statement
   url?: string; // Target URL for 'link' or 'video'
-  relevanceComment?: string; // Hover preview commentary explaining content or relevance
+  relevanceComment?: string; // Hover preview commentary, book pedagogical reflection, or exercise hint
   domainOrSource?: string; // e.g. 'MDN Web Docs', 'YouTube · Canal SENA', 'RFC 9110'
   videoTimestamp?: string; // e.g. '04:10 - 12:30' or '18 min'
   codeLanguage?: string; // e.g. 'typescript', 'sql', 'bash', 'json', 'python', 'cisco'
   calloutTone?: 'info' | 'tip' | 'warning';
   diagramKind?: DiagramKind;
   interactiveKind?: InteractiveKind;
+  quoteAuthor?: string; // Author, edition, and publisher for 'quote' blocks
+  exerciseDifficulty?: ExerciseDifficulty; // Difficulty badge for 'exercise' blocks
+  exerciseCategory?: ExerciseCategory; // 'corto' (5 short proposed exercises) | 'desarrollo' (10 similar exercises to develop)
+  exerciseTopic?: string; // Specific sub-topic tested in this separate 'exercise' block
+  exerciseStarterCode?: string; // Interactive starter code snippet for the learner to edit and execute in-place
+  exerciseSolution?: string; // Step-by-step solved code & explanation for 'exercise' blocks
   sourceNodeId?: string; // Optional reference to a GraphNode for bidirectional Canvas <-> OVA sync
 }
 

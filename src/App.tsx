@@ -45,12 +45,12 @@ type InstructorTab = 'graph' | 'ovas' | 'learners' | 'reminders';
 type PublicSection = 'catalog' | 'evidences' | 'progress';
 
 const STORAGE_KEYS = {
-  NODES: 'nexoova_sena_nodes_v2_js',
-  EDGES: 'nexoova_sena_edges_v2_js',
-  REGIONS: 'nexoova_sena_regions_v2_js',
-  OVAS: 'nexoova_sena_ovas_v2_js',
-  LEARNERS: 'nexoova_sena_learners_v2_js',
-  LOGS: 'nexoova_sena_logs_v2_js',
+  NODES: 'nexoova_sena_nodes_v4_js_135ex',
+  EDGES: 'nexoova_sena_edges_v4_js_135ex',
+  REGIONS: 'nexoova_sena_regions_v4_js_135ex',
+  OVAS: 'nexoova_sena_ovas_v4_js_135ex',
+  LEARNERS: 'nexoova_sena_learners_v4_js_135ex',
+  LOGS: 'nexoova_sena_logs_v4_js_135ex',
   AUTH: 'nexoova_sena_instructor_auth_v1',
 };
 

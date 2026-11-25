@@ -4,7 +4,11 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
+  BookMarked,
   Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Code2,
   Copy,
@@ -21,6 +25,7 @@ import {
   Layers,
   Lightbulb,
   Link2,
+  ListChecks,
   MessageSquareQuote,
   Play,
   Plus,
@@ -33,6 +38,8 @@ import {
 } from 'lucide-react';
 import {
   DiagramKind,
+  ExerciseCategory,
+  ExerciseDifficulty,
   GraphNode,
   InteractiveKind,
   Lesson,
@@ -303,6 +310,20 @@ export function blocksToMarkdown(blocks: LessonBlock[]): string {
             b.codeLanguage || 'javascript'
           }\n${b.content}\n\`\`\`${
             b.relevanceComment ? `\n*Nota técnica:* ${b.relevanceComment}` : ''
+          }`;
+        case 'quote':
+          return `> 📚 **Cita Bibliográfica — ${b.title || 'Referencia Técnica'}** (${
+            b.quoteAuthor || 'Autor'
+          }):\n> *"${b.content}"*${
+            b.relevanceComment ? `\n> — *Reflexión pedagógica:* ${b.relevanceComment}` : ''
+          }`;
+        case 'exercise':
+          return `#### 🧩 ${b.title || 'Ejercicio Práctico'} [${
+            b.exerciseDifficulty || 'Intermedio'
+          }${b.exerciseTopic ? ` · ${b.exerciseTopic}` : ''}]\n${b.content}${
+            b.exerciseSolution
+              ? `\n\n**Solución Resuelta Paso a Paso:**\n\`\`\`javascript\n${b.exerciseSolution}\n\`\`\``
+              : ''
           }`;
         default:
           return b.content;
@@ -2238,6 +2259,625 @@ export const CodeSegmentBlockView: React.FC<{
   );
 };
 
+/**
+ * Bibliographic Quote & Technical Book Reference Block ('quote')
+ * Renders authoritative book citations (Haverbeke, Simpson, Flanagan, Crockford, Zakas, ECMA-262)
+ * with in-place editing support.
+ */
+export const QuoteBlockView: React.FC<{
+  block: LessonBlock;
+  editable?: boolean;
+  onUpdateBlock?: (patch: Partial<LessonBlock>) => void;
+}> = ({ block, editable = false, onUpdateBlock }) => {
+  return (
+    <div className="my-3 rounded-2xl border-l-4 border-l-amber-600 border border-amber-200/90 bg-gradient-to-r from-amber-50/80 via-stone-50/90 to-white p-4 shadow-2xs space-y-2.5 min-w-0 max-w-full overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+            <BookMarked className="w-4 h-4" />
+          </div>
+          {editable && onUpdateBlock ? (
+            <input
+              type="text"
+              value={block.title ?? ''}
+              onChange={(e) => onUpdateBlock({ title: e.target.value })}
+              placeholder="Libro / Obra citada (ej. Eloquent JavaScript, 4.ª Ed., Cap. 2)..."
+              className="flex-1 min-w-0 px-2.5 py-1 text-xs font-bold bg-white border border-amber-300 rounded-lg text-stone-900 focus:outline-none focus:border-amber-600"
+            />
+          ) : (
+            <div className="min-w-0">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-amber-800 font-bold block">
+                Referencia Bibliográfica y Cita de Autor
+              </span>
+              <h4 className="text-xs sm:text-sm font-bold text-stone-950 break-words">
+                {block.title || 'Bibliografía Técnica de JavaScript'}
+              </h4>
+            </div>
+          )}
+        </div>
+
+        {editable && onUpdateBlock ? (
+          <input
+            type="text"
+            value={block.quoteAuthor ?? ''}
+            onChange={(e) => onUpdateBlock({ quoteAuthor: e.target.value })}
+            placeholder="Autor y Editorial (ej. Marijn Haverbeke · No Starch Press)"
+            className="w-full sm:w-64 min-w-0 px-2.5 py-1 text-xs font-mono bg-white border border-amber-300 rounded-lg text-amber-950 focus:outline-none"
+          />
+        ) : (
+          block.quoteAuthor && (
+            <span className="px-2.5 py-1 rounded-full bg-amber-100/90 border border-amber-300/80 text-[11px] font-mono font-semibold text-amber-950 break-words">
+              ✍ {block.quoteAuthor}
+            </span>
+          )
+        )}
+      </div>
+
+      {/* Verbatim or Translated Book Quote */}
+      {editable && onUpdateBlock ? (
+        <textarea
+          rows={3}
+          value={block.content}
+          onChange={(e) => onUpdateBlock({ content: e.target.value })}
+          placeholder="Escribe aquí la cita textual o pasaje clave del libro..."
+          className="w-full p-2.5 text-xs sm:text-sm italic text-stone-800 bg-white border border-amber-200 rounded-xl focus:outline-none focus:border-amber-600 resize-y"
+        />
+      ) : (
+        <blockquote className="pl-3 border-l-2 border-amber-400/80 text-xs sm:text-sm italic text-stone-800 leading-relaxed break-words [overflow-wrap:anywhere]">
+          &ldquo;{block.content}&rdquo;
+        </blockquote>
+      )}
+
+      {/* Pedagogical Commentary / Connection to SENA Practice */}
+      {(editable || block.relevanceComment) && (
+        <div className="pt-2 border-t border-amber-200/70 text-xs text-stone-700 flex items-start gap-2 min-w-0">
+          <MessageSquareQuote className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+          {editable && onUpdateBlock ? (
+            <input
+              type="text"
+              value={block.relevanceComment ?? ''}
+              onChange={(e) =>
+                onUpdateBlock({ relevanceComment: e.target.value })
+              }
+              placeholder="Aplicación práctica o reflexión pedagógica sobre esta cita..."
+              className="flex-1 min-w-0 px-2.5 py-1 bg-white border border-amber-300 rounded-lg text-xs text-stone-800 focus:outline-none"
+            />
+          ) : (
+            <div className="min-w-0 break-words leading-relaxed">
+              <strong className="text-amber-950">
+                Análisis e implicación en ingeniería de software:
+              </strong>{' '}
+              {block.relevanceComment}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/**
+ * Safe In-Browser JavaScript Snippet Execution Engine for Interactive Exercises
+ */
+interface JsExecutionLogEntry {
+  level: 'log' | 'warn' | 'error' | 'result';
+  text: string;
+}
+
+interface JsExecutionResult {
+  logs: JsExecutionLogEntry[];
+  error: string | null;
+  durationMs: string;
+}
+
+function formatJsValueForConsole(val: unknown): string {
+  if (val === undefined) return 'undefined';
+  if (val === null) return 'null';
+  if (typeof val === 'number' && Number.isNaN(val)) return 'NaN';
+  if (typeof val === 'bigint') return `${val.toString()}n`;
+  if (typeof val === 'symbol') return val.toString();
+  if (typeof val === 'function') return `[Function: ${val.name || 'anónima'}]`;
+  if (typeof val === 'string') return val;
+  if (val instanceof Error) return `${val.name}: ${val.message}`;
+  try {
+    return JSON.stringify(val);
+  } catch {
+    return String(val);
+  }
+}
+
+export function executeLiveJavaScriptSnippet(code: string): JsExecutionResult {
+  const logs: JsExecutionLogEntry[] = [];
+  const start =
+    typeof performance !== 'undefined' ? performance.now() : Date.now();
+
+  const customConsole = {
+    log: (...args: unknown[]) => {
+      logs.push({
+        level: 'log',
+        text: args.map(formatJsValueForConsole).join(' '),
+      });
+    },
+    info: (...args: unknown[]) => {
+      logs.push({
+        level: 'log',
+        text: args.map(formatJsValueForConsole).join(' '),
+      });
+    },
+    warn: (...args: unknown[]) => {
+      logs.push({
+        level: 'warn',
+        text: args.map(formatJsValueForConsole).join(' '),
+      });
+    },
+    error: (...args: unknown[]) => {
+      logs.push({
+        level: 'error',
+        text: args.map(formatJsValueForConsole).join(' '),
+      });
+    },
+    table: (data: unknown) => {
+      logs.push({
+        level: 'log',
+        text: formatJsValueForConsole(data),
+      });
+    },
+  };
+
+  try {
+    const runner = new Function('console', `"use strict";\n${code}`);
+    const returnValue = runner(customConsole);
+    if (returnValue !== undefined) {
+      logs.push({
+        level: 'result',
+        text: `↳ Valor retornado: ${formatJsValueForConsole(returnValue)}`,
+      });
+    }
+    const end =
+      typeof performance !== 'undefined' ? performance.now() : Date.now();
+    return {
+      logs,
+      error: null,
+      durationMs: Math.max(0.1, end - start).toFixed(2),
+    };
+  } catch (err: unknown) {
+    const end =
+      typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const errorMessage =
+      err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    return {
+      logs,
+      error: errorMessage,
+      durationMs: Math.max(0.1, end - start).toFixed(2),
+    };
+  }
+}
+
+/**
+ * Separated Individual Exercise Block ('exercise') with Integrated Live JS Code Snippet Runner!
+ * Allows the learner to read the exercise, write/modify their solution directly inside the
+ * interactive code snippet editor, test its execution in real time, and compare with the reference solution.
+ */
+export const ExerciseBlockView: React.FC<{
+  block: LessonBlock;
+  exerciseNumber?: number;
+  editable?: boolean;
+  onUpdateBlock?: (patch: Partial<LessonBlock>) => void;
+}> = ({ block, exerciseNumber, editable = false, onUpdateBlock }) => {
+  const defaultStarter = useMemo(() => {
+    if (block.exerciseStarterCode && block.exerciseStarterCode.trim()) {
+      return block.exerciseStarterCode;
+    }
+    return `// Escribe tu solución para: ${block.title || 'este ejercicio'}\n\nconsole.log('Probando mi solución...');`;
+  }, [block.exerciseStarterCode, block.title]);
+
+  const [studentCode, setStudentCode] = useState<string>(defaultStarter);
+  const [execResult, setExecResult] = useState<JsExecutionResult | null>(null);
+  const [showSolution, setShowSolution] = useState<boolean>(false);
+  const [copiedSol, setCopiedSol] = useState<boolean>(false);
+
+  const difficulty: ExerciseDifficulty =
+    block.exerciseDifficulty ?? 'Intermedio';
+  const category: ExerciseCategory = block.exerciseCategory ?? 'desarrollo';
+
+  const diffBadgeStyle =
+    difficulty === 'Básico'
+      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+      : difficulty === 'Avanzado'
+      ? 'bg-rose-500/20 text-rose-300 border-rose-400/40'
+      : 'bg-amber-500/20 text-amber-300 border-amber-400/40';
+
+  const isCorto = category === 'corto';
+
+  const handleRunSnippet = (codeToRun?: string) => {
+    const targetCode = codeToRun ?? studentCode;
+    const res = executeLiveJavaScriptSnippet(targetCode);
+    setExecResult(res);
+  };
+
+  const handleResetSnippet = () => {
+    setStudentCode(defaultStarter);
+    setExecResult(null);
+  };
+
+  const handleLoadSolutionIntoEditor = () => {
+    if (!block.exerciseSolution) return;
+    setStudentCode(block.exerciseSolution);
+    handleRunSnippet(block.exerciseSolution);
+  };
+
+  const handleCopySolution = () => {
+    if (!block.exerciseSolution) return;
+    navigator.clipboard?.writeText(block.exerciseSolution);
+    setCopiedSol(true);
+    setTimeout(() => setCopiedSol(false), 2000);
+  };
+
+  const solutionLines = (block.exerciseSolution || '').split('\n');
+  const studentLinesCount = (studentCode || '').split('\n').length;
+
+  return (
+    <div
+      className={`my-3 rounded-2xl border-2 bg-white overflow-hidden shadow-xs min-w-0 max-w-full ${
+        isCorto ? 'border-amber-200/90' : 'border-indigo-200/90'
+      }`}
+    >
+      {/* Independent Exercise Header */}
+      <div
+        className={`px-3.5 py-2.5 text-white flex flex-wrap items-center justify-between gap-2 min-w-0 ${
+          isCorto
+            ? 'bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900'
+            : 'bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950'
+        }`}
+      >
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span
+            className={`px-2 py-0.5 rounded-md text-white font-mono text-[11px] font-bold shrink-0 ${
+              isCorto ? 'bg-amber-600' : 'bg-indigo-600'
+            }`}
+          >
+            {isCorto
+              ? `⚡ Corto #${exerciseNumber ?? ''}`
+              : `🛠️ Desarrollo #${exerciseNumber ?? ''}`}
+          </span>
+          {editable && onUpdateBlock ? (
+            <input
+              type="text"
+              value={block.title ?? ''}
+              onChange={(e) => onUpdateBlock({ title: e.target.value })}
+              placeholder="Título del ejercicio independiente..."
+              className="flex-1 min-w-0 px-2.5 py-1 text-xs font-bold bg-slate-800 text-white border border-slate-700 rounded focus:outline-none focus:border-indigo-400"
+            />
+          ) : (
+            <h4 className="text-xs sm:text-sm font-bold text-white break-words min-w-0">
+              {block.title || 'Ejercicio Práctico Independiente'}
+            </h4>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+          {editable && onUpdateBlock ? (
+            <>
+              <select
+                value={category}
+                onChange={(e) =>
+                  onUpdateBlock({
+                    exerciseCategory: e.target.value as ExerciseCategory,
+                  })
+                }
+                className="px-2 py-0.5 text-[11px] font-mono bg-slate-800 text-emerald-300 border border-slate-700 rounded"
+              >
+                <option value="corto">Categoría: Propuesto Corto</option>
+                <option value="desarrollo">Categoría: Para Desarrollar</option>
+              </select>
+              <input
+                type="text"
+                value={block.exerciseTopic ?? ''}
+                onChange={(e) =>
+                  onUpdateBlock({ exerciseTopic: e.target.value })
+                }
+                placeholder="Tema evaluado..."
+                className="w-32 min-w-0 px-2 py-0.5 text-[11px] font-mono bg-slate-800 text-indigo-200 border border-slate-700 rounded"
+              />
+              <select
+                value={difficulty}
+                onChange={(e) =>
+                  onUpdateBlock({
+                    exerciseDifficulty: e.target.value as ExerciseDifficulty,
+                  })
+                }
+                className="px-2 py-0.5 text-[11px] font-mono bg-slate-800 text-amber-300 border border-slate-700 rounded"
+              >
+                <option value="Básico">Nivel: Básico</option>
+                <option value="Intermedio">Nivel: Intermedio</option>
+                <option value="Avanzado">Nivel: Avanzado</option>
+              </select>
+            </>
+          ) : (
+            <>
+              {block.exerciseTopic && (
+                <span className="px-2 py-0.5 rounded bg-slate-800 text-indigo-200 border border-slate-700 text-[10px] font-mono">
+                  {block.exerciseTopic}
+                </span>
+              )}
+              <span
+                className={`px-2 py-0.5 rounded border text-[10px] font-mono font-bold ${diffBadgeStyle}`}
+              >
+                Nivel {difficulty}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Problem Statement, Live Interactive Code Snippet Runner & Solution */}
+      <div className="p-3.5 sm:p-4 space-y-3 bg-slate-50/40 min-w-0 max-w-full">
+        {/* 1. Problem Statement */}
+        <div className="space-y-1.5">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-900 font-bold flex items-center gap-1.5">
+            <ListChecks className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <span>
+              {isCorto
+                ? 'Enunciado del Ejercicio Propuesto Corto'
+                : 'Enunciado del Ejercicio para Desarrollar'}
+            </span>
+          </div>
+
+          {editable && onUpdateBlock ? (
+            <textarea
+              rows={3}
+              value={block.content}
+              onChange={(e) => onUpdateBlock({ content: e.target.value })}
+              placeholder="Describe el problema del ejercicio, datos de entrada y salida esperada..."
+              className="w-full p-2.5 text-xs sm:text-sm text-slate-800 bg-white border border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-600 resize-y"
+            />
+          ) : (
+            <div className="text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line break-words [overflow-wrap:anywhere]">
+              {renderRichTextWithInlinePreviews(block.content)}
+            </div>
+          )}
+        </div>
+
+        {/* 2. Hint / Criterio Técnico */}
+        {(editable || block.relevanceComment) && (
+          <div className="p-2.5 rounded-xl bg-amber-50/90 border border-amber-200/90 text-xs text-amber-950 flex items-start gap-2 min-w-0">
+            <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            {editable && onUpdateBlock ? (
+              <input
+                type="text"
+                value={block.relevanceComment ?? ''}
+                onChange={(e) =>
+                  onUpdateBlock({ relevanceComment: e.target.value })
+                }
+                placeholder="Pista técnica o concepto clave a aplicar en este ejercicio..."
+                className="flex-1 min-w-0 px-2 py-1 bg-white border border-amber-300 rounded text-xs"
+              />
+            ) : (
+              <div className="min-w-0 break-words">
+                <strong>Pista / Criterio Técnico:</strong>{' '}
+                {block.relevanceComment}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 3. LIVE INTERACTIVE CODE SNIPPET RUNNER (Student writes and tests execution right here!) */}
+        <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100 shadow-2xs min-w-0 max-w-full">
+          {/* Top Runner Toolbar */}
+          <div className="px-3 py-2 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="w-2 h-2 rounded-full bg-rose-500/80" />
+                <span className="w-2 h-2 rounded-full bg-amber-500/80" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500/80" />
+              </div>
+              <span className="text-[11px] font-mono font-semibold text-slate-200 truncate">
+                Snippet Interactivo JS · Escribe y prueba tu código aquí
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleRunSnippet()}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-2xs transition-colors"
+              >
+                <Play className="w-3 h-3 fill-current" />
+                <span>Ejecutar Código</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResetSnippet}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-mono bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                title="Restaurar snippet inicial"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reiniciar</span>
+              </button>
+
+              {block.exerciseSolution && (
+                <button
+                  type="button"
+                  onClick={handleLoadSolutionIntoEditor}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-mono bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/70 transition-colors"
+                  title="Cargar la solución resuelta en este editor y ejecutarla"
+                >
+                  <Sparkles className="w-3 h-3 text-indigo-400" />
+                  <span>Probar Solución</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Editable Student Code Area */}
+          <div className="p-3 bg-slate-950 min-w-0 max-w-full">
+            <textarea
+              spellCheck={false}
+              rows={Math.max(4, Math.min(14, studentLinesCount + 1))}
+              value={
+                editable && onUpdateBlock
+                  ? block.exerciseStarterCode ?? studentCode
+                  : studentCode
+              }
+              onChange={(e) => {
+                setStudentCode(e.target.value);
+                if (editable && onUpdateBlock) {
+                  onUpdateBlock({ exerciseStarterCode: e.target.value });
+                }
+              }}
+              placeholder="// Escribe tu código JavaScript aquí y pulsa Ejecutar Código..."
+              className="w-full font-mono text-xs leading-relaxed bg-slate-950 text-emerald-300 focus:outline-none resize-y whitespace-pre-wrap break-words"
+            />
+          </div>
+
+          {/* Live Execution Console Output */}
+          {execResult && (
+            <div className="px-3.5 py-2.5 bg-black/90 border-t border-slate-800 font-mono text-xs space-y-1.5 min-w-0 max-w-full">
+              <div className="flex items-center justify-between gap-2 text-[10px] text-slate-400 border-b border-slate-800/80 pb-1">
+                <span className="flex items-center gap-1.5 font-semibold text-slate-300">
+                  <Terminal className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>Consola de Ejecución en Vivo (Motor JS)</span>
+                </span>
+                <span>Tiempo: {execResult.durationMs} ms</span>
+              </div>
+
+              {execResult.logs.length === 0 && !execResult.error && (
+                <div className="text-slate-400 italic text-[11px]">
+                  ✓ Código ejecutado sin errores. (Usa console.log(...) para
+                  imprimir resultados en consola).
+                </div>
+              )}
+
+              {execResult.logs.map((entry, idx) => (
+                <div
+                  key={idx}
+                  className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed ${
+                    entry.level === 'error'
+                      ? 'text-rose-400'
+                      : entry.level === 'warn'
+                      ? 'text-amber-300'
+                      : entry.level === 'result'
+                      ? 'text-indigo-300 font-semibold'
+                      : 'text-emerald-300'
+                  }`}
+                >
+                  <span className="text-slate-600 select-none mr-1.5">&gt;</span>
+                  {entry.text}
+                </div>
+              ))}
+
+              {execResult.error && (
+                <div className="p-2 rounded-lg bg-rose-950/70 border border-rose-500/40 text-rose-200 whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[11px]">
+                  <strong>⚠️ Error en Tiempo de Ejecución:</strong>{' '}
+                  {execResult.error}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 4. Step-by-Step Official Solution Section */}
+        {editable && onUpdateBlock ? (
+          <div className="space-y-1.5 pt-2 border-t border-indigo-200/60">
+            <label className="block text-[11px] font-mono font-bold text-slate-700">
+              Solución Oficial Resuelta Paso a Paso (Código JS de Referencia):
+            </label>
+            <textarea
+              rows={Math.max(4, solutionLines.length)}
+              value={block.exerciseSolution ?? ''}
+              onChange={(e) =>
+                onUpdateBlock({ exerciseSolution: e.target.value })
+              }
+              placeholder="// Escribe aquí la solución comentada paso a paso..."
+              className="w-full p-3 font-mono text-xs bg-slate-950 text-emerald-300 border border-slate-800 rounded-xl focus:outline-none resize-y"
+            />
+          </div>
+        ) : (
+          block.exerciseSolution && (
+            <div className="pt-0.5">
+              <button
+                type="button"
+                onClick={() => setShowSolution((v) => !v)}
+                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  showSolution
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  {showSolution
+                    ? 'Ocultar Solución de Referencia'
+                    : 'Ver Solución Oficial Paso a Paso'}
+                </span>
+                {showSolution ? (
+                  <ChevronUp className="w-3.5 h-3.5 shrink-0" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+                )}
+              </button>
+
+              {showSolution && (
+                <div className="mt-2 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100 min-w-0 max-w-full">
+                  <div className="px-3.5 py-2 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[11px] font-mono font-semibold text-emerald-400 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>Solución Oficial Comentada Paso a Paso</span>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleLoadSolutionIntoEditor}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-mono bg-emerald-700 hover:bg-emerald-600 text-white rounded"
+                      >
+                        <Play className="w-2.5 h-2.5 fill-current" />
+                        <span>Cargar y Ejecutar Arriba</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCopySolution}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-mono bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700"
+                      >
+                        {copiedSol ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-400" />
+                            <span className="text-emerald-300">Copiado</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 text-slate-400" />
+                            <span>Copiar</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-3 sm:p-4 font-mono text-xs leading-relaxed space-y-0.5 min-w-0 max-w-full overflow-hidden">
+                    {solutionLines.map((line, lIdx) => (
+                      <div
+                        key={lIdx}
+                        className="flex items-start gap-2.5 hover:bg-slate-900/70 rounded px-1 min-w-0"
+                      >
+                        <span className="select-none text-right text-slate-600 w-6 shrink-0 font-mono text-[11px]">
+                          {lIdx + 1}
+                        </span>
+                        <span className="text-emerald-200 whitespace-pre-wrap break-words [overflow-wrap:anywhere] font-mono min-w-0 flex-1">
+                          {line || ' '}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+};
+
 export function renderRichTextWithInlinePreviews(text: string): React.ReactNode {
   const linkRegex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g;
   const elements: React.ReactNode[] = [];
@@ -2323,7 +2963,9 @@ function formatInlineCodeAndBold(segment: string): React.ReactNode {
 }
 
 /**
- * Full Notion-Style Lesson Content Renderer (Used in PublicLearnerPortal & Printable Guide)
+ * Full Notion-Style Lesson Content Renderer (Used in PublicLearnerPortal, MobileAppShell & Printable Guide)
+ * Separates Theoretical Content (Explanations, Book Quotes, Diagrams, Interactive Graphics, Examples)
+ * from the Practical Exercise Workshop (Separated Individual Exercises).
  */
 export const LessonBlocksRenderer: React.FC<{
   lesson: Lesson;
@@ -2332,159 +2974,322 @@ export const LessonBlocksRenderer: React.FC<{
   const [openVideoEmbedIds, setOpenVideoEmbedIds] = useState<
     Record<string, boolean>
   >({});
+  const [sectionFilter, setSectionFilter] = useState<
+    'all' | 'theory' | 'cortos' | 'desarrollo'
+  >('all');
+
+  const theoryBlocks = useMemo(
+    () => blocks.filter((b) => b.type !== 'exercise'),
+    [blocks]
+  );
+  const exerciseBlocks = useMemo(
+    () => blocks.filter((b) => b.type === 'exercise'),
+    [blocks]
+  );
+  const shortExercises = useMemo(
+    () => exerciseBlocks.filter((b) => b.exerciseCategory === 'corto'),
+    [exerciseBlocks]
+  );
+  const devExercises = useMemo(
+    () => exerciseBlocks.filter((b) => b.exerciseCategory !== 'corto'),
+    [exerciseBlocks]
+  );
+  const quoteCount = useMemo(
+    () => blocks.filter((b) => b.type === 'quote').length,
+    [blocks]
+  );
 
   const toggleVideoEmbed = (blockId: string) => {
     setOpenVideoEmbedIds((prev) => ({ ...prev, [blockId]: !prev[blockId] }));
   };
 
-  return (
-    <div className="space-y-4 min-w-0 max-w-full overflow-hidden">
-      {blocks.map((block) => {
-        switch (block.type) {
-          case 'heading':
-            return (
-              <h3
-                key={block.id}
-                className="text-base font-bold text-slate-900 pt-3 border-b border-slate-100 pb-1.5 flex items-center gap-2 min-w-0"
-              >
-                <span className="w-1.5 h-4 rounded-full bg-indigo-600 inline-block shrink-0" />
-                <span className="break-words min-w-0">
-                  {block.title || block.content}
-                </span>
-              </h3>
-            );
+  const renderSingleBlock = (block: LessonBlock, exerciseIdx?: number) => {
+    switch (block.type) {
+      case 'heading':
+        return (
+          <h3
+            key={block.id}
+            className="text-base font-bold text-slate-900 pt-3 border-b border-slate-100 pb-1.5 flex items-center gap-2 min-w-0"
+          >
+            <span className="w-1.5 h-4 rounded-full bg-indigo-600 inline-block shrink-0" />
+            <span className="break-words min-w-0">
+              {block.title || block.content}
+            </span>
+          </h3>
+        );
 
-          case 'text':
-            return (
-              <div
-                key={block.id}
-                className="text-sm text-slate-700 leading-relaxed whitespace-pre-line break-words [overflow-wrap:anywhere] min-w-0 max-w-full"
-              >
+      case 'text':
+        return (
+          <div
+            key={block.id}
+            className="text-sm text-slate-700 leading-relaxed whitespace-pre-line break-words [overflow-wrap:anywhere] min-w-0 max-w-full"
+          >
+            {renderRichTextWithInlinePreviews(block.content)}
+          </div>
+        );
+
+      case 'quote':
+        return <QuoteBlockView key={block.id} block={block} />;
+
+      case 'exercise':
+        return (
+          <ExerciseBlockView
+            key={block.id}
+            block={block}
+            exerciseNumber={exerciseIdx}
+          />
+        );
+
+      case 'callout': {
+        const tone = block.calloutTone ?? 'info';
+        const styles =
+          tone === 'tip'
+            ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+            : tone === 'warning'
+            ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+            : 'bg-indigo-50/70 border-indigo-200 text-indigo-950';
+        return (
+          <div
+            key={block.id}
+            className={`p-3.5 sm:p-4 rounded-xl border flex items-start gap-3 min-w-0 max-w-full ${styles}`}
+          >
+            {tone === 'tip' ? (
+              <Lightbulb className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            ) : tone === 'warning' ? (
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            ) : (
+              <Info className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+            )}
+            <div className="space-y-1 text-xs leading-relaxed min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
+              {block.title && (
+                <div className="font-bold text-sm break-words">
+                  {block.title}
+                </div>
+              )}
+              <div className="whitespace-pre-line break-words">
                 {renderRichTextWithInlinePreviews(block.content)}
               </div>
-            );
+            </div>
+          </div>
+        );
+      }
 
-          case 'callout': {
-            const tone = block.calloutTone ?? 'info';
-            const styles =
-              tone === 'tip'
-                ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
-                : tone === 'warning'
-                ? 'bg-amber-50/80 border-amber-200 text-amber-950'
-                : 'bg-indigo-50/70 border-indigo-200 text-indigo-950';
-            return (
-              <div
-                key={block.id}
-                className={`p-3.5 sm:p-4 rounded-xl border flex items-start gap-3 min-w-0 max-w-full ${styles}`}
-              >
-                {tone === 'tip' ? (
-                  <Lightbulb className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                ) : tone === 'warning' ? (
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+      case 'diagram':
+        return <DiagramBlockView key={block.id} block={block} />;
+
+      case 'interactive':
+        return <InteractiveGraphicBlockView key={block.id} block={block} />;
+
+      case 'link':
+        return (
+          <div key={block.id} className="my-1">
+            <HoverPreviewTrigger
+              kind="link"
+              title={block.title || block.url || 'Enlace de referencia'}
+              url={block.url || 'https://developer.mozilla.org'}
+              relevanceComment={
+                block.relevanceComment ||
+                block.content ||
+                'Enlace técnico seleccionado para fundamentar la lección.'
+              }
+              domainOrSource={block.domainOrSource}
+              description={block.content}
+            />
+          </div>
+        );
+
+      case 'video': {
+        const ytId = extractYouTubeId(block.url);
+        const isEmbedOpen = !!openVideoEmbedIds[block.id];
+        return (
+          <div key={block.id} className="my-1 space-y-2">
+            <HoverPreviewTrigger
+              kind="video"
+              title={block.title || 'Video explicativo de la lección'}
+              url={block.url || 'https://www.youtube.com'}
+              relevanceComment={
+                block.relevanceComment ||
+                block.content ||
+                'Video seleccionado por el instructor para demostrar el procedimiento paso a paso.'
+              }
+              domainOrSource={block.domainOrSource}
+              videoTimestamp={block.videoTimestamp}
+              description={block.content}
+              onToggleEmbed={() => toggleVideoEmbed(block.id)}
+              isEmbedOpen={isEmbedOpen}
+            />
+
+            {isEmbedOpen && (
+              <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100 p-4 space-y-3">
+                {ytId ? (
+                  <div className="aspect-video w-full rounded-lg overflow-hidden bg-black">
+                    <iframe
+                      title={block.title || 'Video OVA'}
+                      src={`https://www.youtube.com/embed/${ytId}`}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
                 ) : (
-                  <Info className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
-                )}
-                <div className="space-y-1 text-xs leading-relaxed min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
-                  {block.title && (
-                    <div className="font-bold text-sm break-words">
+                  <div className="p-6 rounded-lg bg-slate-900 border border-slate-800 flex flex-col items-center text-center space-y-3">
+                    <Video className="w-6 h-6 text-rose-400" />
+                    <div className="text-sm font-bold text-white">
                       {block.title}
                     </div>
-                  )}
-                  <div className="whitespace-pre-line break-words">
-                    {renderRichTextWithInlinePreviews(block.content)}
-                  </div>
-                </div>
-              </div>
-            );
-          }
-
-          case 'diagram':
-            return <DiagramBlockView key={block.id} block={block} />;
-
-          case 'interactive':
-            return <InteractiveGraphicBlockView key={block.id} block={block} />;
-
-          case 'link':
-            return (
-              <div key={block.id} className="my-1">
-                <HoverPreviewTrigger
-                  kind="link"
-                  title={block.title || block.url || 'Enlace de referencia'}
-                  url={block.url || 'https://developer.mozilla.org'}
-                  relevanceComment={
-                    block.relevanceComment ||
-                    block.content ||
-                    'Enlace técnico seleccionado para fundamentar la lección.'
-                  }
-                  domainOrSource={block.domainOrSource}
-                  description={block.content}
-                />
-              </div>
-            );
-
-          case 'video': {
-            const ytId = extractYouTubeId(block.url);
-            const isEmbedOpen = !!openVideoEmbedIds[block.id];
-            return (
-              <div key={block.id} className="my-1 space-y-2">
-                <HoverPreviewTrigger
-                  kind="video"
-                  title={block.title || 'Video explicativo de la lección'}
-                  url={block.url || 'https://www.youtube.com'}
-                  relevanceComment={
-                    block.relevanceComment ||
-                    block.content ||
-                    'Video seleccionado por el instructor para demostrar el procedimiento paso a paso.'
-                  }
-                  domainOrSource={block.domainOrSource}
-                  videoTimestamp={block.videoTimestamp}
-                  description={block.content}
-                  onToggleEmbed={() => toggleVideoEmbed(block.id)}
-                  isEmbedOpen={isEmbedOpen}
-                />
-
-                {isEmbedOpen && (
-                  <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100 p-4 space-y-3">
-                    {ytId ? (
-                      <div className="aspect-video w-full rounded-lg overflow-hidden bg-black">
-                        <iframe
-                          title={block.title || 'Video OVA'}
-                          src={`https://www.youtube.com/embed/${ytId}`}
-                          className="w-full h-full border-0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    ) : (
-                      <div className="p-6 rounded-lg bg-slate-900 border border-slate-800 flex flex-col items-center text-center space-y-3">
-                        <Video className="w-6 h-6 text-rose-400" />
-                        <div className="text-sm font-bold text-white">
-                          {block.title}
-                        </div>
-                        <a
-                          href={block.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-lg"
-                        >
-                          Abrir Reproductor Externo
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-                    )}
+                    <a
+                      href={block.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-lg"
+                    >
+                      Abrir Reproductor Externo
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
                   </div>
                 )}
               </div>
-            );
-          }
+            )}
+          </div>
+        );
+      }
 
-          case 'code':
-            return <CodeSegmentBlockView key={block.id} block={block} />;
+      case 'code':
+        return <CodeSegmentBlockView key={block.id} block={block} />;
 
-          default:
-            return null;
-        }
-      })}
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-4 min-w-0 max-w-full overflow-hidden">
+      {/* Segmented Filter Bar when Lesson has Separated Exercises */}
+      {exerciseBlocks.length > 0 && (
+        <div className="p-2.5 bg-slate-100/90 border border-slate-200/90 rounded-xl flex flex-wrap items-center justify-between gap-2 min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => setSectionFilter('all')}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                sectionFilter === 'all'
+                  ? 'bg-slate-900 text-white shadow-2xs'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              Todo ({blocks.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSectionFilter('theory')}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1 ${
+                sectionFilter === 'theory'
+                  ? 'bg-amber-700 text-white shadow-2xs'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <BookMarked className="w-3.5 h-3.5 shrink-0" />
+              <span>
+                1. Teoría y Libros
+                {quoteCount > 0 ? ` (${quoteCount} citas)` : ''}
+              </span>
+            </button>
+            {shortExercises.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSectionFilter('cortos')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1 ${
+                  sectionFilter === 'cortos'
+                    ? 'bg-amber-600 text-white shadow-2xs'
+                    : 'bg-white text-amber-900 border border-amber-300 hover:bg-amber-50'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  2. Ejercicios Cortos ({shortExercises.length})
+                </span>
+              </button>
+            )}
+            {devExercises.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSectionFilter('desarrollo')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1 ${
+                  sectionFilter === 'desarrollo'
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50'
+                }`}
+              >
+                <ListChecks className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  3. Para Desarrollar ({devExercises.length})
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* PART 1: EXTENSIVE THEORETICAL EXPLANATION, BOOK QUOTES, DIAGRAMS & CODE EXAMPLES */}
+      {(sectionFilter === 'all' || sectionFilter === 'theory') && (
+        <div className="space-y-4 min-w-0 max-w-full">
+          {theoryBlocks.map((block) => renderSingleBlock(block))}
+        </div>
+      )}
+
+      {/* PART 2A: 5 SHORT PROPOSED EXERCISES (WITH LIVE EXECUTABLE SNIPPET) */}
+      {(sectionFilter === 'all' || sectionFilter === 'cortos') &&
+        shortExercises.length > 0 && (
+          <div className="pt-4 border-t-2 border-amber-300/80 space-y-3 min-w-0 max-w-full">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
+              <div className="space-y-0.5 min-w-0">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-amber-300 font-bold">
+                  Parte A · Verificación Rápida con Ejecución en Vivo
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-white break-words">
+                  ⚡ {shortExercises.length} Ejercicios Propuestos Cortos del
+                  Tópico
+                </h3>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-200 text-[11px] font-mono font-semibold">
+                Completa el snippet y pulsa ▶ Ejecutar Código
+              </span>
+            </div>
+
+            <div className="space-y-3.5 min-w-0 max-w-full">
+              {shortExercises.map((exBlock, idx) =>
+                renderSingleBlock(exBlock, idx + 1)
+              )}
+            </div>
+          </div>
+        )}
+
+      {/* PART 2B: 10 SIMILAR EXERCISES TO DEVELOP (WITH LIVE EXECUTABLE SNIPPET) */}
+      {(sectionFilter === 'all' || sectionFilter === 'desarrollo') &&
+        devExercises.length > 0 && (
+          <div className="pt-4 border-t-2 border-indigo-200/80 space-y-3 min-w-0 max-w-full">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 text-white flex flex-wrap items-center justify-between gap-2">
+              <div className="space-y-0.5 min-w-0">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-indigo-300 font-bold">
+                  Parte B · Taller Práctico de Desarrollo Algorítmico
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-white break-words">
+                  🛠️ {devExercises.length} Ejercicios Similares para Desarrollar
+                  en el Snippet
+                </h3>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-[11px] font-mono font-semibold">
+                Desarrolla y prueba tu solución en consola
+              </span>
+            </div>
+
+            <div className="space-y-3.5 min-w-0 max-w-full">
+              {devExercises.map((exBlock, idx) =>
+                renderSingleBlock(exBlock, idx + 1)
+              )}
+            </div>
+          </div>
+        )}
     </div>
   );
 };
@@ -2596,6 +3401,31 @@ export const NotionLessonBlockEditor: React.FC<{
         content:
           'Haz clic en los métodos para observar cómo muta o se transforma la estructura en tiempo real.',
       };
+    } else if (type === 'quote') {
+      newBlock = {
+        id: newId,
+        type: 'quote',
+        title: 'Eloquent JavaScript (4.ª Edición)',
+        quoteAuthor: 'Marijn Haverbeke · No Starch Press (2024)',
+        content:
+          'Escribe aquí la cita textual del libro o especificación ECMA-262...',
+        relevanceComment:
+          'Explica aquí cómo se aplica esta cita al desarrollo profesional de software.',
+      };
+    } else if (type === 'exercise') {
+      newBlock = {
+        id: newId,
+        type: 'exercise',
+        title: 'Nuevo Ejercicio Práctico Independiente',
+        exerciseDifficulty: 'Intermedio',
+        exerciseTopic: 'Algoritmia JavaScript',
+        content:
+          'Describe el enunciado del ejercicio, los parámetros de entrada y el resultado esperado.',
+        relevanceComment:
+          'Pista técnica para orientar la solución del aprendiz.',
+        exerciseSolution:
+          '// Solución paso a paso:\nconst resolver = () => {\n  return true;\n};',
+      };
     } else if (type === 'callout') {
       newBlock = {
         id: newId,
@@ -2687,9 +3517,11 @@ export const NotionLessonBlockEditor: React.FC<{
             }
             className="min-w-0 flex-1 sm:flex-initial max-w-full px-2.5 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-600 truncate"
           >
-            <option value="text">📝 Texto / Párrafo / Ejercicio</option>
+            <option value="text">📝 Texto / Explicación Extensa</option>
             <option value="heading">📌 Subtítulo de Sección</option>
-            <option value="code">💻 Código Fuente (IDE In-Situ)</option>
+            <option value="quote">📚 Cita Bibliográfica / Libro</option>
+            <option value="exercise">🧩 Ejercicio Práctico Separado</option>
+            <option value="code">💻 Código Fuente (Ejemplo IDE)</option>
             <option value="diagram">📊 Diagrama / Esquema Visual SVG</option>
             <option value="interactive">
               ⚡ Gráfico Interactivo (Arrays / Objetos)
@@ -2719,6 +3551,20 @@ export const NotionLessonBlockEditor: React.FC<{
           </button>
           <button
             type="button"
+            onClick={() => handleAddBlockAt('quote')}
+            className="px-2 py-1 text-[11px] font-medium bg-amber-100/80 hover:bg-amber-200/80 text-amber-950 border border-amber-300 rounded-md"
+          >
+            + Cita / Libro
+          </button>
+          <button
+            type="button"
+            onClick={() => handleAddBlockAt('exercise')}
+            className="px-2 py-1 text-[11px] font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-md"
+          >
+            + Ejercicio Separado
+          </button>
+          <button
+            type="button"
             onClick={() => handleAddBlockAt('code')}
             className="px-2 py-1 text-[11px] font-medium bg-slate-900 hover:bg-slate-800 text-white rounded-md"
           >
@@ -2737,20 +3583,6 @@ export const NotionLessonBlockEditor: React.FC<{
             className="px-2 py-1 text-[11px] font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-md"
           >
             + Interactivo
-          </button>
-          <button
-            type="button"
-            onClick={() => handleAddBlockAt('link')}
-            className="px-2 py-1 text-[11px] font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md"
-          >
-            + Enlace
-          </button>
-          <button
-            type="button"
-            onClick={() => handleAddBlockAt('video')}
-            className="px-2 py-1 text-[11px] font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-md"
-          >
-            + Video
           </button>
         </div>
       </div>
@@ -2789,6 +3621,8 @@ export const NotionLessonBlockEditor: React.FC<{
                 >
                   <option value="text">📝 Texto</option>
                   <option value="heading">📌 Subtítulo</option>
+                  <option value="quote">📚 Cita / Libro</option>
+                  <option value="exercise">🧩 Ejercicio Separado</option>
                   <option value="code">💻 Código Fuente</option>
                   <option value="diagram">📊 Diagrama Visual</option>
                   <option value="interactive">⚡ Gráfico Interactivo</option>
@@ -2991,6 +3825,22 @@ export const NotionLessonBlockEditor: React.FC<{
 
             {block.type === 'interactive' && (
               <InteractiveGraphicBlockView
+                block={block}
+                editable
+                onUpdateBlock={(patch) => handleUpdateBlock(block.id, patch)}
+              />
+            )}
+
+            {block.type === 'quote' && (
+              <QuoteBlockView
+                block={block}
+                editable
+                onUpdateBlock={(patch) => handleUpdateBlock(block.id, patch)}
+              />
+            )}
+
+            {block.type === 'exercise' && (
+              <ExerciseBlockView
                 block={block}
                 editable
                 onUpdateBlock={(patch) => handleUpdateBlock(block.id, patch)}

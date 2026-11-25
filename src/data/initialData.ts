@@ -9,6 +9,21 @@ import {
   ReminderTemplate,
   SentReminderLog,
 } from '../types/ova';
+import {
+  EXERCISES_JS_101,
+  EXERCISES_JS_102,
+  EXERCISES_JS_103,
+} from './exercisesOva1';
+import {
+  EXERCISES_JS_201,
+  EXERCISES_JS_202,
+  EXERCISES_JS_203,
+} from './exercisesOva2';
+import {
+  EXERCISES_JS_301,
+  EXERCISES_JS_302,
+  EXERCISES_JS_303,
+} from './exercisesOva3';
 
 export const DEFAULT_INSTRUCTOR: InstructorCredentials = {
   username: 'instructor.sena',
@@ -20,511 +35,640 @@ export const DEFAULT_INSTRUCTOR: InstructorCredentials = {
 };
 
 // ============================================================================
-// BLOQUES DE CONTENIDO DE LAS 3 OVAS DE JAVASCRIPT (COMPARTIDOS ENTRE CANVAS Y OVAS)
+// OVA 1: GENERALIDADES, SINTAXIS, TIPOS DE VARIABLES Y TIPOS DE DATOS
+// (Teoría Extensa + Citas de Libros + 5 Ejercicios Cortos + 10 para Desarrollar por Tópico = 45 Ejercicios)
 // ============================================================================
 
 const BLOCKS_JS_101: LessonBlock[] = [
   {
     id: 'blk-js101-1',
     type: 'heading',
-    title: '1. ¿Qué es JavaScript y cómo se ejecuta?',
-    content: '1. ¿Qué es JavaScript y cómo se ejecuta?',
+    title: '1. Naturaleza Histórica, Estandarización ECMAScript y Arquitectura JIT',
+    content: '1. Naturaleza Histórica, Estandarización ECMAScript y Arquitectura JIT',
     sourceNodeId: 'node-js-101',
   },
   {
     id: 'blk-js101-2',
     type: 'text',
     content:
-      'JavaScript (estandarizado bajo **ECMAScript**) es un lenguaje de programación multiparadigma, de **tipado dinámico** e interpretado/compilado al vuelo (**JIT - Just-In-Time**) por motores como **V8** (Chrome y Node.js) o **SpiderMonkey** (Firefox). Consulta la guía oficial en [MDN JavaScript Guide](https://developer.mozilla.org/es/docs/Web/JavaScript/Guide "Documentación oficial de Mozilla con la referencia completa de sintaxis y estándares ECMAScript.") para explorar su evolución desde ES6+.',
+      'Creado originalmente en 1995 por **Brendan Eich** en Netscape y estandarizado desde 1997 por **Ecma International** bajo la especificación técnica **ECMA-262 (ECMAScript)**, JavaScript ha evolucionado desde un lenguaje de scripting ligero para el navegador hasta convertirse en la columna vertebral del desarrollo de software moderno (Frontend Web, Backend con Node.js/Deno/Bun, aplicaciones móviles híbridas y servicios Cloud Serverless).\n\nA diferencia de la creencia popular de que JavaScript es un lenguaje "puramente interpretado línea por línea", los motores industriales modernos como **V8** (Google Chrome y Node.js), **SpiderMonkey** (Mozilla Firefox) y **JavaScriptCore** (Apple Safari) implementan una arquitectura híbrida de **Compilación Justo a Tiempo (JIT — Just-In-Time Compilation)** en múltiples etapas:\n\n1. **Análisis Léxico y Sintáctico (Parser → AST):** El código fuente se descompila en *tokens* léxicos y se transforma en un **Árbol de Sintaxis Abstracta (AST)**, verificando en esta fase previa cualquier error gramatical (`SyntaxError`) antes de ejecutar una sola instrucción.\n2. **Intérprete de Bytecode (Ignition en V8):** El AST se traduce rápidamente a *bytecode* intermedio para arrancar la ejecución con latencia mínima.\n3. **Compilador Optimizador (TurboFan / Maglev en V8):** Mientras el programa corre, un *profiler* identifica las funciones "calientes" (*hot functions*) que se invocan repetidamente y las compila directamente a **código máquina nativo optimizado** para la arquitectura del procesador (x86_64 o ARM64). Consulta la guía oficial en [MDN JavaScript Guide](https://developer.mozilla.org/es/docs/Web/JavaScript/Guide "Documentación oficial de Mozilla con la referencia completa de gramática léxica, motores y estándares ECMAScript.").',
+    sourceNodeId: 'node-js-101',
+  },
+  {
+    id: 'blk-js101-q1',
+    type: 'quote',
+    title: 'You Don’t Know JS Yet: Get Started (2.ª Edición, Cap. 1: What Is JavaScript?)',
+    quoteAuthor: 'Kyle Simpson · Leanpub / O’Reilly (2020)',
+    content:
+      'JavaScript no es un lenguaje interpretado en el sentido tradicional; es un lenguaje compilado. El motor de JS analiza todo el código fuente antes de ejecutarlo, lo que significa que los errores de sintaxis estáticos se detectan durante la fase de compilación inicial, mucho antes de que comience la ejecución de la primera línea.',
+    relevanceComment:
+      'Esta distinción de Kyle Simpson explica por qué un error de escritura en la línea 200 de un archivo impide que se ejecute siquiera la línea 1: el motor compila y valida el árbol sintáctico completo (AST) como primer paso obligatorio.',
     sourceNodeId: 'node-js-101',
   },
   {
     id: 'blk-js101-3',
-    type: 'callout',
-    calloutTone: 'info',
-    title: 'Reglas Esenciales de Sintaxis en JavaScript',
-    content:
-      '• Case-Sensitive: Distingue mayúsculas y minúsculas (`aprendiz` ≠ `Aprendiz`).\n• Sentencias y Expresiones: Cada instrucción se cierra con punto y coma (`;`) por buena práctica.\n• Comentarios: Usa `//` para una línea y `/* ... */` para bloques.\n• Modo Estricto: Declarar `"use strict";` al inicio previene el uso de variables no declaradas.',
+    type: 'heading',
+    title: '2. Gramática Léxica, Expresiones vs. Sentencias y Modo Estricto',
+    content: '2. Gramática Léxica, Expresiones vs. Sentencias y Modo Estricto',
     sourceNodeId: 'node-js-101',
   },
   {
     id: 'blk-js101-4',
-    type: 'code',
-    codeLanguage: 'javascript',
-    title: '01_generalidades_sintaxis.js',
-    content: `'use strict';
-
-// 1. Comentario de una sola línea: Sentencia de salida en consola
-console.log('Iniciando módulo de Fundamentos JavaScript — SENA');
-
-/* 2. Diferencia entre Expresión (produce un valor) y Sentencia (ejecuta una acción) */
-const horasTeoria = 12;
-const horasPractica = 18;
-const totalHorasOva = horasTeoria + horasPractica; // Expresión aritmética -> 30
-
-// 3. Sensibilidad a mayúsculas (Case-Sensitive)
-const codigoFicha = '2874512';
-const CodigoFicha = '2901845';
-console.log('Ficha A:', codigoFicha, '| Ficha B:', CodigoFicha);`,
+    type: 'text',
+    content:
+      'Para escribir software robusto en JavaScript es indispensable dominar su **gramática léxica**. El lenguaje está codificado en **Unicode (UTF-16)** y es estrictamente **sensible a mayúsculas y minúsculas (*case-sensitive*)**: los identificadores `tasaInteres`, `TasaInteres` y `TASAINTERES` representan tres ubicaciones de memoria completamente distintas.\n\nAsimismo, la literatura técnica distingue dos unidades constructivas fundamentales en todo programa:\n\n• **Expresiones (*Expressions*):** Cualquier fragmento de código que se evalúa y **produce un valor**. Por ejemplo, `45 + 15`, `aprendiz.activo && nota >= 70` o una llamada `Math.max(10, 20)` son expresiones porque el motor las reduce a un valor concreto (`60`, `true`, `20`).\n• **Sentencias (*Statements*):** Instrucciones completas que realizan una **acción o efecto secundario** en el programa (declarar una variable, ramificar el flujo con `if`, iterar con `for` o retornar con `return`). Toda sentencia debe finalizar explícitamente con punto y coma (`;`) para no depender del mecanismo de **Inserción Automática de Punto y Coma (ASI)**, el cual puede provocar errores sutiles cuando una línea siguiente comienza con `(`, `[` o `` ` ``.',
+    sourceNodeId: 'node-js-101',
+  },
+  {
+    id: 'blk-js101-q2',
+    type: 'quote',
+    title: 'Eloquent JavaScript (4.ª Edición, Cap. 2: Program Structure)',
+    quoteAuthor: 'Marijn Haverbeke · No Starch Press (2024)',
+    content:
+      'Un fragmento de código que produce un valor se denomina expresión. Una sentencia completa equivale a una oración en el lenguaje humano, y un programa no es más que una lista secuencial de sentencias que transforman el estado interno del mundo digital.',
     relevanceComment:
-      'Observa el uso de "use strict" en la primera línea para obligar a escribir código limpio y seguro.',
+      'En React y JavaScript funcional moderno, saber qué es una expresión es vital: dentro de las llaves `{ ... }` de una plantilla o un Template Literal (`${...}`) solo puedes colocar expresiones (como el operador ternario), nunca sentencias crudas (como un bloque if/else).',
     sourceNodeId: 'node-js-101',
   },
   {
     id: 'blk-js101-5',
-    type: 'heading',
-    title: '2. Ejercicios Prácticos y Resueltos — Tema: Sintaxis',
-    content: '2. Ejercicios Prácticos y Resueltos — Tema: Sintaxis',
+    type: 'callout',
+    calloutTone: 'info',
+    title: 'Estándares de Codificación Industrial y Modo Estricto ("use strict")',
+    content:
+      '• Directiva "use strict": Introducida en ECMAScript 5 y activada por defecto en todos los módulos ES6 (`import`/`export`) y clases (`class`), prohíbe crear variables globales accidentales por omisión de palabra reservada, bloquea parámetros duplicados y lanza errores cuando se intenta sobrescribir propiedades de solo lectura.\n• Convenciones de Nomenclatura: Usa `camelCase` para variables y funciones (`calcularPromedioFinal`), `PascalCase` para clases y componentes (`GestorCertificados`), y `UPPER_SNAKE_CASE` para constantes globales inmutables (`IVA_COLOMBIA = 0.19`).',
     sourceNodeId: 'node-js-101',
   },
   {
     id: 'blk-js101-6',
     type: 'code',
     codeLanguage: 'javascript',
-    title: 'ejercicios_tema1_sintaxis.js',
-    content: `// EJERCICIO 1 (Resuelto): Identifica y corrige los 3 errores de sintaxis
-// Código con errores:
-// const 1nombre = "Carlos"
-// Console.log(1nombre)
+    title: 'ejemplo_01_arquitectura_lexica_y_expresiones.js',
+    content: `'use strict';
 
-// SOLUCIÓN CORRECTA:
-// 1) Un identificador no puede iniciar con número.
-// 2) el objeto global es 'console' en minúscula.
-const nombreInstructor = 'Carlos';
-console.log('Instructor:', nombreInstructor);
+/**
+ * Ejemplo demostrativo de Gramática Léxica, Expresiones vs. Sentencias
+ * y interpolación mediante Template Literals (Backticks).
+ */
 
-// EJERCICIO 2 (Propuesto):
-// Escribe una expresión que calcule el porcentaje de asistencia de un aprendiz
-// que asistió a 18 sesiones de un total de 20 y muéstralo con console.log().
-const sesionesAsistidas = 18;
-const totalSesiones = 20;
-const porcentajeAsistencia = (sesionesAsistidas / totalSesiones) * 100;
-console.log('Asistencia:', porcentajeAsistencia + '%'); // 90%`,
+// 1. Constantes de configuración global (UPPER_SNAKE_CASE)
+const HORAS_CREDITO_SENA = 48;
+const PORCENTAJE_MINIMO_ASISTENCIA = 0.85;
+
+// 2. Variables de dominio (camelCase)
+const nombrePrograma = 'Tecnólogo en Análisis y Desarrollo de Software';
+const creditosMatriculados = 4;
+
+// 3. Expresión aritmética compuesta (se evalúa y reduce al valor numérico 192)
+const totalHorasTrimestre = creditosMatriculados * HORAS_CREDITO_SENA;
+
+// 4. Expresión relacional y booleana
+const horasAsistidasAprendiz = 172;
+const cumpleRequisitoAsistencia =
+  horasAsistidasAprendiz >= totalHorasTrimestre * PORCENTAJE_MINIMO_ASISTENCIA;
+
+// 5. Template Literal con expresiones embebidas dentro de \${ ... }
+const reporteEjecutivo = \`[SENA - \${nombrePrograma}]
+• Horas exigidas en el trimestre: \${totalHorasTrimestre} h
+• Horas registradas por el aprendiz: \${horasAsistidasAprendiz} h (\${((horasAsistidasAprendiz / totalHorasTrimestre) * 100).toFixed(1)}%)
+• Estado de habilitación: \${cumpleRequisitoAsistencia ? 'HABILITADO' : 'EN RIESGO ACADÉMICO'}\`;
+
+console.log(reporteEjecutivo);`,
     relevanceComment:
-      'Ejercicios aplicados para dominar las reglas léxicas y de identificadores en JavaScript.',
+      'Observa cómo dentro de ${ ... } en el Template Literal podemos anidar tanto llamadas a métodos (.toFixed(1)) como expresiones condicionales ternarias.',
     sourceNodeId: 'node-js-101',
   },
+  ...EXERCISES_JS_101,
 ];
 
 const BLOCKS_JS_102: LessonBlock[] = [
   {
     id: 'blk-js102-1',
     type: 'heading',
-    title: '1. Declaración de Variables: var vs let vs const',
-    content: '1. Declaración de Variables: var vs let vs const',
+    title: '1. Evolución del Enlace de Variables: De var (ES5) a let y const (ES6+)',
+    content: '1. Evolución del Enlace de Variables: De var (ES5) a let y const (ES6+)',
     sourceNodeId: 'node-js-102',
   },
   {
     id: 'blk-js102-2',
     type: 'text',
     content:
-      'En JavaScript moderno (ES6+) contamos con tres palabras reservadas para declarar variables: **`const`** (referencia constante de ámbito de bloque, usada por defecto), **`let`** (variable reasignable de ámbito de bloque) y **`var`** (declaración heredada con ámbito de función y *hoisting*, que debe evitarse en proyectos nuevos).',
+      'En la literatura académica de ciencias de la computación, una **variable** (también denominada **enlace** o *binding* por Marijn Haverbeke) es una asociación simbólica entre un identificador en el entorno léxico (*Lexical Environment*) y un valor almacenado en memoria.\n\nDurante los primeros 20 años de JavaScript (ECMAScript 1 hasta ECMAScript 5), la única forma de declarar variables era la palabra reservada **`var`**. Sin embargo, `var` presentaba tres comportamientos arquitectónicos problemáticos para proyectos de gran escala:\n\n1. **Ámbito de Función (*Function Scope*) en lugar de Ámbito de Bloque:** Una variable declarada con `var` dentro de un bloque `if { ... }` o dentro de un ciclo `for (var i = 0; ...)` **se escapa fuera de las llaves `{ }`** y contamina toda la función contenedora (o el objeto global).\n2. **Elevación (*Hoisting*) con inicialización implícita a `undefined`:** El motor registra las declaraciones `var` al principio de la función y les asigna `undefined`, permitiendo leer una variable antes de la línea donde fue declarada sin lanzar error, lo que oculta defectos lógicos.\n3. **Re-declaración silenciosa permitida:** Declarar dos veces `var total = 10; var total = 20;` en el mismo ámbito sobrescribe el enlace sin advertir al programador.\n\nPara solucionar definitivamente estos defectos, el comité **TC39** introdujo en **ECMAScript 2015 (ES6)** las declaraciones de ámbito de bloque **`let`** y **`const`**.',
+    sourceNodeId: 'node-js-102',
+  },
+  {
+    id: 'blk-js102-q1',
+    type: 'quote',
+    title: 'Understanding ECMAScript 6 (Cap. 1: Block Bindings)',
+    quoteAuthor: 'Nicholas C. Zakas · No Starch Press (2016)',
+    content:
+      'Las declaraciones de variables utilizando var son tratadas como si estuvieran en la parte superior de la función (o en el ámbito global, si están fuera de una función) sin importar dónde ocurra realmente la declaración. Las declaraciones de bloque con let y const introducen el alcance léxico predecible que los ingenieros esperan de lenguajes como C, Java o C#.',
+    relevanceComment:
+      'Nicholas C. Zakas (creador de ESLint) destaca que el cambio de var a const/let fue la mejora más importante de ES6 para eliminar errores de colisión de variables en ciclos y condicionales.',
     sourceNodeId: 'node-js-102',
   },
   {
     id: 'blk-js102-3',
     type: 'diagram',
     diagramKind: 'var_let_const',
-    title: 'Comparativa Visual: Ámbito (Scope) y Mutabilidad de var, let y const',
+    title: 'Esquema Comparativo de Memoria y Ámbito: var vs. let vs. const',
     content:
-      'Tanto let como const respetan los bloques delimitados por llaves { }, evitando fugas de variables fuera de condicionales o ciclos.',
+      'Observa cómo let y const quedan estrictamente confinadas dentro de cualquier par de llaves { } (Block Scope) y están protegidas por la Zona Muerta Temporal (TDZ).',
     sourceNodeId: 'node-js-102',
   },
   {
     id: 'blk-js102-4',
-    type: 'code',
-    codeLanguage: 'javascript',
-    title: '02_variables_y_scope.js',
-    content: `// 1. const: Para valores cuya referencia no cambiará (Convención UPPER_SNAKE_CASE o camelCase)
-const NOTA_MINIMA_APROBACION = 70;
-const centroFormacion = 'CEET - SENA';
-
-// 2. let: Para variables cuyo valor se reasigna (contadores, acumuladores, estado)
-let intentosRealizados = 0;
-intentosRealizados = intentosRealizados + 1;
-
-// 3. Ámbito de Bloque (Block Scope)
-if (intentosRealizados === 1) {
-  let mensajeTemporal = 'Primer intento registrado';
-  console.log(mensajeTemporal); // Funciona dentro del bloque { }
-}
-// console.log(mensajeTemporal); // ReferenceError: mensajeTemporal is not defined`,
-    relevanceComment:
-      'Regla de oro en JS moderno: declara todo con const por defecto, y cambia a let únicamente cuando necesites reasignar la variable.',
+    type: 'heading',
+    title: '2. La Zona Muerta Temporal (TDZ) y la Diferencia entre Reasignación y Mutación',
+    content: '2. La Zona Muerta Temporal (TDZ) y la Diferencia entre Reasignación y Mutación',
     sourceNodeId: 'node-js-102',
   },
   {
     id: 'blk-js102-5',
-    type: 'heading',
-    title: '2. Ejercicios por Tema: Ámbito y Reasignación',
-    content: '2. Ejercicios por Tema: Ámbito y Reasignación',
+    type: 'text',
+    content:
+      'Cuando el motor de JavaScript entra en un bloque `{ ... }`, registra en memoria los identificadores declarados con `let` y `const`, pero **no los inicializa** hasta que la ejecución alcanza físicamente la línea de declaración. El intervalo entre el inicio del bloque y la línea donde se declara la variable se denomina **Zona Muerta Temporal (*Temporal Dead Zone — TDZ*)**. Cualquier intento de acceder a la variable dentro de su TDZ lanza inmediatamente un `ReferenceError: Cannot access variable before initialization`.\n\nPor otra parte, uno de los conceptos más malinterpretados por quienes inician en JavaScript es el significado exacto de **`const`**:\n\n• **`const` garantiza inmutabilidad de la REFERENCIA (el enlace), NO inmutabilidad profunda del valor apuntado.**\n• Si declaras un valor primitivo (`const TASA = 0.19;`), no puedes cambiarlo porque los primitivos son inmutables y la única forma de cambiarlo sería reasignar la variable (`TASA = 0.21` → `TypeError: Assignment to constant variable`).\n• Pero si declaras un objeto o un arreglo (`const aprendiz = { nota: 80 };`), la variable `aprendiz` guarda la **dirección de memoria** del objeto. Modificar una propiedad interna (`aprendiz.nota = 95;`) **sí está permitido** porque la dirección de memoria del objeto no cambió; lo que está prohibido es apuntar la variable a otro objeto nuevo (`aprendiz = { nota: 95 };`). Si deseas congelar también las propiedades superficiales del objeto, debes invocar **`Object.freeze(aprendiz)`**.',
+    sourceNodeId: 'node-js-102',
+  },
+  {
+    id: 'blk-js102-q2',
+    type: 'quote',
+    title: 'JavaScript: The Definitive Guide (7.ª Edición, Cap. 3: Types, Values, and Variables)',
+    quoteAuthor: 'David Flanagan · O’Reilly Media (2020)',
+    content:
+      'Existe una escuela de pensamiento ampliamente adoptada en la ingeniería de JavaScript moderno que sostiene que debemos usar const por defecto para todas las declaraciones, reservando let exclusivamente para aquellas variables cuyo enlace sabemos de antemano que deberá reasignarse en el transcurso del algoritmo.',
+    relevanceComment:
+      'Al leer un archivo donde el 95% de las declaraciones son const, cualquier declaración let actúa como una señal visual inmediata para el lector: "¡Atención! Esta variable va a cambiar de valor más abajo".',
     sourceNodeId: 'node-js-102',
   },
   {
     id: 'blk-js102-6',
     type: 'code',
     codeLanguage: 'javascript',
-    title: 'ejercicios_tema2_variables.js',
-    content: `// EJERCICIO 1 (Resuelto): ¿Por qué el siguiente código con const NO lanza error?
-const configOva = { version: 1, publicado: false };
-configOva.publicado = true; // ✓ Válido: muta una propiedad interna, no reasigna la referencia
-console.log(configOva);
+    title: 'ejemplo_02_block_scope_tdz_y_freeze.js',
+    content: `'use strict';
 
-// EJERCICIO 2 (Resuelto): Intercambio de valores entre dos variables let
-let turnoManana = 'Ficha 2874512';
-let turnoTarde = 'Ficha 2901845';
+// 1. Uso por defecto de const para referencias fijas
+const CENTRO_SENA = 'CEET - Distrito Capital';
 
-// Intercambio usando desestructuración o variable auxiliar:
-const auxiliar = turnoManana;
-turnoManana = turnoTarde;
-turnoTarde = auxiliar;
-console.log({ turnoManana, turnoTarde });`,
+// 2. Uso intencional de let para estado que se reasigna (acumuladores y contadores)
+let cuposInscritos = 28;
+cuposInscritos += 2; // Reasignación válida -> 30
+
+// 3. Demostración de Ámbito de Bloque (Block Scope) y Ocultamiento (Shadowing)
+const estadoGlobal = 'ACTIVO';
+if (cuposInscritos === 30) {
+  // Esta constante 'estadoGlobal' existe SOLO dentro de este bloque if (Shadowing)
+  const estadoGlobal = 'GRUPO COMPLETO (30/30)';
+  const mensajeInterno = 'Cierre de inscripciones ejecutado';
+  console.log('Dentro del bloque:', estadoGlobal, '|', mensajeInterno);
+}
+console.log('Fuera del bloque:', estadoGlobal); // Sigue siendo "ACTIVO"
+
+// 4. const con Objetos: Mutación de propiedades vs. Object.freeze()
+const configuracionEvaluacion = {
+  notaMinima: 70,
+  intentosMaximos: 3,
+};
+configuracionEvaluacion.intentosMaximos = 4; // ✓ Mutación interna permitida
+
+// Si congelamos el objeto con Object.freeze(), impedimos también la mutación interna:
+Object.freeze(configuracionEvaluacion);
+// configuracionEvaluacion.notaMinima = 50; // ✗ Lanza TypeError en "use strict"`,
     relevanceComment:
-      'Comprende la diferencia entre reasignar una variable (=) y mutar una propiedad interna.',
+      'Combina const + Object.freeze() cuando necesites que un diccionario de configuración sea verdaderamente inmutable tanto en su referencia como en sus propiedades.',
     sourceNodeId: 'node-js-102',
   },
+  ...EXERCISES_JS_102,
 ];
 
 const BLOCKS_JS_103: LessonBlock[] = [
   {
     id: 'blk-js103-1',
     type: 'heading',
-    title: '1. Tipos de Datos Primitivos vs Tipos de Referencia',
-    content: '1. Tipos de Datos Primitivos vs Tipos de Referencia',
+    title: '1. Taxonomía Oficial de Tipos en ECMAScript: 7 Primitivos y Tipos de Referencia',
+    content: '1. Taxonomía Oficial de Tipos en ECMAScript: 7 Primitivos y Tipos de Referencia',
     sourceNodeId: 'node-js-103',
   },
   {
     id: 'blk-js103-2',
     type: 'text',
     content:
-      'JavaScript clasifica todos los valores en dos grandes familias: **7 Tipos Primitivos** (que se copian por valor directo y son inmutables) y **Tipos de Referencia u Objetos** (que se almacenan en el *Heap* de memoria y se manipulan mediante referencias). Revisa la tabla oficial en [MDN Estructuras y Tipos de Datos](https://developer.mozilla.org/es/docs/Web/JavaScript/Data_structures "Especificación detallada de los 7 tipos primitivos, el operador typeof y el comportamiento de null y NaN.").',
+      'En JavaScript, **las variables no tienen tipo; los valores sí tienen tipo**. Una misma variable declarada con `let` puede apuntar en un instante a un número y más adelante a una cadena de texto. Según la sección 6 de la especificación **ECMA-262**, todo valor en JavaScript pertenece exactamente a uno de los siguientes **8 tipos oficiales** (divididos en 7 tipos primitivos inmutables y la familia de Objetos/Referencias):\n\n1. **`number` (Numérico IEEE 754 de doble precisión - 64 bits):** Representa tanto enteros como números de punto flotante (hasta el límite entero seguro `Number.MAX_SAFE_INTEGER = 9007199254740991`), además de tres valores simbólicos especiales: `Infinity`, `-Infinity` y `NaN` (*Not-a-Number*).\n2. **`bigint` (Enteros de precisión arbitraria):** Escritos con el sufijo `n` (ej. `900719925474099912345n`), permiten operar con enteros astronómicos o criptográficos sin pérdida de precisión.\n3. **`string` (Cadena de caracteres UTF-16 inmutable):** Secuencia indexada de caracteres textuales. Una vez creado un string en memoria, ninguno de sus caracteres puede mutarse in-situ; métodos como `.toUpperCase()` o `.trim()` siempre devuelven un string nuevo.\n4. **`boolean` (Lógico Booleano):** Únicamente `true` o `false`.\n5. **`undefined` (No definido):** Tipo con un único valor (`undefined`) que el motor asigna automáticamente a las variables declaradas pero aún no inicializadas, a los parámetros omitidos y a las propiedades inexistentes.\n6. **`null` (Nulo intencional):** Tipo primitivo cuyo único valor (`null`) representa la ausencia intencional de cualquier referencia a objeto. Por un famoso accidente histórico de la primera versión de JavaScript en 1995 (donde las etiquetas de tipo de objeto eran `000` en binario y el puntero nulo también era `0x00`), el operador `typeof null` retorna `"object"`, aunque `null` es un tipo primitivo.\n7. **`symbol` (Símbolo único e irrepetible):** Creado mediante `Symbol("descripcion")`, genera identificadores garantizados como únicos para evitar colisiones de claves en objetos.\n8. **`object` (Tipos de Referencia en el Memory Heap):** Incluye objetos literales (`{}`), arreglos indexados (`[]`), funciones ejecutables (`function`), fechas (`Date`), mapas (`Map`), conjuntos (`Set`) y expresiones regulares (`RegExp`). Consulta la especificación en [MDN Estructuras y Tipos de Datos](https://developer.mozilla.org/es/docs/Web/JavaScript/Data_structures "Documentación completa sobre los 7 tipos primitivos, el Heap de objetos y la tabla del operador typeof.").',
+    sourceNodeId: 'node-js-103',
+  },
+  {
+    id: 'blk-js103-q1',
+    type: 'quote',
+    title: 'You Don’t Know JS: Types & Grammar (Cap. 1: Types)',
+    quoteAuthor: 'Kyle Simpson · O’Reilly Media',
+    content:
+      'Las variables en JavaScript no tienen tipos; los valores son los que tienen tipos. Las variables pueden contener cualquier valor, en cualquier momento. Comprender cómo un valor se convierte de un tipo a otro —ya sea de forma explícita por el desarrollador o de forma implícita mediante las reglas abstractas de coerción del motor— es la diferencia entre dominar el lenguaje o sufrir errores inexplicables.',
+    relevanceComment:
+      'Kyle Simpson recalca que el operador typeof no pregunta "¿cuál es el tipo de esta variable?", sino "¿cuál es el tipo del valor que está almacenado actualmente dentro de esta variable?".',
     sourceNodeId: 'node-js-103',
   },
   {
     id: 'blk-js103-3',
     type: 'diagram',
     diagramKind: 'data_types',
-    title: 'Esquema de Memoria: 7 Tipos Primitivos (Valor) vs Objetos (Referencia)',
+    title: 'Arquitectura de Memoria: Copia por Valor (Stack) vs. Copia por Referencia (Heap)',
     content:
-      'Usa siempre el operador de igualdad estricta (===) para comparar tanto el valor como el tipo de dato sin conversiones automáticas inesperadas.',
+      'Los 7 tipos primitivos se copian creando un valor independiente; los objetos y arreglos almacenan un puntero a la dirección del Heap, por lo que copiar la variable sin clonar el objeto hace que ambas variables apunten a la misma estructura.',
     sourceNodeId: 'node-js-103',
   },
   {
     id: 'blk-js103-4',
-    type: 'code',
-    codeLanguage: 'javascript',
-    title: '03_tipos_datos_typeof.js',
-    content: `// 1. Tipos Primitivos y operador typeof
-const nombre = 'Valentina';          // typeof -> "string"
-const promedio = 94.5;               // typeof -> "number"
-const esEgresado = false;            // typeof -> "boolean"
-let fechaGrado;                      // typeof -> "undefined"
-const tutorAsignado = null;          // typeof -> "object" (peculiaridad histórica de JS)
-const idUnico = Symbol('id');        // typeof -> "symbol"
-const enteroGigante = 9007199254740991n; // typeof -> "bigint"
-
-// 2. Conversión Explícita vs Coerción Implícita
-const entradaFormulario = '85';
-const puntosExtra = 10;
-console.log(entradaFormulario + puntosExtra);         // "8510" (Concatenación string)
-console.log(Number(entradaFormulario) + puntosExtra); // 95 (Suma numérica real)
-
-// 3. Igualdad Estricta (===) vs Igualdad Débil (==)
-console.log(85 === '85'); // false (distinto tipo: number vs string)
-console.log(85 == '85');  // true  (coerción peligrosa, evitar ==)`,
-    relevanceComment:
-      'Convertir explícitamente con Number(), String() o Boolean() evita bugs silenciosos al sumar datos provenientes de formularios HTML.',
+    type: 'heading',
+    title: '2. Coerción de Tipos, Valores Falsy/Truthy e Igualdad Estricta (===)',
+    content: '2. Coerción de Tipos, Valores Falsy/Truthy e Igualdad Estricta (===)',
     sourceNodeId: 'node-js-103',
   },
   {
     id: 'blk-js103-5',
-    type: 'heading',
-    title: '2. Ejercicios por Tema: Verificación de Tipos y Conversión',
-    content: '2. Ejercicios por Tema: Verificación de Tipos y Conversión',
+    type: 'text',
+    content:
+      'Cuando aplicamos un operador a valores de tipos diferentes, el motor ejecuta operaciones internas de conversión llamadas **Coerción de Tipos (*Type Coercion*)**:\n\n• **La sobrecarga del operador `+`:** Si **cualquiera** de los dos operandos de `a + b` es un `string` (o se convierte a primitivo string), JavaScript prioriza la **concatenación textual** sobre la suma matemática (`"100" + 25` produce `"10025"`). Por el contrario, los operadores `-`, `*`, `/` y `%` son exclusivamente matemáticos y convierten ambos operandos a `number` (`"100" - 25` produce `75`).\n• **Los 8 Valores *Falsy* Exactos:** Al convertirse a `boolean` (por ejemplo, dentro de la condición de un `if (valor)`), existen exactamente **8 valores en todo JavaScript que se evalúan como `false`**: `false`, `0`, `-0`, `0n` (BigInt cero), `""` (cadena vacía), `null`, `undefined` y `NaN`. **Absolutamente cualquier otro valor** (incluyendo un arreglo vacío `[]`, un objeto vacío `{}` y la cadena `"0"` o `"false"`) es **`truthy` (verdadero)**.\n• **Igualdad Estricta (`===`) vs. Igualdad Abstracta (`==`):** El operador `==` intenta igualar los tipos mediante reglas complejas (por ejemplo, `0 == ""` es `true` y `false == "0"` es `true`). El operador **`===`** compara tipo y valor directamente sin ninguna conversión implícita.',
+    sourceNodeId: 'node-js-103',
+  },
+  {
+    id: 'blk-js103-q2',
+    type: 'quote',
+    title: 'JavaScript: The Good Parts (Apéndice A: Awful Parts)',
+    quoteAuthor: 'Douglas Crockford · O’Reilly Media',
+    content:
+      'JavaScript tiene dos conjuntos de operadores de igualdad: === y !==, y sus gemelos malvados == y !=. Los operadores == y != realizan coerción de tipos antes de comparar, lo que carece de transitividad y produce resultados contraintuitivos. Mi consejo es no utilizar jamás los gemelos malvados; usa siempre === y !==.',
+    relevanceComment:
+      'Esta cita clásica de Douglas Crockford (creador del formato JSON) dio origen a la regla eqeqeq en ESLint, estándar obligatorio hoy en la industria.',
     sourceNodeId: 'node-js-103',
   },
   {
     id: 'blk-js103-6',
     type: 'code',
     codeLanguage: 'javascript',
-    title: 'ejercicios_tema3_tipos.js',
-    content: `// EJERCICIO 1 (Resuelto): Crea una función que sume dos valores solo si ambos son números válidos
-function sumarSeguro(a, b) {
-  const numA = Number(a);
-  const numB = Number(b);
-  if (Number.isNaN(numA) || Number.isNaN(numB)) {
-    return 'Error: Uno de los argumentos no es convertible a número';
-  }
-  return numA + numB;
+    title: 'ejemplo_03_tipos_coercion_y_referencias.js',
+    content: `'use strict';
+
+// 1. Verificación precisa de tipos (resolviendo el caso especial de null y arrays)
+function obtenerTipoExacto(valor) {
+  if (valor === null) return 'null';
+  if (Array.isArray(valor)) return 'array';
+  return typeof valor;
 }
 
-console.log(sumarSeguro('40', 50));     // 90
-console.log(sumarSeguro('abc', 50));    // "Error: Uno de los argumentos no es convertible a número"`,
+console.log(obtenerTipoExacto(null));        // "null" (evita el bug histórico de typeof null === "object")
+console.log(obtenerTipoExacto([10, 20]));    // "array"
+console.log(obtenerTipoExacto(95.4));        // "number"
+
+// 2. La anomalía de punto flotante IEEE 754 (0.1 + 0.2 !== 0.3)
+const sumaDecimal = 0.1 + 0.2; // 0.30000000000000004
+const sonIgualesConTolerancia = Math.abs(sumaDecimal - 0.3) < Number.EPSILON;
+console.log('¿0.1 + 0.2 equivale a 0.3 con Number.EPSILON?:', sonIgualesConTolerancia); // true
+
+// 3. Diferencia entre Copia por Valor (Primitivos) y Copia por Referencia (Objetos)
+let notaOriginal = 80;
+let notaCopia = notaOriginal;
+notaCopia = 100;
+console.log('Primitivos independientes:', { notaOriginal, notaCopia }); // 80 y 100
+
+const fichaOriginal = { codigo: 2874512, jornada: 'Diurna' };
+const fichaClonInmutable = { ...fichaOriginal, jornada: 'Nocturna' }; // Copia independiente con Spread
+console.log('Original intacto:', fichaOriginal.jornada, '| Clon:', fichaClonInmutable.jornada);`,
     relevanceComment:
-      'Number.isNaN() verifica de forma segura si una conversión numérica falló.',
+      'Observa la función obtenerTipoExacto(valor): mejora el operador nativo typeof distinguiendo correctamente entre null, array y object.',
     sourceNodeId: 'node-js-103',
   },
+  ...EXERCISES_JS_103,
 ];
 
 // ============================================================================
 // OVA 2: ESTRUCTURAS DE CONTROL, EXPLICACIONES CON IMÁGENES Y EJERCICIOS RESUELTOS
+// (Teoría Extensa + Diagramas SVG + Citas de Libros + 45 Ejercicios Ejecutables)
 // ============================================================================
 
 const BLOCKS_JS_201: LessonBlock[] = [
   {
     id: 'blk-js201-1',
     type: 'heading',
-    title: '1. Estructuras Condicionales: if / else if / else, Ternario y switch',
-    content: '1. Estructuras Condicionales: if / else if / else, Ternario y switch',
+    title: '1. Teoría del Control de Flujo Ramificado y Álgebra Booleana de Cortocircuito',
+    content: '1. Teoría del Control de Flujo Ramificado y Álgebra Booleana de Cortocircuito',
     sourceNodeId: 'node-js-201',
   },
   {
     id: 'blk-js201-2',
     type: 'text',
     content:
-      'Las estructuras condicionales permiten bifurcar el flujo de ejecución de un programa evaluando expresiones booleanas (`true` o `false`). Cuando existen múltiples rangos excluyentes utilizamos la escalera **`if / else if / else`**; para asignaciones breves de dos caminos usamos el **operador ternario (`? :`)**, y para comparar una variable contra valores discretos exactos usamos **`switch / case`**.',
+      'Un programa sin estructuras de control se ejecuta de forma estrictamente lineal (de arriba hacia abajo), como una receta estática incapaz de reaccionar ante los datos. Las **estructuras de control condicionales** dotan al software de capacidad de decisión, permitiendo que el flujo de ejecución se bifurque en distintas rutas según el valor de verdad (*truthiness*) de una condición lógica.\n\nEn JavaScript moderno disponemos de cuatro mecanismos complementarios para expresar decisiones:\n\n1. **Bifurcación `if / else if / else`:** Evalúa predicados booleanos arbitrarios (rangos numéricos, combinaciones lógicas con `&&`, `||`, `!`). Tan pronto como una rama se evalúa como `true`, su bloque `{ ... }` se ejecuta y todas las demás ramas `else if / else` se descartan.\n2. **Cláusulas de Guarda (*Guard Clauses* o Retorno Temprano):** En lugar de anidar múltiples bloques `if` uno dentro de otro (antipatrón conocido como *Arrow Anti-Pattern* o *Pirámide de la Perdición*), la ingeniería de software limpia valida primero los casos inválidos o bordes al inicio de la función y retorna de inmediato (`if (!valido) return;`), dejando el flujo principal plano y legible.\n3. **Operador Condicional Ternario (`condicion ? valorSiTrue : valorSiFalse`):** Es el único operador de JavaScript que recibe tres operandos. A diferencia de `if` (que es una sentencia), el ternario **es una expresión**, por lo que puede asignarse a una constante `const` o incrustarse dentro de plantillas.\n4. **Despacho Multicamino `switch / case`:** Compara una expresión discriminante contra múltiples etiquetas `case` utilizando **igualdad estricta (`===`)**.',
+    sourceNodeId: 'node-js-201',
+  },
+  {
+    id: 'blk-js201-q1',
+    type: 'quote',
+    title: 'Eloquent JavaScript (4.ª Edición, Cap. 2: Control Flow — Conditional Execution)',
+    quoteAuthor: 'Marijn Haverbeke · No Starch Press (2024)',
+    content:
+      'Un programa en ejecución no siempre es un camino recto. Con frecuencia necesitamos crear una carretera ramificada, donde el programa toma el ramal adecuado dependiendo de las condiciones de los datos que encuentra en tiempo de ejecución.',
+    relevanceComment:
+      'La metáfora de la carretera ramificada de Haverbeke se visualiza directamente en el diagrama de flujo inferior: cada rombo de decisión divide el camino en dos rutas mutuamente excluyentes.',
     sourceNodeId: 'node-js-201',
   },
   {
     id: 'blk-js201-3',
     type: 'diagram',
     diagramKind: 'if_else_flow',
-    title: 'Imagen / Diagrama de Flujo: Toma de Decisiones con if / else if / else',
+    title: 'Imagen / Diagrama de Flujo: Arquitectura de Decisión Booleana (if / else if / else)',
     content:
-      'El motor evalúa la condición en el rombo: si resulta verdadera (true) ejecuta el bloque superior; si resulta falsa (false) toma la rama inferior hacia else if o else.',
+      'El rombo amarillo representa el predicado lógico: si su evaluación resulta verdadera (true) el flujo toma el ramal verde superior; si resulta falsa (false) desciende al ramal rojo alternativo hasta converger al final.',
+    sourceNodeId: 'node-js-201',
+  },
+  {
+    id: 'blk-js201-q2',
+    type: 'quote',
+    title: 'Clean Code: A Handbook of Agile Software Craftsmanship (Cap. 3: Functions & Guard Clauses)',
+    quoteAuthor: 'Robert C. Martin (Uncle Bob) · Prentice Hall',
+    content:
+      'Las estructuras if/else y switch no deberían tener más de uno o dos niveles de anidamiento. Cuando una función valida precondiciones mediante cláusulas de guarda con retorno temprano al inicio, la complejidad ciclomática disminuye drásticamente y el propósito principal del algoritmo queda expuesto con total claridad.',
+    relevanceComment:
+      'Aplicar Guard Clauses en JavaScript evita tener 4 niveles de llaves anidadas (if { if { if { ... } } }) que dificultan el mantenimiento y las pruebas unitarias.',
     sourceNodeId: 'node-js-201',
   },
   {
     id: 'blk-js201-4',
-    type: 'code',
-    codeLanguage: 'javascript',
-    title: '01_condicionales_y_switch.js',
-    content: `// 1. Escalera if / else if / else para evaluar rangos numéricos
-function clasificarPuntajeSena(puntaje) {
-  if (puntaje >= 90) {
-    return 'Aprobado con Excelencia (A+)';
-  } else if (puntaje >= 70) {
-    return 'Aprobado (A)';
-  } else {
-    return 'No Aprobado — Requiere Plan de Mejoramiento (D)';
-  }
-}
-
-// 2. Operador Ternario (? :) para asignaciones directas en una línea
-const puntajeAprendiz = 84;
-const estadoCertificado = puntajeAprendiz >= 70 ? 'Habilitado' : 'Pendiente';
-
-// 3. Estructura switch / case para códigos exactos
-function obtenerHorarioModalidad(modalidad) {
-  switch (modalidad) {
-    case 'DIURNA':
-      return '06:00 a.m. - 12:00 p.m.';
-    case 'NOCTURNA':
-      return '06:00 p.m. - 10:00 p.m.';
-    case 'VIRTUAL':
-      return 'Plataforma 24/7 con sesiones sincrónicas';
-    default:
-      return 'Modalidad no registrada';
-  }
-}`,
-    relevanceComment:
-      'No olvides colocar return o break en cada bloque case de un switch para evitar el efecto fall-through (caída al siguiente caso).',
+    type: 'text',
+    content:
+      'Además de las sentencias condicionales clásicas, ECMAScript moderno (ES2020+) incorpora tres operadores de **evaluación de cortocircuito (*Short-Circuit Evaluation*)** indispensables en código profesional:\n\n• **AND lógico (`A && B`):** Si `A` es *falsy*, detiene la evaluación y retorna `A` sin ejecutar `B`; si `A` es *truthy*, retorna `B`.\n• **OR lógico (`A || B`):** Si `A` es *truthy*, retorna `A` inmediatamente; si `A` es *falsy* (incluyendo `0` o `""`), retorna el valor de respaldo `B`.\n• **Coalescencia Nula (`A ?? B` — *Nullish Coalescing*):** Retorna el respaldo `B` **únicamente si `A` es `null` o `undefined`**. Esto es vital cuando `0` o `""` son valores válidos (por ejemplo, una calificación `0` o un descuento del `0%`).',
     sourceNodeId: 'node-js-201',
   },
   {
     id: 'blk-js201-5',
-    type: 'heading',
-    title: '2. Ejercicios Resueltos Paso a Paso — Condicionales',
-    content: '2. Ejercicios Resueltos Paso a Paso — Condicionales',
-    sourceNodeId: 'node-js-201',
-  },
-  {
-    id: 'blk-js201-6',
     type: 'code',
     codeLanguage: 'javascript',
-    title: 'ejercicios_resueltos_condicionales.js',
-    content: `/**
- * EJERCICIO RESUELTO 1: Validador de Acceso y Rol con Cortocircuito y Nullish Coalescing (??)
- * Enunciado: Dado un usuario que puede no tener nombre configurado, asignar "Aprendiz Invitado"
- * por defecto y determinar si puede publicar un OVA.
- */
-function verificarPermisoPublicacion(usuario) {
-  const nombreMostrar = usuario.nombre ?? 'Aprendiz Invitado';
-  if (!usuario.activo) {
-    return \`Acceso denegado para \${nombreMostrar}: cuenta inactiva.\`;
+    title: 'ejemplo_04_guard_clauses_switch_y_nullish.js',
+    content: `'use strict';
+
+// 1. Patrón Profesional: Guard Clauses (Retorno Temprano sin anidamiento profundo)
+function autorizarPresentacionPrueba(aprendiz) {
+  if (!aprendiz) return 'Error: Registro de aprendiz no suministrado.';
+  if (!aprendiz.matriculaActiva) return 'Bloqueado: La matrícula no se encuentra activa.';
+  if (aprendiz.porcentajeAsistencia < 80) {
+    return \`Bloqueado: Asistencia insuficiente (\${aprendiz.porcentajeAsistencia}%). Mínimo 80%.\`;
   }
-  if (usuario.rol === 'instructor' || usuario.rol === 'coordinador') {
-    return \`Bienvenido \${nombreMostrar}: permiso de autoría concedido.\`;
-  }
-  return \`Hola \${nombreMostrar}: acceso en modo lectura y entrega de evidencias.\`;
+
+  // Camino feliz (Happy Path) plano y sin llaves anidadas
+  const turno = aprendiz.promedio >= 90 ? 'Prioritario' : 'Estándar';
+  return \`✓ Aprendiz \${aprendiz.nombre} autorizado en turno \${turno}.\`;
 }
 
-console.log(verificarPermisoPublicacion({ nombre: null, activo: true, rol: 'aprendiz' }));
-// -> "Hola Aprendiz Invitado: acceso en modo lectura y entrega de evidencias."`,
+// 2. Diferencia crítica entre || (OR) y ?? (Nullish Coalescing) con el número 0
+const notaRegistrada = 0; // El aprendiz sacó 0, ¡no es que falte la nota!
+console.log('Con OR (||) erróneo :', notaRegistrada || 'Sin calificar'); // "Sin calificar" (¡Bug! 0 es falsy)
+console.log('Con Nullish (??) ok :', notaRegistrada ?? 'Sin calificar'); // 0 (Respeta el 0 porque no es null/undefined)`,
     relevanceComment:
-      'El operador ?? (Nullish Coalescing) solo reemplaza valores null o undefined, respetando cadenas vacías o el número 0.',
+      'Observa cómo las 3 cláusulas de guarda iniciales descartan inmediatamente los estados inválidos sin necesidad de un solo bloque else.',
     sourceNodeId: 'node-js-201',
   },
+  ...EXERCISES_JS_201,
 ];
 
 const BLOCKS_JS_202: LessonBlock[] = [
   {
     id: 'blk-js202-1',
     type: 'heading',
-    title: '1. Estructuras Repetitivas: Ciclos for, while y do...while',
-    content: '1. Estructuras Repetitivas: Ciclos for, while y do...while',
+    title: '1. Anatomía de las Estructuras Repetitivas: Invariantes, Terminación y Complejidad',
+    content: '1. Anatomía de las Estructuras Repetitivas: Invariantes, Terminación y Complejidad',
     sourceNodeId: 'node-js-202',
   },
   {
     id: 'blk-js202-2',
     type: 'text',
     content:
-      'Los ciclos permiten repetir un bloque de instrucciones mientras una condición lógica se mantenga verdadera. Usamos **`for`** cuando conocemos de antemano el número de iteraciones, **`while`** cuando la repetición depende de una condición dinámica evaluada al inicio, y **`do...while`** cuando necesitamos garantizar que el bloque se ejecute **al menos una vez**.',
+      'La verdadera potencia de un computador radica en su capacidad para ejecutar millones de operaciones repetitivas por segundo sin fatiga. En algoritmia, un **ciclo o bucle (*loop*)** es una estructura de control que repite la ejecución de un bloque de sentencias mientras un predicado booleano (la **condición de permanencia**) se evalúe como `true`.\n\nTodo ciclo bien diseñado en ingeniería de software debe satisfacer tres propiedades formales:\n\n1. **Estado Inicial (*Initialization*):** Establece las variables de control (contadores, punteros o acumuladores) antes de la primera iteración.\n2. **Condición de Guardia (*Continuation Condition*):** Predicado evaluado antes de cada iteración (en `for` y `while`) o al final de cada iteración (en `do...while`).\n3. **Progreso hacia la Terminación (*Step / Mutation*):** Modificación del estado en cada vuelta (`i++`, `n = Math.floor(n / 2)`, `intentos--`) que garantiza matemáticamente que la condición llegará a ser `false` en un número finito de pasos. Si el estado nunca avanza hacia la condición de parada, se produce un **ciclo infinito (*Infinite Loop*)** que congela el hilo principal de ejecución (*Event Loop*).',
+    sourceNodeId: 'node-js-202',
+  },
+  {
+    id: 'blk-js202-q1',
+    type: 'quote',
+    title: 'JavaScript: The Definitive Guide (7.ª Edición, Cap. 5: Statements — Loops)',
+    quoteAuthor: 'David Flanagan · O’Reilly Media (2020)',
+    content:
+      'La sentencia for condensa en su encabezado las tres manipulaciones cruciales de casi todo bucle: la inicialización de la variable contadora, la prueba booleana que determina si el bucle continúa y la actualización de la variable al cierre de cada iteración, haciendo explícita de un vistazo la ley que gobierna la repetición.',
+    relevanceComment:
+      'Como señala Flanagan, agrupar (inicialización; condición; actualización) en la primera línea del ciclo for reduce drásticamente el riesgo de olvidar incrementar el contador.',
     sourceNodeId: 'node-js-202',
   },
   {
     id: 'blk-js202-3',
     type: 'diagram',
     diagramKind: 'loops_flow',
-    title: 'Imagen / Diagrama de Flujo: Las 4 Etapas de un Ciclo Repetitivo (for / while)',
+    title: 'Imagen / Diagrama de Flujo: Ciclo de Vida en 4 Etapas de un Bucle (for / while)',
     content:
-      'En cada vuelta del ciclo se evalúa la condición (2): si es true se ejecuta el cuerpo (3) y luego el incremento (4); si es false (o se invoca break) el ciclo termina.',
+      'Observa el lazo de retroalimentación superior: tras ejecutar el cuerpo del ciclo (etapa 3), el flujo pasa obligatoriamente por el paso de actualización i++ (etapa 4) antes de reevaluar la condición en el rombo (etapa 2).',
     sourceNodeId: 'node-js-202',
   },
   {
     id: 'blk-js202-4',
-    type: 'code',
-    codeLanguage: 'javascript',
-    title: '02_ciclos_for_while.js',
-    content: `// 1. Ciclo for clásico con continue (saltar iteración) y break (detener ciclo)
-for (let trimestre = 1; trimestre <= 6; trimestre++) {
-  if (trimestre === 3) {
-    continue; // Salta la impresión del trimestre 3 y pasa al 4
-  }
-  console.log('Cursando Trimestre Lectivo #' + trimestre);
-}
-
-// 2. Ciclo while: Búsqueda hasta cumplir condición
-let cuposDisponibles = 3;
-while (cuposDisponibles > 0) {
-  console.log('Cupo asignado. Restantes:', cuposDisponibles - 1);
-  cuposDisponibles--; // ¡Fundamental actualizar la variable para evitar un ciclo infinito!
-}`,
-    relevanceComment:
-      'continue salta únicamente la vuelta actual del ciclo; break aborta y sale del ciclo por completo.',
+    type: 'heading',
+    title: '2. Cuándo Elegir for, while o do...while y Control Fino con break y continue',
+    content: '2. Cuándo Elegir for, while o do...while y Control Fino con break y continue',
     sourceNodeId: 'node-js-202',
   },
   {
     id: 'blk-js202-5',
-    type: 'heading',
-    title: '2. Ejercicios Resueltos Paso a Paso — Ciclos',
-    content: '2. Ejercicios Resueltos Paso a Paso — Ciclos',
+    type: 'text',
+    content:
+      'Aunque cualquier algoritmo iterativo puede expresarse con cualquiera de los tres bucles, la claridad semántica exige elegir la estructura adecuada:\n\n• **Ciclo `for (let i = 0; i < n; i++)`:** Ideal para **iteración definida**, cuando conocemos de antemano el límite de repeticiones o necesitamos el índice numérico `i`.\n• **Ciclo `while (condicion)`:** Ideal para **iteración indefinida**, cuando el número de vueltas no se conoce a priori y depende de una convergencia dinámica (búsqueda binaria, lectura de colas, división sucesiva de dígitos).\n• **Ciclo `do { ... } while (condicion)`:** Evalúa la condición **después** de ejecutar el cuerpo, garantizando que el bloque se ejecute **como mínimo una vez**.\n• **Control de salto interno:** La sentencia **`continue`** aborta únicamente la iteración actual y salta de inmediato a la etapa de actualización (`i++`) para comenzar la siguiente vuelta; la sentencia **`break`** detiene y abandona el bucle por completo.',
+    sourceNodeId: 'node-js-202',
+  },
+  {
+    id: 'blk-js202-q2',
+    type: 'quote',
+    title: 'Eloquent JavaScript (4.ª Edición, Cap. 2: While and Do Loops)',
+    quoteAuthor: 'Marijn Haverbeke · No Starch Press (2024)',
+    content:
+      'Un bucle do es una estructura de control similar a un bucle while. Se diferencia únicamente en un punto: un bucle do ejecuta siempre su cuerpo al menos una vez, y solo comienza a comprobar si debe detenerse después de esa primera ejecución.',
+    relevanceComment:
+      'El bucle do...while es el patrón estándar para menús interactivos, reintentos de conexión inicial o generación de códigos aleatorios que deben validarse tras ser generados.',
     sourceNodeId: 'node-js-202',
   },
   {
     id: 'blk-js202-6',
     type: 'code',
     codeLanguage: 'javascript',
-    title: 'ejercicios_resueltos_ciclos.js',
-    content: `/**
- * EJERCICIO RESUELTO 1: Conteo de Evidencias Aprobadas y Promedio General
- * Enunciado: Dado un listado de calificaciones, calcular con un ciclo for cuántas
- * aprobaron (>= 70) y cuál es el promedio total del grupo.
- */
-const calificacionesGrupo = [80, 65, 95, 72, 50, 88];
-let sumaTotal = 0;
-let totalAprobados = 0;
+    title: 'ejemplo_05_patrones_acumulador_y_busqueda_ciclos.js',
+    content: `'use strict';
 
-for (let i = 0; i < calificacionesGrupo.length; i++) {
-  const notaActual = calificacionesGrupo[i];
-  sumaTotal += notaActual;
-  if (notaActual >= 70) {
-    totalAprobados++;
+// 1. Patrón de Búsqueda Temprana con 'for' y 'break' + salto con 'continue'
+const registrosServidor = [
+  { id: 101, estado: 'OK', latenciaMs: 45 },
+  { id: 102, estado: 'MANTENIMIENTO', latenciaMs: 0 },
+  { id: 103, estado: 'OK', latenciaMs: 62 },
+  { id: 104, estado: 'CRITICO', latenciaMs: 1850 },
+  { id: 105, estado: 'OK', latenciaMs: 38 },
+];
+
+for (let i = 0; i < registrosServidor.length; i++) {
+  const nodo = registrosServidor[i];
+
+  if (nodo.estado === 'MANTENIMIENTO') {
+    continue; // Ignora nodos en mantenimiento y pasa al siguiente índice
   }
-}
 
-const promedioGrupo = (sumaTotal / calificacionesGrupo.length).toFixed(1);
-console.log(\`Aprobados: \${totalAprobados} de \${calificacionesGrupo.length} | Promedio: \${promedioGrupo}\`);
-// -> "Aprobados: 4 de 6 | Promedio: 75.0"`,
+  if (nodo.estado === 'CRITICO') {
+    console.log(\`🚨 Alerta crítica detectada en nodo #\${nodo.id} (\${nodo.latenciaMs}ms). Deteniendo escaneo.\`);
+    break; // Sale del ciclo inmediatamente sin revisar el nodo 105
+  }
+
+  console.log(\`✓ Nodo #\${nodo.id} operativo (\${nodo.latenciaMs}ms)\`);
+}`,
     relevanceComment:
-      'Patrón clásico de acumulador (sumaTotal += notaActual) y contador condicional (totalAprobados++).',
+      'Usar break tan pronto como encontramos el elemento buscado ahorra ciclos de CPU innecesarios en arreglos de miles de registros.',
     sourceNodeId: 'node-js-202',
   },
+  ...EXERCISES_JS_202,
 ];
 
 const BLOCKS_JS_203: LessonBlock[] = [
   {
     id: 'blk-js203-1',
     type: 'heading',
-    title: '1. Iteración Moderna (for...of, for...in) y Manejo de Errores (try / catch)',
-    content: '1. Iteración Moderna (for...of, for...in) y Manejo de Errores (try / catch)',
+    title: '1. Protocolo Iterable en ES6+: Diferencia Estructural entre for...of y for...in',
+    content: '1. Protocolo Iterable en ES6+: Diferencia Estructural entre for...of y for...in',
     sourceNodeId: 'node-js-203',
   },
   {
     id: 'blk-js203-2',
     type: 'text',
     content:
-      'Para recorrer colecciones sin gestionar índices manuales, JavaScript ofrece **`for...of`** (itera directamente sobre los **valores** de un arreglo o cadena) y **`for...in`** (itera sobre las **claves/propiedades** de un objeto). Además, toda operación propensa a fallos externos (como parsear JSON o consultar una red) debe protegerse con **`try / catch / finally`**.',
+      'Gran parte de los errores de índice fuera de rango (*Off-by-One Errors*) en programación tradicional provienen de administrar manualmente variables contadoras `i` cuando solo necesitamos procesar los elementos de una colección. Para eliminar esa fricción, ECMAScript 2015 introdujo el **Protocolo de Iteración (`[Symbol.iterator]`)** y el bucle declarativo **`for...of`**:\n\n• **`for (const elemento of coleccion)`:** Recorre directamente los **valores** de cualquier objeto iterable (`Array`, `String`, `Map`, `Set`, `NodeList` del DOM). Permite usar `const` en el encabezado porque se crea un enlace nuevo en cada paso y soporta `break`, `continue` y `return` (a diferencia de `.forEach()`, donde `break` es ilegal).\n• **`for (const clave in objeto)`:** Recorre los **nombres de las propiedades enumerables (claves string)** de un objeto, incluyendo las heredadas por su cadena de prototipos. Por ello, **nunca debe usarse `for...in` para recorrer arreglos**, y en objetos modernos se prefiere combinar `for (const [clave, valor] of Object.entries(objeto))`.',
+    sourceNodeId: 'node-js-203',
+  },
+  {
+    id: 'blk-js203-q1',
+    type: 'quote',
+    title: 'Exploring JavaScript (ES2024 Edition, Cap. 21: Synchronous Iteration)',
+    quoteAuthor: 'Dr. Axel Rauschmayer · ExploringJS Books (2024)',
+    content:
+      'El bucle for-of combina lo mejor de dos mundos: la concisión declarativa de los métodos de arreglos sin variables de índice manuales, y la flexibilidad total de las estructuras de control imperativas para interrumpir la iteración con break o retornar directamente desde la función contenedora.',
+    relevanceComment:
+      'Dr. Axel Rauschmayer destaca una ventaja clave de for...of frente a .forEach(): dentro de un for...of también puedes utilizar await para operaciones asíncronas secuenciales.',
     sourceNodeId: 'node-js-203',
   },
   {
     id: 'blk-js203-3',
-    type: 'diagram',
-    diagramKind: 'try_catch_flow',
-    title: 'Imagen / Diagrama de Flujo: Captura de Excepciones con try / catch / finally',
-    content:
-      'Si ocurre un error dentro de try, la ejecución salta inmediatamente a catch sin detener la aplicación, y finalmente ejecuta finally.',
+    type: 'heading',
+    title: '2. Arquitectura de Tolerancia a Fallos: Excepciones, throw y try / catch / finally',
+    content: '2. Arquitectura de Tolerancia a Fallos: Excepciones, throw y try / catch / finally',
     sourceNodeId: 'node-js-203',
   },
   {
     id: 'blk-js203-4',
-    type: 'code',
-    codeLanguage: 'javascript',
-    title: '03_for_of_try_catch_resuelto.js',
-    content: `/**
- * EJERCICIO RESUELTO: Procesador Seguro de Entregas JSON con for...of y try/catch
- * Enunciado: Recorrer una lista de cadenas JSON enviadas por aprendices; si alguna
- * tiene formato inválido, capturar el error sin detener el procesamiento del resto.
- */
-const enviosJson = [
-  '{"aprendiz": "Valentina", "nota": 95}',
-  '{JSON_CORRUPTO_SIN_COMILLAS}',
-  '{"aprendiz": "Mateo", "nota": 82}',
-];
-
-for (const cadena of enviosJson) {
-  try {
-    const registro = JSON.parse(cadena);
-    console.log('✓ Entrega procesada:', registro.aprendiz, '-> Nota:', registro.nota);
-  } catch (error) {
-    console.warn('⚠️ Envío descartado por sintaxis JSON inválida:', error.message);
-  } finally {
-    // Se ejecuta en cada iteración haya o no error
-  }
-}`,
-    relevanceComment:
-      'Observa cómo el segundo elemento falla en JSON.parse(), es capturado por catch y el ciclo continúa procesando a Mateo sin colapsar.',
+    type: 'text',
+    content:
+      'En entornos reales de producción, las aplicaciones interactúan con sistemas externos impredecibles: el usuario ingresa un archivo JSON malformado, una petición HTTP pierde conexión o una base de datos rechaza una llave duplicada. Si ocurre un error en tiempo de ejecución y no es interceptado, la pila de llamadas (*Call Stack*) se desenrolla abruptamente y **el programa entero colapsa**.\n\nJavaScript implementa el manejo estructurado de excepciones mediante cuatro componentes:\n\n1. **Instanciación y lanzamiento (`throw new Error("mensaje")`):** Permite que nuestras propias funciones señalicen violaciones de reglas de negocio creando un objeto `Error` (o subclases como `TypeError`, `RangeError`, `SyntaxError`) que captura automáticamente la traza de la pila (*stack trace*).\n2. **Bloque supervisado (`try { ... }`):** Envuelve las operaciones críticas que podrían fallar.\n3. **Bloque receptor (`catch (error) { ... }`):** Se activa únicamente si dentro de `try` se lanza una excepción. Recibe el objeto `error` con sus propiedades `error.name`, `error.message` y `error.stack` para registrar el incidente o recuperar el estado.\n4. **Bloque de cierre garantizado (`finally { ... }`):** Se ejecuta **siempre**, sin importar si el bloque `try` finalizó con éxito, si entró al `catch` o incluso si hubo un `return` dentro de ellos. Es indispensable para liberar conexiones, cerrar transacciones o apagar indicadores de carga (*spinners*).',
     sourceNodeId: 'node-js-203',
   },
+  {
+    id: 'blk-js203-5',
+    type: 'diagram',
+    diagramKind: 'try_catch_flow',
+    title: 'Imagen / Diagrama de Flujo: Ciclo de Captura y Recuperación con try / catch / finally',
+    content:
+      'Tanto la ruta de excepción (2A: catch) como la ruta de éxito sin errores (2B) desembocan obligatoriamente en el bloque 3 (finally) antes de continuar el programa.',
+    sourceNodeId: 'node-js-203',
+  },
+  {
+    id: 'blk-js203-q2',
+    type: 'quote',
+    title: 'Eloquent JavaScript (4.ª Edición, Cap. 8: Bugs and Errors — Exceptions)',
+    quoteAuthor: 'Marijn Haverbeke · No Starch Press (2024)',
+    content:
+      'El manejo de excepciones es un mecanismo que permite que el código que detecta un problema lance (throw) una excepción, la cual salta fuera de todas las funciones activas en la pila de llamadas hasta aterrizar en el primer bloque try/catch que sepa cómo resolver o informar el incidente con elegancia.',
+    relevanceComment:
+      'Gracias a que las excepciones suben por la pila de llamadas (Call Stack Propagation), puedes lanzar un error en una función auxiliar profunda y capturarlo limpiamente en el controlador principal.',
+    sourceNodeId: 'node-js-203',
+  },
+  {
+    id: 'blk-js203-6',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: 'ejemplo_06_for_of_y_manejo_robusto_excepciones.js',
+    content: `'use strict';
+
+// Ejemplo integral: Validador de Lote de Entregas JSON con for...of y try/catch/finally
+function procesarLoteEvidencias(loteJsonStrings) {
+  const procesadas = [];
+  const errores = [];
+
+  for (const [indice, cadenaJson] of loteJsonStrings.entries()) {
+    try {
+      const data = JSON.parse(cadenaJson);
+
+      if (!data.aprendiz || typeof data.nota !== 'number') {
+        throw new TypeError('Faltan campos obligatorios (aprendiz o nota numérica)');
+      }
+      if (data.nota < 0 || data.nota > 100) {
+        throw new RangeError(\`Nota fuera de rango [0-100]: \${data.nota}\`);
+      }
+
+      procesadas.push({ indice, aprendiz: data.aprendiz, nota: data.nota });
+    } catch (error) {
+      errores.push({
+        indice,
+        tipoError: error.name,
+        detalle: error.message,
+      });
+    } finally {
+      // Auditoría garantizada por cada registro del lote
+    }
+  }
+
+  return { totalExitosas: procesadas.length, procesadas, errores };
+}
+
+const lotePrueba = [
+  '{"aprendiz": "Valentina Rojas", "nota": 96}',
+  '{JSON_MALFORMADO}',
+  '{"aprendiz": "Mateo Hernández", "nota": 140}',
+  '{"aprendiz": "Laura Pineda", "nota": 88}',
+];
+
+console.log(procesarLoteEvidencias(lotePrueba));`,
+    relevanceComment:
+      'Observa cómo usamos .entries() en el for...of para obtener tanto el índice como el valor, y cómo distinguimos SyntaxError, TypeError y RangeError.',
+    sourceNodeId: 'node-js-203',
+  },
+  ...EXERCISES_JS_203,
 ];
 
 // ============================================================================
 // OVA 3: ARREGLOS Y OBJETOS EN JAVASCRIPT (GRÁFICOS INTERACTIVOS Y MICROANIMACIONES)
+// (Teoría Extensa + Simuladores Animados + Citas de Libros + 45 Ejercicios Ejecutables)
 // ============================================================================
 
 const BLOCKS_JS_301: LessonBlock[] = [
   {
     id: 'blk-js301-1',
     type: 'heading',
-    title: '1. Arreglos (Arrays) en JavaScript: Estructura Indexada y Mutación',
-    content: '1. Arreglos (Arrays) en JavaScript: Estructura Indexada y Mutación',
+    title: '1. Arquitectura de los Arreglos en JavaScript: Indexación Base 0 y Complejidad Algorítmica',
+    content: '1. Arquitectura de los Arreglos en JavaScript: Indexación Base 0 y Complejidad Algorítmica',
     sourceNodeId: 'node-js-301',
   },
   {
     id: 'blk-js301-2',
     type: 'text',
     content:
-      'Un **Arreglo (`Array`)** es una colección ordenada de datos donde cada elemento ocupa una posición numérica llamada **índice** que inicia siempre en **`0`**. Interactúa con el siguiente gráfico animado para experimentar cómo los métodos **`.push()`**, **`.pop()`**, **`.unshift()`** y **`.shift()`** modifican la estructura en memoria.',
+      'Un **Arreglo (`Array`)** en JavaScript es una estructura de datos ordenada y dinámica que almacena una secuencia de elementos accesibles mediante un **índice entero en base cero (`0, 1, 2, ..., length - 1`)**. Aunque a nivel de especificación ECMA-262 un `Array` es un tipo especializado de objeto cuyas claves son índices numéricos y cuya propiedad `.length` se auto-actualiza, los motores modernos como **V8** optimizan internamente los arreglos homogéneos como bloques contiguos de memoria C++ (*FixedArray / Packed Elements*).\n\nComprender cómo se almacenan los elementos en memoria explica la diferencia crítica de rendimiento (complejidad algorítmica **Big-O**) entre operar al final vs. operar al inicio de un arreglo:\n\n• **Operaciones al FINAL del arreglo (`.push(x)` y `.pop()`):** Tienen complejidad **`O(1)` (tiempo constante)**. Como agregan o retiran en la última casilla (`[length - 1]`), ninguno de los elementos anteriores cambia de posición.\n• **Operaciones al INICIO del arreglo (`.unshift(x)` y `.shift()`):** Tienen complejidad **`O(n)` (tiempo lineal)**. Insertar un elemento en el índice `[0]` obliga al motor a desplazar un puesto hacia la derecha absolutamente todos los `n` elementos existentes en memoria (`[0] → [1]`, `[1] → [2]`, etc.).\n\nInteractúa con el siguiente **laboratorio gráfico animado** para visualizar en tiempo real cómo mutan las celdas de memoria y los índices.',
+    sourceNodeId: 'node-js-301',
+  },
+  {
+    id: 'blk-js301-q1',
+    type: 'quote',
+    title: 'Eloquent JavaScript (4.ª Edición, Cap. 4: Data Structures: Objects and Arrays)',
+    quoteAuthor: 'Marijn Haverbeke · No Starch Press (2024)',
+    content:
+      'Para representar colecciones digitales de datos necesitamos algo más que variables sueltas. JavaScript proporciona un tipo de dato específico para almacenar secuencias ordenadas de valores: el Array, donde el índice cero señala el primer elemento y cada método de pila o cola permite modelar flujos de información complejos.',
+    relevanceComment:
+      'Con .push() y .pop() un Array de JavaScript funciona como una Pila (Stack - LIFO: Last In, First Out); con .push() y .shift() funciona como una Cola (Queue - FIFO: First In, First Out).',
     sourceNodeId: 'node-js-301',
   },
   {
@@ -533,43 +677,84 @@ const BLOCKS_JS_301: LessonBlock[] = [
     interactiveKind: 'array_lab',
     title: 'Gráfico Interactivo Animado: Operaciones en Memoria sobre un Array JS',
     content:
-      'Escribe un elemento y pulsa .push() (final), .unshift() (inicio), .pop() o .shift() para ver cómo se desplazan los índices [0], [1], [2] con microanimaciones.',
+      'Escribe un elemento y pulsa .push() (final), .unshift() (inicio), .pop(), .shift() o .reverse() para ver cómo se desplazan los índices [0], [1], [2] con microanimaciones.',
     sourceNodeId: 'node-js-301',
   },
   {
     id: 'blk-js301-4',
-    type: 'code',
-    codeLanguage: 'javascript',
-    title: '01_arreglos_fundamentos_y_ejercicios.js',
-    content: `// 1. Declaración, acceso por índice [0] y último elemento con .at(-1)
-const modulosAdso = ['Algoritmia', 'Bases de Datos', 'Frontend JS', 'Backend Node'];
-console.log('Primer módulo [0]:', modulosAdso[0]);       // "Algoritmia"
-console.log('Último módulo:', modulosAdso.at(-1));       // "Backend Node"
-
-// 2. EJERCICIO RESUELTO: Gestión de Cola de Soporte de Aprendices (FIFO)
-const colaSoporte = ['Valentina', 'Mateo'];
-colaSoporte.push('Laura');               // Llega Laura al final -> ['Valentina', 'Mateo', 'Laura']
-const atendido = colaSoporte.shift();    // Sale el primero ('Valentina')
-console.log('Atendiendo a:', atendido, '| En espera:', colaSoporte);`,
-    relevanceComment:
-      'El método moderno .at(-1) permite leer el último elemento de cualquier arreglo sin tener que escribir arr[arr.length - 1].',
+    type: 'heading',
+    title: '2. Métodos Mutables vs. Inmutables (.splice vs. .slice / .toSorted) y Desestructuración',
+    content: '2. Métodos Mutables vs. Inmutables (.splice vs. .slice / .toSorted) y Desestructuración',
     sourceNodeId: 'node-js-301',
   },
+  {
+    id: 'blk-js301-5',
+    type: 'text',
+    content:
+      'Al trabajar con arreglos es fundamental distinguir qué métodos **mutan el arreglo original in-place** y cuáles **retornan una copia nueva sin alterar el original**:\n\n• **`.splice(inicio, cantidadEliminar, ...nuevosItems)` (Mutable):** Modifica directamente el arreglo original eliminando o insertando elementos en cualquier posición intermedia.\n• **`.slice(inicio, fin)` (Inmutable):** Extrae y devuelve un sub-arreglo nuevo desde `inicio` hasta `fin - 1`, dejando intacto el arreglo original.\n• **Lectura moderna con `.at(-1)`:** Permite indexar desde el final del arreglo con números negativos (`arr.at(-1)` devuelve el último elemento, `arr.at(-2)` el penúltimo).\n• **Clonación y concatenación con *Spread* (`[...arrA, ...arrB]`):** Crea un nuevo arreglo expandiendo los elementos individuales.',
+    sourceNodeId: 'node-js-301',
+  },
+  {
+    id: 'blk-js301-q2',
+    type: 'quote',
+    title: 'JavaScript: The Definitive Guide (7.ª Edición, Cap. 7: Arrays)',
+    quoteAuthor: 'David Flanagan · O’Reilly Media (2020)',
+    content:
+      'Los arreglos de JavaScript son dinámicos: crecen o se reducen según sea necesario sin necesidad de reasignar bloques fijos manualmente, y el operador de propagación (spread ...) proporciona una sintaxis declarativa limpia para clonar y combinar secuencias sin efectos secundarios.',
+    relevanceComment:
+      'En frameworks reactivos como React o Vue, nunca debes mutar un arreglo de estado con .push() o .splice(); siempre debes crear una nueva referencia con [...arreglo, nuevoItem].',
+    sourceNodeId: 'node-js-301',
+  },
+  {
+    id: 'blk-js301-6',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: 'ejemplo_07_arreglos_indexacion_slice_y_spread.js',
+    content: `'use strict';
+
+// 1. Indexación positiva y negativa con .at()
+const etapasProyecto = ['Análisis', 'Planeación', 'Ejecución', 'Evaluación'];
+console.log('Primera etapa [0] :', etapasProyecto[0]);       // "Análisis"
+console.log('Última etapa (-1) :', etapasProyecto.at(-1));   // "Evaluación"
+
+// 2. Extracción inmutable con .slice() vs inserción con Spread (...)
+const etapasCentrales = etapasProyecto.slice(1, 3); // ["Planeación", "Ejecución"]
+const cronogramaExtendido = ['Inducción', ...etapasProyecto, 'Certificación'];
+
+// 3. Desestructuración posicional con operador Rest (...resto)
+const [primera, segunda, ...etapasRestantes] = cronogramaExtendido;
+console.log({ primera, segunda, etapasRestantes });`,
+    relevanceComment:
+      'Observa cómo el operador ... (Rest/Spread) sirve tanto para expandir un arreglo al construir otro como para capturar los elementos sobrantes al desestructurar.',
+    sourceNodeId: 'node-js-301',
+  },
+  ...EXERCISES_JS_301,
 ];
 
 const BLOCKS_JS_302: LessonBlock[] = [
   {
     id: 'blk-js302-1',
     type: 'heading',
-    title: '1. Métodos Funcionales de Arreglos: map, filter, find y reduce',
-    content: '1. Métodos Funcionales de Arreglos: map, filter, find y reduce',
+    title: '1. Programación Funcional sobre Arreglos: Funciones de Orden Superior e Inmutabilidad',
+    content: '1. Programación Funcional sobre Arreglos: Funciones de Orden Superior e Inmutabilidad',
     sourceNodeId: 'node-js-302',
   },
   {
     id: 'blk-js302-2',
     type: 'text',
     content:
-      'En el desarrollo moderno con JavaScript y React evitamos mutar los arreglos originales. En su lugar, encadenamos métodos funcionales inmutables que reciben una función *callback*: **`.map()`** para transformar, **`.filter()`** para seleccionar, **`.find()`** para localizar un elemento único y **`.reduce()`** para totalizar.',
+      'En JavaScript las funciones son **ciudadanos de primera clase (*First-Class Citizens*)**: pueden almacenarse en variables, pasarse como argumentos a otras funciones y retornarse como resultado. Una función que recibe otra función (*callback*) como parámetro se denomina **Función de Orden Superior (*Higher-Order Function*)**.\n\nEl prototipo `Array.prototype` incluye un conjunto de métodos funcionales declarativos que permiten procesar colecciones de datos **sin mutar jamás el arreglo de entrada**, componiendo tuberías de transformación (*data pipelines*):\n\n1. **Proyección 1 a 1 con `.map((elemento, indice) => nuevoElemento)`:** Aplica una función transformadora a cada elemento de un arreglo de longitud `N` y retorna un **nuevo arreglo de longitud `N`** con los resultados transformados.\n2. **Selección por predicado con `.filter((elemento) => condicionBooleana)`:** Evalúa una función predicado sobre cada elemento y retorna un **nuevo arreglo (de longitud `0` hasta `N`)** que contiene únicamente aquellos elementos para los cuales el callback retornó `true`.\n3. **Localización con `.find((elemento) => condicion)` y `.findIndex(...)`:** Recorre el arreglo y detiene la búsqueda tan pronto como encuentra el **primer elemento** que cumple el predicado, retornando dicho elemento (o `undefined` si ninguno coincide).\n4. **Verificación cuantificadora con `.some(...)` y `.every(...)`:** `.some()` retorna `true` si **al menos un** elemento cumple la condición (cuantificador existencial ∃); `.every()` retorna `true` si **todos** los elementos cumplen la condición (cuantificador universal ∀).\n5. **Agregación universal con `.reduce((acumulador, elemento) => nuevoAcumulador, valorInicial)`:** Pliega o condensa todos los elementos del arreglo en un único valor de salida (un número total, un objeto agrupado, un diccionario indexado o incluso otro arreglo).',
+    sourceNodeId: 'node-js-302',
+  },
+  {
+    id: 'blk-js302-q1',
+    type: 'quote',
+    title: 'Eloquent JavaScript (4.ª Edición, Cap. 5: Higher-Order Functions)',
+    quoteAuthor: 'Marijn Haverbeke · No Starch Press (2024)',
+    content:
+      'Las funciones que operan sobre otras funciones, ya sea tomándolas como argumentos o retornándolas, se denominan funciones de orden superior. Nos permiten abstraer no solo valores, sino acciones completas: filtrar, transformar y reducir colecciones se convierten en bloques de construcción expresivos que se leen casi como lenguaje natural.',
+    relevanceComment:
+      'Como explica Haverbeke, expresar un algoritmo como entregas.filter(esAprobado).map(extraerNombre) comunica la intención del negocio con mucha mayor claridad que un bucle for de 15 líneas.',
     sourceNodeId: 'node-js-302',
   },
   {
@@ -578,54 +763,83 @@ const BLOCKS_JS_302: LessonBlock[] = [
     interactiveKind: 'array_functional',
     title: 'Simulador Visual Animado: Pipeline Funcional (.map, .filter, .find, .reduce)',
     content:
-      'Haz clic en cada método funcional para visualizar qué elementos se transforman, cuáles superan el filtro (>= 70) y cómo se calcula el acumulador.',
+      'Alterna entre los 4 métodos funcionales para observar cómo el arreglo original permanece inmutable mientras se genera la nueva colección o el valor reducido.',
+    sourceNodeId: 'node-js-302',
+  },
+  {
+    id: 'blk-js302-q2',
+    type: 'quote',
+    title: 'How JavaScript Works (Cap. 12: Functional Programming & Purity)',
+    quoteAuthor: 'Douglas Crockford · Virgule-Solidus (2018)',
+    content:
+      'La programación funcional evita la mutación de estado compartido. Cuando utilizamos map, filter y reduce con funciones puras que no alteran sus argumentos, eliminamos de raíz toda una categoría de errores de concurrencia y efectos colaterales difíciles de rastrear.',
+    relevanceComment:
+      'Pasa siempre el segundo argumento valorInicial a .reduce(fn, valorInicial) (por ejemplo, 0 para sumas o {} para agrupaciones) para evitar un TypeError si el arreglo llega vacío.',
     sourceNodeId: 'node-js-302',
   },
   {
     id: 'blk-js302-4',
     type: 'code',
     codeLanguage: 'javascript',
-    title: '02_ejercicios_map_filter_reduce.js',
-    content: `// EJERCICIO RESUELTO: Pipeline Funcional de Calificaciones SENA
-const entregas = [
-  { aprendiz: 'Valentina', puntaje: 95, entregada: true },
-  { aprendiz: 'Mateo', puntaje: 58, entregada: true },
-  { aprendiz: 'Laura', puntaje: 88, entregada: true },
-  { aprendiz: 'Juan', puntaje: 0, entregada: false },
+    title: 'ejemplo_08_encadenamiento_funcional_map_filter_reduce.js',
+    content: `'use strict';
+
+const proyectosAdso = [
+  { codigo: 'P-01', nombre: 'API Facturación Electrónica', puntaje: 94, activo: true, horas: 120 },
+  { codigo: 'P-02', nombre: 'Landing Estática Legacy', puntaje: 62, activo: false, horas: 40 },
+  { codigo: 'P-03', nombre: 'App Móvil Inventario QR', puntaje: 88, activo: true, horas: 95 },
+  { codigo: 'P-04', nombre: 'Dashboard Analítico SENA', puntaje: 97, activo: true, horas: 140 },
 ];
 
-// 1. Filtrar solo los aprendices que aprobaron (puntaje >= 70)
-const aprobados = entregas.filter((item) => item.entregada && item.puntaje >= 70);
+// 1. Pipeline encadenado: Filtrar activos aprobados (>=70) -> Transformar con .map()
+const proyectosDestacados = proyectosAdso
+  .filter((p) => p.activo && p.puntaje >= 70)
+  .map((p) => ({
+    etiqueta: \`[\${p.codigo}] \${p.nombre}\`,
+    calificacion: p.puntaje,
+  }));
 
-// 2. Extraer únicamente un arreglo con los nombres en mayúsculas usando .map()
-const nombresCuadroHonor = aprobados.map((item) => item.aprendiz.toUpperCase());
+// 2. Reducción (.reduce) para calcular el total de horas de todos los proyectos activos
+const totalHorasActivos = proyectosAdso
+  .filter((p) => p.activo)
+  .reduce((acumulador, proyecto) => acumulador + proyecto.horas, 0);
 
-// 3. Calcular el puntaje promedio de los aprobados usando .reduce()
-const promedioAprobados =
-  aprobados.reduce((acumulador, item) => acumulador + item.puntaje, 0) /
-  aprobados.length;
+// 3. Cuantificadores booleanos .some() y .every()
+const hayExcelencia = proyectosAdso.some((p) => p.puntaje >= 95); // true
+const todosAprobaron = proyectosAdso.every((p) => p.puntaje >= 70); // false
 
-console.log('Cuadro de Honor:', nombresCuadroHonor); // ["VALENTINA", "LAURA"]
-console.log('Promedio Aprobados:', promedioAprobados); // 91.5`,
+console.log({ proyectosDestacados, totalHorasActivos, hayExcelencia, todosAprobaron });`,
     relevanceComment:
-      'Encadenar .filter() seguido de .map() y .reduce() es el patrón más utilizado en aplicaciones web modernas.',
+      'Cada eslabón de la cadena (.filter -> .map) recibe el nuevo arreglo retornado por el paso anterior sin modificar jamás proyectosAdso.',
     sourceNodeId: 'node-js-302',
   },
+  ...EXERCISES_JS_302,
 ];
 
 const BLOCKS_JS_303: LessonBlock[] = [
   {
     id: 'blk-js303-1',
     type: 'heading',
-    title: '1. Objetos en JavaScript: Pares Clave-Valor, Desestructuración y JSON',
-    content: '1. Objetos en JavaScript: Pares Clave-Valor, Desestructuración y JSON',
+    title: '1. Objetos en JavaScript: Diccionarios Dinámicos Clave-Valor, Métodos y Contexto this',
+    content: '1. Objetos en JavaScript: Diccionarios Dinámicos Clave-Valor, Métodos y Contexto this',
     sourceNodeId: 'node-js-303',
   },
   {
     id: 'blk-js303-2',
     type: 'text',
     content:
-      'Los **Objetos (`Object`)** permiten modelar entidades del mundo real agrupando propiedades (`clave: valor`) y comportamientos (métodos). Utiliza el siguiente inspector interactivo para experimentar con la notación de punto, notación de corchetes, desestructuración y `Object.keys()`.',
+      'Mientras que los arreglos indexan datos secuenciales por posición numérica (`[0], [1], [2]`), los **Objetos (`Object`)** son estructuras compuestas que permiten modelar entidades del dominio real agrupando **propiedades con nombre (`clave: valor`)** y **comportamientos (`métodos`)**.\n\nExisten dos mecanismos sintácticos complementarios para leer, crear o modificar propiedades de un objeto:\n\n• **Notación de Punto (`objeto.propiedad`):** Concisa, rápida de leer y preferida siempre que el nombre de la clave sea un identificador válido y estático conocido en tiempo de escritura.\n• **Notación de Corchetes (`objeto[expresionClave]`):** Obligatoria cuando el nombre de la propiedad es **dinámico** (proviene de una variable o parámetro en tiempo de ejecución) o cuando la clave contiene espacios, guiones o caracteres especiales (`objeto["fecha-entrega"]`).\n\nInteractúa con el siguiente **inspector gráfico animado de objetos** para experimentar con el acceso por punto, acceso por corchetes, desestructuración, adición de propiedades y `Object.keys()`.',
+    sourceNodeId: 'node-js-303',
+  },
+  {
+    id: 'blk-js303-q1',
+    type: 'quote',
+    title: 'JavaScript: The Definitive Guide (7.ª Edición, Cap. 6: Objects)',
+    quoteAuthor: 'David Flanagan · O’Reilly Media (2020)',
+    content:
+      'Los objetos son el tipo de dato fundamental de JavaScript. Un objeto es un valor compuesto: agrupa múltiples valores (primitivos u otros objetos) y permite almacenarlos y recuperarlos por nombre. Podemos pensar en un objeto como una tabla hash dinámica de pares clave-valor.',
+    relevanceComment:
+      'Como explica Flanagan, dado que las propiedades de un objeto pueden contener a su vez otros objetos o arreglos, podemos representar cualquier grafo o árbol de información empresarial.',
     sourceNodeId: 'node-js-303',
   },
   {
@@ -634,39 +848,79 @@ const BLOCKS_JS_303: LessonBlock[] = [
     interactiveKind: 'object_lab',
     title: 'Gráfico Interactivo Animado: Inspector de Objetos Clave-Valor y Desestructuración',
     content:
-      'Toca cualquier propiedad del objeto o agrega una nueva clave-valor para ver cómo se accede y muta la estructura en tiempo real.',
+      'Toca cualquier propiedad del objeto o agrega una nueva clave-valor para ver cómo se accede, desestructura y muta la estructura en tiempo real.',
     sourceNodeId: 'node-js-303',
   },
   {
     id: 'blk-js303-4',
-    type: 'code',
-    codeLanguage: 'javascript',
-    title: '03_objetos_desestructuracion_ejercicios.js',
-    content: `// 1. Declaración de Objeto Literal, Desestructuración y Operador Spread (...)
-const proyectoFormativo = {
-  codigo: 'PRJ-ADSO-2026',
-  titulo: 'Sistema de Gestión de Inventario Cloud',
-  ficha: 2874512,
-  tecnologias: ['JavaScript', 'Node.js', 'PostgreSQL'],
-};
-
-// Desestructuración directa de propiedades en variables independientes
-const { titulo, ficha } = proyectoFormativo;
-
-// Clonación inmutable agregando una propiedad con Spread (...)
-const proyectoActualizado = {
-  ...proyectoFormativo,
-  estado: 'En Producción',
-};
-
-// 2. EJERCICIO RESUELTO: Recorrer claves y valores con Object.entries()
-for (const [clave, valor] of Object.entries(proyectoActualizado)) {
-  console.log(\`Propiedad [\${clave}] ->\`, valor);
-}`,
-    relevanceComment:
-      'El operador Spread ({ ...objeto, nuevaPropiedad }) crea una copia superficial sin alterar el objeto original.',
+    type: 'heading',
+    title: '2. Desestructuración Avanzada, Introspección (Object.keys/values/entries) y JSON',
+    content: '2. Desestructuración Avanzada, Introspección (Object.keys/values/entries) y JSON',
     sourceNodeId: 'node-js-303',
   },
+  {
+    id: 'blk-js303-5',
+    type: 'text',
+    content:
+      'En el desarrollo de aplicaciones modernas con JavaScript, Node.js y React, tres herramientas sobre objetos se utilizan en prácticamente cada archivo:\n\n1. **Asignación por Desestructuración (*Object Destructuring*):** Permite extraer múltiples propiedades de un objeto en variables locales de una sola vez (`const { nombre, ficha, rol = "Aprendiz" } = usuario;`), soportando valores por defecto (`=`), renombramiento con alias (`{ nombre: nombreCompleto }`) y desestructuración anidada.\n2. **Métodos Estáticos de Introspección:**\n   • `Object.keys(obj)` → devuelve un arreglo con las claves (`["nombre", "ficha"]`).\n   • `Object.values(obj)` → devuelve un arreglo con los valores (`["Valentina", 2874512]`).\n   • `Object.entries(obj)` → devuelve un arreglo de pares `[clave, valor]`, y su inverso `Object.fromEntries(pares)` reconstruye un objeto desde una lista de pares.\n3. **Serialización y Deserialización JSON (*JavaScript Object Notation*):** Estándar universal (RFC 8259) descubierto y especificado por **Douglas Crockford**. `JSON.stringify(objeto, null, 2)` convierte un objeto en memoria a una cadena de texto transportable por red o almacenable en disco, y `JSON.parse(texto)` reconstruye el objeto en memoria.',
+    sourceNodeId: 'node-js-303',
+  },
+  {
+    id: 'blk-js303-q2',
+    type: 'quote',
+    title: 'JavaScript: The Good Parts (Cap. 3: Objects & JSON)',
+    quoteAuthor: 'Douglas Crockford · O’Reilly Media',
+    content:
+      'La notación literal de objetos de JavaScript —rodear pares clave/valor separados por comas entre llaves { }— es tan expresiva, compacta y legible que inspiró directamente el estándar JSON, el formato universal de intercambio de datos de la web moderna.',
+    relevanceComment:
+      'Recuerda la diferencia sintáctica entre un Objeto Literal de JS y un texto JSON: en JSON todas las claves deben ir obligatoriamente entre comillas dobles ("clave": "valor") y no se permiten funciones ni undefined.',
+    sourceNodeId: 'node-js-303',
+  },
+  {
+    id: 'blk-js303-6',
+    type: 'code',
+    codeLanguage: 'javascript',
+    title: 'ejemplo_09_objetos_desestructuracion_entries_y_json.js',
+    content: `'use strict';
+
+// 1. Objeto con propiedades anidadas y método que utiliza el contexto 'this'
+const fichaCaracterizacion = {
+  codigo: 2874512,
+  programa: 'ADSO',
+  sede: {
+    centro: 'CEET',
+    ciudad: 'Bogotá D.C.',
+  },
+  aprendicesMatriculados: 30,
+  obtenerResumen() {
+    return \`Ficha \${this.codigo} (\${this.programa}) - \${this.sede.centro} [\${this.aprendicesMatriculados} aprendices]\`;
+  },
+};
+
+// 2. Desestructuración con alias (:), valor por defecto (=) y objeto anidado
+const {
+  codigo: numeroFicha,
+  modalidad = 'Presencial',
+  sede: { ciudad },
+} = fichaCaracterizacion;
+
+console.log({ numeroFicha, modalidad, ciudad });
+
+// 3. Transformación de valores de un objeto con Object.entries() y Object.fromEntries()
+const puntajesBrutos = { algoritmia: 80, sql: 90, javascript: 95 };
+const puntajesConBono = Object.fromEntries(
+  Object.entries(puntajesBrutos).map(([materia, nota]) => [materia, Math.min(100, nota + 5)])
+);
+
+// 4. Serialización a formato JSON con indentación de 2 espacios
+const jsonExportado = JSON.stringify(puntajesConBono, null, 2);
+console.log(fichaCaracterizacion.obtenerResumen());
+console.log('JSON Exportado:\\n', jsonExportado);`,
+    relevanceComment:
+      'La combinación Object.fromEntries(Object.entries(obj).map(...)) permite aplicar toda la potencia funcional de los arreglos para transformar diccionarios clave-valor.',
+    sourceNodeId: 'node-js-303',
+  },
+  ...EXERCISES_JS_303,
 ];
 
 // ============================================================================
@@ -677,7 +931,7 @@ export const INITIAL_REGIONS: GraphRegion[] = [
   {
     id: 'reg-js-1',
     title: 'Contenedor OVA 01 · Generalidades, Sintaxis, Variables y Tipos de Datos JS',
-    subtitle: 'Fundamentos del motor JS, reglas léxicas, var/let/const y los 7 tipos primitivos vs referencias',
+    subtitle: 'Teoría extensa, citas de libros y 45 ejercicios con snippet ejecutable (15 cortos + 30 para desarrollar)',
     x: 50,
     y: 50,
     width: 1030,
@@ -688,7 +942,7 @@ export const INITIAL_REGIONS: GraphRegion[] = [
   {
     id: 'reg-js-2',
     title: 'Contenedor OVA 02 · Estructuras de Control, Diagramas de Flujo y Ejercicios Resueltos',
-    subtitle: 'Condicionales if/else/switch, ciclos for/while/do-while y manejo de errores try/catch/finally',
+    subtitle: 'Condicionales, ciclos, try/catch, citas bibliográficas y 45 ejercicios con snippet ejecutable (15 cortos + 30 desarrollo)',
     x: 50,
     y: 400,
     width: 1030,
@@ -699,7 +953,7 @@ export const INITIAL_REGIONS: GraphRegion[] = [
   {
     id: 'reg-js-3',
     title: 'Contenedor OVA 03 · Arreglos y Objetos en JavaScript (Gráficos Interactivos)',
-    subtitle: 'Arrays indexados, métodos funcionales map/filter/reduce, objetos clave-valor y desestructuración',
+    subtitle: 'Laboratorios animados de Arrays y Objetos, map/filter/reduce y 45 ejercicios con snippet ejecutable (15 cortos + 30 desarrollo)',
     x: 50,
     y: 750,
     width: 1030,
@@ -713,7 +967,7 @@ export const INITIAL_NODES: GraphNode[] = [
   // Nodos asociados a Región 1 (OVA 1)
   {
     id: 'node-js-101',
-    title: 'Generalidades y Reglas de Sintaxis en JavaScript',
+    title: 'Generalidades, Motor JIT V8, Gramática Léxica (5 Cortos + 10 Desarrollo)',
     type: 'code',
     codeLanguage: 'javascript',
     researchStatus: 'in_ova',
@@ -722,15 +976,15 @@ export const INITIAL_NODES: GraphNode[] = [
     regionId: 'reg-js-1',
     linkedOvaId: 'ova-js-1',
     linkedLessonId: 'les-js-101',
-    tags: ['JavaScript', 'Sintaxis', 'OVA 1'],
-    updatedAt: '2026-11-24',
+    tags: ['JavaScript', 'Sintaxis', '15 Ejercicios'],
+    updatedAt: '2026-11-25',
     content:
-      'Motor JIT V8, modo estricto "use strict", sensibilidad a mayúsculas, expresiones vs sentencias y ejercicios de sintaxis.',
+      'Arquitectura JIT V8, citas de Kyle Simpson y Marijn Haverbeke, 5 ejercicios propuestos cortos y 10 ejercicios para desarrollar con consola en vivo.',
     blocks: BLOCKS_JS_101,
   },
   {
     id: 'node-js-102',
-    title: 'Tipos de Variables: var, let, const y Ámbito (Scope)',
+    title: 'Variables (var, let, const), TDZ, Block Scope (5 Cortos + 10 Desarrollo)',
     type: 'markdown',
     researchStatus: 'in_ova',
     x: 415,
@@ -738,15 +992,15 @@ export const INITIAL_NODES: GraphNode[] = [
     regionId: 'reg-js-1',
     linkedOvaId: 'ova-js-1',
     linkedLessonId: 'les-js-102',
-    tags: ['Variables', 'Scope', 'let/const'],
-    updatedAt: '2026-11-24',
+    tags: ['Variables', 'Scope', '15 Ejercicios'],
+    updatedAt: '2026-11-25',
     content:
-      'Comparativa gráfica entre var, let y const, Block Scope { }, Hoisting, Temporal Dead Zone y ejercicios prácticos.',
+      'Evolución de var a let/const, citas de Nicholas C. Zakas y David Flanagan, 5 ejercicios cortos y 10 ejercicios para desarrollar en el snippet.',
     blocks: BLOCKS_JS_102,
   },
   {
     id: 'node-js-103',
-    title: 'Tipos de Datos Primitivos, Referencias y Coerción',
+    title: 'Los 8 Tipos de Datos ECMA-262, Coerción y === (5 Cortos + 10 Desarrollo)',
     type: 'code',
     codeLanguage: 'javascript',
     researchStatus: 'in_ova',
@@ -755,17 +1009,17 @@ export const INITIAL_NODES: GraphNode[] = [
     regionId: 'reg-js-1',
     linkedOvaId: 'ova-js-1',
     linkedLessonId: 'les-js-103',
-    tags: ['Tipos de Datos', 'typeof', '==='],
-    updatedAt: '2026-11-24',
+    tags: ['Tipos de Datos', 'Stack/Heap', '15 Ejercicios'],
+    updatedAt: '2026-11-25',
     content:
-      'Los 7 tipos primitivos en Stack vs Objetos en Heap, operador typeof, conversión explícita Number() e igualdad estricta ===.',
+      '7 tipos primitivos en Stack vs Objetos en Heap, citas de Kyle Simpson y Douglas Crockford, 5 ejercicios cortos y 10 ejercicios para desarrollar.',
     blocks: BLOCKS_JS_103,
   },
 
   // Nodos asociados a Región 2 (OVA 2)
   {
     id: 'node-js-201',
-    title: 'Condicionales: if / else, Ternario y switch (Con Diagrama)',
+    title: 'Condicionales, Guard Clauses y Diagrama (5 Cortos + 10 Desarrollo)',
     type: 'markdown',
     researchStatus: 'in_ova',
     x: 80,
@@ -773,15 +1027,15 @@ export const INITIAL_NODES: GraphNode[] = [
     regionId: 'reg-js-2',
     linkedOvaId: 'ova-js-2',
     linkedLessonId: 'les-js-201',
-    tags: ['Condicionales', 'Diagrama', 'OVA 2'],
-    updatedAt: '2026-11-24',
+    tags: ['Condicionales', 'Clean Code', '15 Ejercicios'],
+    updatedAt: '2026-11-25',
     content:
-      'Diagrama de flujo de decisión booleana, escaleras else-if, operador ternario, switch/case y ejercicios resueltos.',
+      'Diagrama de flujo booleano, citas de Haverbeke y Robert C. Martin (Clean Code), 5 ejercicios cortos y 10 ejercicios para desarrollar.',
     blocks: BLOCKS_JS_201,
   },
   {
     id: 'node-js-202',
-    title: 'Ciclos Repetitivos: for, while, do...while y Ejercicios Resueltos',
+    title: 'Ciclos (for, while, do...while) y Complejidad (5 Cortos + 10 Desarrollo)',
     type: 'code',
     codeLanguage: 'javascript',
     researchStatus: 'in_ova',
@@ -790,15 +1044,15 @@ export const INITIAL_NODES: GraphNode[] = [
     regionId: 'reg-js-2',
     linkedOvaId: 'ova-js-2',
     linkedLessonId: 'les-js-202',
-    tags: ['Ciclos', 'for/while', 'Resueltos'],
-    updatedAt: '2026-11-24',
+    tags: ['Ciclos', 'Algoritmia', '15 Ejercicios'],
+    updatedAt: '2026-11-25',
     content:
-      'Esquema visual de las 4 etapas de un ciclo, control con break y continue, acumuladores y ejercicios resueltos paso a paso.',
+      'Invariantes y terminación de bucles, citas de David Flanagan y Haverbeke, diagrama de 4 etapas, 5 ejercicios cortos y 10 para desarrollar.',
     blocks: BLOCKS_JS_202,
   },
   {
     id: 'node-js-203',
-    title: 'Iteración Moderna (for...of) y Excepciones (try / catch)',
+    title: 'Protocolo Iterable (for...of) y try/catch/finally (5 Cortos + 10 Desarrollo)',
     type: 'code',
     codeLanguage: 'javascript',
     researchStatus: 'in_ova',
@@ -807,17 +1061,17 @@ export const INITIAL_NODES: GraphNode[] = [
     regionId: 'reg-js-2',
     linkedOvaId: 'ova-js-2',
     linkedLessonId: 'les-js-203',
-    tags: ['for...of', 'try/catch', 'Errores'],
-    updatedAt: '2026-11-24',
+    tags: ['for...of', 'try/catch', '15 Ejercicios'],
+    updatedAt: '2026-11-25',
     content:
-      'Diagrama de flujo try/catch/finally, recorrido de valores con for...of y ejercicio resuelto de validación JSON.',
+      'Protocolo Symbol.iterator, citas de Dr. Axel Rauschmayer y Haverbeke, diagrama try/catch/finally, 5 ejercicios cortos y 10 para desarrollar.',
     blocks: BLOCKS_JS_203,
   },
 
   // Nodos asociados a Región 3 (OVA 3)
   {
     id: 'node-js-301',
-    title: 'Arreglos (Arrays): Indexación y Gráfico Interactivo Animado',
+    title: 'Arreglos (Arrays), Big-O y Lab Animado (5 Cortos + 10 Desarrollo)',
     type: 'markdown',
     researchStatus: 'in_ova',
     x: 80,
@@ -825,15 +1079,15 @@ export const INITIAL_NODES: GraphNode[] = [
     regionId: 'reg-js-3',
     linkedOvaId: 'ova-js-3',
     linkedLessonId: 'les-js-301',
-    tags: ['Arrays', 'Interactivo', 'OVA 3'],
-    updatedAt: '2026-11-24',
+    tags: ['Arrays', 'Big-O', '15 Ejercicios'],
+    updatedAt: '2026-11-25',
     content:
-      'Laboratorio visual animado de arreglos (push, pop, shift, unshift, reverse), acceso por índice [0] y ejercicios.',
+      'Memoria contigua O(1) vs O(n), citas de Haverbeke y Flanagan, laboratorio animado de arreglos, 5 ejercicios cortos y 10 para desarrollar.',
     blocks: BLOCKS_JS_301,
   },
   {
     id: 'node-js-302',
-    title: 'Métodos Funcionales: map, filter, find y reduce (Simulador)',
+    title: 'Programación Funcional (map, filter, reduce) (5 Cortos + 10 Desarrollo)',
     type: 'code',
     codeLanguage: 'javascript',
     researchStatus: 'in_ova',
@@ -842,15 +1096,15 @@ export const INITIAL_NODES: GraphNode[] = [
     regionId: 'reg-js-3',
     linkedOvaId: 'ova-js-3',
     linkedLessonId: 'les-js-302',
-    tags: ['map/filter', 'reduce', 'Animado'],
-    updatedAt: '2026-11-24',
+    tags: ['map/filter', 'reduce', '15 Ejercicios'],
+    updatedAt: '2026-11-25',
     content:
-      'Simulador animado de transformación inmutable con map, filter, find y reduce aplicado a calificaciones y colecciones.',
+      'Funciones de Orden Superior e inmutabilidad, citas de Haverbeke y Douglas Crockford, simulador funcional animado, 5 ejercicios cortos y 10 para desarrollar.',
     blocks: BLOCKS_JS_302,
   },
   {
     id: 'node-js-303',
-    title: 'Objetos en JS: Clave-Valor, Desestructuración y JSON',
+    title: 'Objetos Clave-Valor, Desestructuración y JSON (5 Cortos + 10 Desarrollo)',
     type: 'markdown',
     researchStatus: 'in_ova',
     x: 750,
@@ -858,10 +1112,10 @@ export const INITIAL_NODES: GraphNode[] = [
     regionId: 'reg-js-3',
     linkedOvaId: 'ova-js-3',
     linkedLessonId: 'les-js-303',
-    tags: ['Objetos', 'Destructuring', 'JSON'],
-    updatedAt: '2026-11-24',
+    tags: ['Objetos', 'JSON', '15 Ejercicios'],
+    updatedAt: '2026-11-25',
     content:
-      'Inspector interactivo animado de objetos clave-valor, notación de punto/corchetes, spread (...) y ejercicios.',
+      'Tablas hash clave-valor, citas de David Flanagan y Douglas Crockford, inspector interactivo de objetos, 5 ejercicios cortos y 10 para desarrollar.',
     blocks: BLOCKS_JS_303,
   },
 ];
@@ -871,19 +1125,19 @@ export const INITIAL_EDGES: GraphEdge[] = [
     id: 'edge-js-1',
     sourceId: 'node-js-101',
     targetId: 'node-js-102',
-    label: 'declara estado con',
+    label: 'declara enlaces en',
   },
   {
     id: 'edge-js-2',
     sourceId: 'node-js-102',
     targetId: 'node-js-103',
-    label: 'almacena tipos en',
+    label: 'tipa valores en',
   },
   {
     id: 'edge-js-3',
     sourceId: 'node-js-103',
     targetId: 'node-js-201',
-    label: 'evalúa condiciones en',
+    label: 'evalúa predicados en',
   },
   {
     id: 'edge-js-4',
@@ -901,24 +1155,24 @@ export const INITIAL_EDGES: GraphEdge[] = [
     id: 'edge-js-6',
     sourceId: 'node-js-202',
     targetId: 'node-js-301',
-    label: 'recorre colecciones',
+    label: 'indexa secuencias en',
   },
   {
     id: 'edge-js-7',
     sourceId: 'node-js-301',
     targetId: 'node-js-302',
-    label: 'transforma datos con',
+    label: 'transforma colecciones con',
   },
   {
     id: 'edge-js-8',
     sourceId: 'node-js-302',
     targetId: 'node-js-303',
-    label: 'estructura entidades en',
+    label: 'modela entidades en',
   },
 ];
 
 // ============================================================================
-// LAS 3 OVAS DE JAVASCRIPT COMPLETAS
+// LAS 3 OVAS DE JAVASCRIPT COMPLETAS (18 CITAS DE LIBROS + 135 EJERCICIOS EJECUTABLES)
 // ============================================================================
 
 export const INITIAL_OVAS: OVA[] = [
@@ -932,86 +1186,104 @@ export const INITIAL_OVAS: OVA[] = [
     learningOutcome: 'RAP 01 · Codificar algoritmos en JavaScript aplicando estándares de sintaxis ECMAScript, ámbito de variables y conversión segura de tipos de datos',
     status: 'published',
     description:
-      'Domina las bases del lenguaje JavaScript moderno: arquitectura del motor de ejecución, reglas de sintaxis, declaración de variables (var, let, const), ámbito de bloque, tipos de datos primitivos vs referencias, ejemplos comentados y ejercicios prácticos por cada tema.',
-    estimatedHours: 18,
-    updatedAt: '2026-11-24',
+      'Fundamentación exhaustiva de JavaScript moderno con citas de Kyle Simpson, Marijn Haverbeke, Nicholas C. Zakas, David Flanagan y Douglas Crockford. Cada uno de los 3 tópicos incluye 5 ejercicios propuestos cortos y 10 ejercicios similares para desarrollar con snippet de código interactivo ejecutable (45 ejercicios en esta OVA).',
+    estimatedHours: 28,
+    updatedAt: '2026-11-25',
     lessons: [
       {
         id: 'les-js-101',
         order: 1,
-        title: 'Generalidades de JavaScript, Motor de Ejecución y Reglas de Sintaxis',
-        durationMinutes: 45,
-        summary: 'Comprende cómo funciona JavaScript en el navegador y en Node.js, sus reglas léxicas, expresiones, sentencias y modo estricto.',
+        title: 'Generalidades de JavaScript, Arquitectura JIT V8 y Gramática Sintáctica',
+        durationMinutes: 80,
+        summary: 'Estudia la compilación JIT en V8, citas de Kyle Simpson y Marijn Haverbeke, y practica en el snippet ejecutable con 5 ejercicios propuestos cortos + 10 ejercicios para desarrollar.',
         linkedNodeIds: ['node-js-101'],
         contentMarkdown: '',
         blocks: BLOCKS_JS_101,
         quiz: [
           {
             id: 'q-js101-1',
-            question: '¿Cuál es el propósito de incluir la directiva "use strict"; al inicio de un archivo o función en JavaScript?',
+            question: 'Según Kyle Simpson en "You Don’t Know JS Yet", ¿por qué un error de sintaxis en la línea 100 impide que se ejecute la línea 1 de un archivo JavaScript?',
             options: [
-              'Activar el modo estricto de ECMAScript para impedir el uso de variables no declaradas y capturar errores silenciosos',
-              'Desactivar todas las funciones matemáticas del navegador',
-              'Obligar a que el código solo funcione sin conexión a internet',
+              'Porque el motor realiza primero una fase de análisis y compilación (generando el AST) antes de ejecutar la primera instrucción',
+              'Porque JavaScript lee los archivos de abajo hacia arriba',
+              'Porque el navegador descarga primero el final del archivo',
             ],
             correctIndex: 0,
-            explanation: 'El modo estricto convierte malas prácticas silenciosas (como asignar a una variable nunca declarada) en errores explícitos.',
+            explanation: 'El motor de JS parsea el código fuente completo hacia un Árbol de Sintaxis Abstracta (AST) antes de iniciar la ejecución.',
+          },
+          {
+            id: 'q-js101-2',
+            question: '¿Cuál es la diferencia fundamental entre una Expresión y una Sentencia según "Eloquent JavaScript"?',
+            options: [
+              'Una expresión se evalúa y produce un valor, mientras que una sentencia ejecuta una acción completa en el programa',
+              'Las expresiones solo funcionan en Node.js y las sentencias solo en el navegador',
+              'No existe ninguna diferencia',
+            ],
+            correctIndex: 0,
+            explanation: 'Toda expresión (ej. 5 + 3 o un ternario) se reduce a un valor; por eso puede incrustarse dentro de ${...}.',
           },
         ],
         activity: {
           id: 'act-js101',
-          title: 'Taller Práctico Tema 1: Depuración de Sintaxis y Expresiones en JS',
+          title: 'Taller Práctico OVA 1: 15 Ejercicios Cortos y 30 de Desarrollo Ejecutados en Snippet',
           evidenceCode: 'GA7-220501096-JS1-EV01',
           evidenceType: 'Conocimiento',
           instructions:
-            'Resuelve los ejercicios de corrección léxica, expresiones aritméticas y modo estricto incluidos en la Lección 1.',
+            'Resuelve y ejecuta directamente en los snippets interactivos los 5 ejercicios propuestos cortos y los 10 ejercicios para desarrollar de cada uno de los 3 tópicos del OVA 1.',
           dueDate: '2026-11-28',
-          deliverableFormat: 'Archivo .js o enlace a repositorio GitHub',
+          deliverableFormat: 'Repositorio GitHub con archivos .js ejecutables en modo estricto',
         },
       },
       {
         id: 'les-js-102',
         order: 2,
-        title: 'Declaración y Tipos de Variables (var, let, const) y Ámbito de Bloque',
-        durationMinutes: 50,
-        summary: 'Diferencia con precisión el ámbito de función vs ámbito de bloque, Hoisting, Temporal Dead Zone y cuándo usar const o let.',
+        title: 'Declaración de Variables (var, let, const), Block Scope y Zona Muerta Temporal',
+        durationMinutes: 85,
+        summary: 'Analiza el ámbito léxico con citas de Nicholas C. Zakas y David Flanagan, el diagrama comparativo var/let/const, y practica con 5 ejercicios cortos + 10 ejercicios para desarrollar.',
         linkedNodeIds: ['node-js-102'],
         contentMarkdown: '',
         blocks: BLOCKS_JS_102,
         quiz: [
           {
             id: 'q-js102-1',
-            question: '¿Qué ocurre si declaras un objeto con const (ej. const usuario = { activo: false }) e intentas modificar usuario.activo = true?',
+            question: '¿Qué es la Zona Muerta Temporal (Temporal Dead Zone - TDZ) en variables declaradas con let y const?',
             options: [
-              'Es completamente válido porque const protege la referencia de la variable, pero permite mutar las propiedades internas del objeto',
-              'Se formatea automáticamente el disco duro',
-              'Borra todas las demás variables del archivo',
+              'El intervalo desde que inicia el bloque { } hasta la línea física donde se declara e inicializa la variable, durante el cual cualquier acceso lanza ReferenceError',
+              'Un recolector de basura que borra variables cada 5 minutos',
+              'Un modo de ahorro de batería del navegador',
             ],
             correctIndex: 0,
-            explanation: 'const impide reasignar la variable (usuario = otroObjeto), pero las propiedades internas de un objeto o arreglo sí pueden modificarse.',
+            explanation: 'A diferencia de var (que se inicializa a undefined con hoisting), let y const permanecen no inicializadas en la TDZ hasta alcanzar su línea de declaración.',
+          },
+          {
+            id: 'q-js102-2',
+            question: 'Si deseas que un objeto declarado con const tampoco permita modificar ninguna de sus propiedades internas superficiales, ¿qué método debes aplicar?',
+            options: ['Object.freeze(objeto)', 'Number.isNaN(objeto)', 'JSON.parse(objeto)'],
+            correctIndex: 0,
+            explanation: 'const protege la referencia de la variable, mientras que Object.freeze() congela las propiedades propias del objeto.',
           },
         ],
       },
       {
         id: 'les-js-103',
         order: 3,
-        title: 'Tipos de Datos Primitivos y de Referencia, typeof y Conversión de Tipos',
-        durationMinutes: 55,
-        summary: 'Identifica los 7 tipos primitivos y los tipos de referencia, evita trampas de coerción implícita y aplica igualdad estricta (===).',
+        title: 'Taxonomía de Tipos de Datos ECMA-262, Stack vs. Heap, Coerción e Igualdad Estricta',
+        durationMinutes: 90,
+        summary: 'Profundiza en los 7 tipos primitivos y objetos en el Heap, citas de Kyle Simpson y Douglas Crockford, y resuelve en el snippet 5 ejercicios cortos + 10 para desarrollar.',
         linkedNodeIds: ['node-js-103'],
         contentMarkdown: '',
         blocks: BLOCKS_JS_103,
         quiz: [
           {
             id: 'q-js103-1',
-            question: '¿Qué valor y tipo retorna la expresión Number("45") + 10 frente a "45" + 10 en JavaScript?',
+            question: '¿Cuáles de los siguientes valores se evalúan como TRUTHY (verdaderos) al convertirlos a booleano en un condicional if?',
             options: [
-              'Number("45") + 10 retorna el número 55, mientras que "45" + 10 concatena y retorna el string "4510"',
-              'Ambas retornan undefined',
-              'Ambas lanzan un SyntaxError',
+              'La cadena "0", la cadena "false", un arreglo vacío [] y un objeto vacío {}',
+              'El número 0, la cadena vacía "", null, undefined y NaN',
+              'Únicamente el booleano true',
             ],
             correctIndex: 0,
-            explanation: 'El operador + concatena si cualquiera de los operandos es un string; Number("45") convierte explícitamente la cadena a número antes de sumar.',
+            explanation: 'Solo existen 8 valores falsy (false, 0, -0, 0n, "", null, undefined, NaN). Cualquier string no vacío ("0") y cualquier objeto o array ([] o {}) es truthy.',
           },
         ],
       },
@@ -1027,86 +1299,86 @@ export const INITIAL_OVAS: OVA[] = [
     learningOutcome: 'RAP 02 · Implementar lógica algorítmica mediante estructuras condicionales, ciclos repetitivos y manejo de excepciones en JavaScript',
     status: 'published',
     description:
-      'Aprende a controlar el flujo de ejecución en JavaScript mediante explicaciones visuales con diagramas de flujo ilustrados, estructuras condicionales (if/else, switch, ternario), bucles (for, while, do...while, for...of), captura de errores (try/catch) y ejercicios resueltos paso a paso.',
-    estimatedHours: 20,
-    updatedAt: '2026-11-24',
+      'Estudio profundo del control de flujo algorítmico con diagramas SVG ilustrados y citas de Marijn Haverbeke, Robert C. Martin (Clean Code), David Flanagan y Dr. Axel Rauschmayer. Cada tópico incluye 5 ejercicios propuestos cortos y 10 ejercicios similares para desarrollar con ejecución en vivo (45 ejercicios en esta OVA).',
+    estimatedHours: 32,
+    updatedAt: '2026-11-25',
     lessons: [
       {
         id: 'les-js-201',
         order: 1,
-        title: 'Estructuras Condicionales: if / else if / else, Ternario y switch',
-        durationMinutes: 50,
-        summary: 'Visualiza con diagramas de flujo cómo se ramifica la lógica de negocio y estudia ejercicios resueltos de clasificación y validación.',
+        title: 'Estructuras Condicionales, Cláusulas de Guarda (Clean Code) y Cortocircuito',
+        durationMinutes: 85,
+        summary: 'Domina la toma de decisiones con diagramas de flujo, citas de Haverbeke y Robert C. Martin, y practica en el snippet ejecutable con 5 ejercicios cortos + 10 para desarrollar.',
         linkedNodeIds: ['node-js-201'],
         contentMarkdown: '',
         blocks: BLOCKS_JS_201,
         quiz: [
           {
             id: 'q-js201-1',
-            question: 'En una estructura switch(rol), ¿qué sucede si olvidas colocar la instrucción break o return al final de un bloque case coincidente?',
+            question: '¿Por qué el operador de coalescencia nula (A ?? B) es más seguro que el operador OR (A || B) cuando trabajamos con calificaciones o precios numéricos?',
             options: [
-              'Ocurre "fall-through": JavaScript continúa ejecutando las instrucciones del siguiente case hacia abajo',
-              'El navegador cierra la pestaña automáticamente',
-              'El switch se convierte en un ciclo infinito',
+              'Porque ?? solo usa el valor por defecto B cuando A es null o undefined, respetando el número 0 como un valor válido',
+              'Porque || no funciona con strings',
+              'Porque ?? multiplica ambos números automáticamente',
             ],
             correctIndex: 0,
-            explanation: 'Sin break ni return, la ejecución cae (fall-through) hacia los casos subsiguientes hasta encontrar un break o terminar el switch.',
+            explanation: 'Con ||, el número 0 se considera falsy y es reemplazado por el valor por defecto; con ??, el 0 se conserva intacto.',
           },
         ],
       },
       {
         id: 'les-js-202',
         order: 2,
-        title: 'Estructuras Repetitivas: Ciclos for, while, do...while, break y continue',
-        durationMinutes: 55,
-        summary: 'Domina las 4 etapas de todo ciclo repetitivo con esquemas gráficos, contadores, acumuladores y ejercicios resueltos.',
+        title: 'Estructuras Repetitivas (for, while, do...while), Invariantes y Complejidad',
+        durationMinutes: 90,
+        summary: 'Estudia la teoría formal de bucles con citas de David Flanagan y Haverbeke, el diagrama de 4 etapas y desarrolla en vivo 5 ejercicios cortos + 10 ejercicios algorítmicos.',
         linkedNodeIds: ['node-js-202'],
         contentMarkdown: '',
         blocks: BLOCKS_JS_202,
         quiz: [
           {
             id: 'q-js202-1',
-            question: '¿Cuál es la diferencia exacta entre las instrucciones continue y break dentro de un ciclo for?',
+            question: 'Para verificar si un número entero n > 1 es primo de forma eficiente, ¿hasta qué límite basta con probar divisores en el ciclo for?',
             options: [
-              'continue salta únicamente a la siguiente iteración del ciclo, mientras que break detiene y sale del ciclo por completo',
-              'Ambas hacen exactamente lo mismo',
-              'continue reinicia el computador y break borra el arreglo',
+              'Hasta la raíz cuadrada de n (d * d <= n), logrando complejidad O(√n)',
+              'Hasta n * 100',
+              'Solo hay que probar si es divisible entre 2',
             ],
             correctIndex: 0,
-            explanation: 'continue omite el resto del cuerpo en la iteración actual y pasa al incremento (i++); break finaliza el bucle inmediatamente.',
+            explanation: 'Todo número compuesto n posee al menos un factor primo menor o igual a √n.',
           },
         ],
         activity: {
           id: 'act-js202',
-          title: 'Evidencia de Desempeño: Algoritmos de Control de Flujo y Ciclos en JS',
+          title: 'Evidencia de Desempeño: 45 Algoritmos Ejecutables de Control de Flujo y Excepciones',
           evidenceCode: 'GA7-220501096-JS2-EV01',
           evidenceType: 'Desempeño',
           instructions:
-            'Implementa y documenta 5 algoritmos en JavaScript que combinen condicionales, switch y ciclos for/while siguiendo la guía de ejercicios resueltos.',
+            'Resuelve en los snippets ejecutables los 5 ejercicios cortos y 10 ejercicios para desarrollar de Condicionales, Ciclos y Excepciones (45 ejercicios en total del OVA 2).',
           dueDate: '2026-11-30',
-          deliverableFormat: 'Repositorio Git con scripts .js ejecutables',
+          deliverableFormat: 'Repositorio Git con scripts .js y pruebas de consola',
         },
       },
       {
         id: 'les-js-203',
         order: 3,
-        title: 'Iteración Moderna (for...of, for...in) y Manejo de Excepciones (try / catch)',
-        durationMinutes: 50,
-        summary: 'Recorre colecciones de forma declarativa y blinda tus programas frente a errores en tiempo de ejecución con try, catch y finally.',
+        title: 'Protocolo Iterable (for...of vs. for...in) y Tolerancia a Fallos (try / catch / finally)',
+        durationMinutes: 85,
+        summary: 'Explora el protocolo Symbol.iterator con citas de Dr. Axel Rauschmayer y Haverbeke, el diagrama try/catch/finally y practica con 5 ejercicios cortos + 10 para desarrollar.',
         linkedNodeIds: ['node-js-203'],
         contentMarkdown: '',
         blocks: BLOCKS_JS_203,
         quiz: [
           {
             id: 'q-js203-1',
-            question: '¿Cuándo se ejecuta el bloque finally dentro de una estructura try / catch / finally?',
+            question: 'Según Dr. Axel Rauschmayer en "Exploring JavaScript", ¿qué ventaja clave ofrece el bucle for...of frente al método .forEach() de los arreglos?',
             options: [
-              'Siempre, tanto si el bloque try terminó con éxito como si ocurrió una excepción capturada por catch',
-              'Únicamente cuando hay un error de sintaxis',
-              'Solo los días lunes',
+              'Permite detener la iteración anticipadamente con break, saltar pasos con continue o retornar directamente desde la función contenedora',
+              'Modifica automáticamente todos los números a strings',
+              'Solo for...of puede usarse en archivos HTML',
             ],
             correctIndex: 0,
-            explanation: 'El bloque finally está garantizado para ejecutarse siempre al finalizar try/catch, ideal para liberar recursos o cerrar indicadores de carga.',
+            explanation: 'Dentro de un callback .forEach() no se puede usar break ni continue, mientras que for...of sí los soporta nativamente.',
           },
         ],
       },
@@ -1122,77 +1394,81 @@ export const INITIAL_OVAS: OVA[] = [
     learningOutcome: 'RAP 03 · Manipular colecciones de datos mediante arreglos, programación funcional (map, filter, reduce) y objetos clave-valor en JavaScript',
     status: 'published',
     description:
-      'Explora visualmente cómo funcionan los Arreglos y los Objetos en JavaScript a través de laboratorios gráficos interactivos con microanimaciones en tiempo real, métodos funcionales (.map, .filter, .find, .reduce), desestructuración, operador Spread, JSON y ejercicios aplicados.',
-    estimatedHours: 24,
-    updatedAt: '2026-11-24',
+      'Tratado práctico y visual sobre estructuras de datos en JavaScript con 3 laboratorios interactivos animados, análisis de complejidad Big-O y citas de Marijn Haverbeke, David Flanagan y Douglas Crockford. Cada tópico cuenta con 5 ejercicios propuestos cortos y 10 ejercicios similares para desarrollar en su snippet ejecutable (45 ejercicios en esta OVA).',
+    estimatedHours: 36,
+    updatedAt: '2026-11-25',
     lessons: [
       {
         id: 'les-js-301',
         order: 1,
-        title: 'Arreglos (Arrays) en JavaScript: Indexación, Mutación y Laboratorio Animado',
-        durationMinutes: 50,
-        summary: 'Experimenta en el gráfico interactivo cómo se indexan los arreglos en base 0 y cómo operan push, pop, shift, unshift y reverse.',
+        title: 'Arreglos (Arrays): Arquitectura en Memoria, Big-O y Laboratorio Interactivo',
+        durationMinutes: 90,
+        summary: 'Analiza la complejidad O(1) vs O(n) de push/pop y shift/unshift con citas de Haverbeke y Flanagan, el gráfico animado y 5 ejercicios cortos + 10 para desarrollar.',
         linkedNodeIds: ['node-js-301'],
         contentMarkdown: '',
         blocks: BLOCKS_JS_301,
         quiz: [
           {
             id: 'q-js301-1',
-            question: '¿Qué método de un arreglo en JavaScript inserta un nuevo elemento al INICIO (índice 0) desplazando los demás elementos?',
-            options: ['.unshift()', '.push()', '.pop()', '.shift()'],
+            question: '¿Por qué las operaciones .unshift() y .shift() tienen complejidad O(n) mientras que .push() y .pop() tienen complejidad O(1)?',
+            options: [
+              'Porque insertar o extraer en el índice [0] obliga a desplazar en memoria todos los demás elementos del arreglo para reindexarlos',
+              'Porque .unshift() requiere conexión a internet',
+              'Porque .push() solo funciona con números pares',
+            ],
             correctIndex: 0,
-            explanation: '.unshift(elemento) inserta al principio del arreglo (índice 0), mientras que .push(elemento) agrega al final.',
+            explanation: 'Operar al final (.push/.pop) solo toca la última casilla; operar al inicio (.unshift/.shift) desplaza los n elementos restantes.',
           },
         ],
       },
       {
         id: 'les-js-302',
         order: 2,
-        title: 'Métodos Funcionales de Arreglos: map, filter, find y reduce',
-        durationMinutes: 60,
-        summary: 'Domina la transformación inmutable de colecciones de datos utilizando el simulador visual animado de pipelines funcionales.',
+        title: 'Programación Funcional sobre Arreglos: map, filter, find, some, every y reduce',
+        durationMinutes: 95,
+        summary: 'Domina las funciones de orden superior con citas de Haverbeke y Douglas Crockford, el simulador animado de pipelines y 5 ejercicios cortos + 10 para desarrollar.',
         linkedNodeIds: ['node-js-302'],
         contentMarkdown: '',
         blocks: BLOCKS_JS_302,
         quiz: [
           {
             id: 'q-js302-1',
-            question: 'Si tienes un arreglo de 10 aprendices y quieres obtener un NUEVO arreglo únicamente con aquellos cuya nota sea >= 70, ¿qué método debes usar?',
-            options: ['.filter()', '.map()', '.find()', '.forEach()'],
+            question: '¿Qué método funcional de Array permite condensar o agrupar una lista de objetos de ventas en un único diccionario de totales por categoría?',
+            options: ['.reduce()', '.filter()', '.find()', '.some()'],
             correctIndex: 0,
-            explanation: '.filter() evalúa una condición booleana sobre cada elemento y retorna un nuevo arreglo solo con los elementos que cumplieron la condición.',
+            explanation: '.reduce((acumulador, item) => ..., {}) permite construir cualquier estructura agregada (un número, un objeto diccionario o otro arreglo) a partir de una colección.',
           },
         ],
       },
       {
         id: 'les-js-303',
         order: 3,
-        title: 'Objetos en JavaScript: Propiedades Clave-Valor, Desestructuración y JSON',
-        durationMinutes: 55,
-        summary: 'Modela entidades complejas mediante objetos literales, desestructuración, operador Spread (...) e inspección interactiva clave-valor.',
+        title: 'Objetos Clave-Valor, Desestructuración, Object.entries/fromEntries y JSON',
+        durationMinutes: 90,
+        summary: 'Modela entidades con citas de David Flanagan y Douglas Crockford, el inspector interactivo de objetos y 5 ejercicios cortos + 10 para desarrollar en el snippet.',
         linkedNodeIds: ['node-js-303'],
         contentMarkdown: '',
         blocks: BLOCKS_JS_303,
         quiz: [
           {
             id: 'q-js303-1',
-            question: '¿Qué retorna el método estático Object.keys(aprendiz) al aplicarlo sobre un objeto literal en JavaScript?',
+            question: '¿Qué pareja de métodos estáticos de Object permite transformar un diccionario clave-valor aplicando .filter() o .map() como si fuera un arreglo y reconstruir el objeto?',
             options: [
-              'Un arreglo de strings con los nombres de todas las propiedades (claves) propias enumerables del objeto',
-              'Un único número con la cantidad de letras del objeto',
-              'Borra todas las claves del objeto',
+              'Object.entries(obj) seguido de Object.fromEntries(pares)',
+              'Object.freeze(obj) seguido de Object.isFrozen(obj)',
+              'JSON.parse(obj) seguido de Math.round(obj)',
             ],
             correctIndex: 0,
-            explanation: 'Object.keys(obj) devuelve un Array con las claves del objeto, permitiendo iterarlas o transformarlas con métodos de arreglos.',
+            explanation: 'Object.entries(obj) convierte el objeto en un arreglo de pares [clave, valor], y Object.fromEntries() vuelve a ensamblar el objeto resultante.',
           },
         ],
         activity: {
           id: 'act-js303',
-          title: 'Evidencia de Producto: Gestor de Catálogo con Arreglos de Objetos en JS',
+          title: 'Evidencia de Producto: 45 Ejercicios Ejecutables de Arreglos, Programación Funcional y Objetos',
           evidenceCode: 'GA7-220501096-JS3-EV02',
           evidenceType: 'Producto',
           instructions:
-            'Construye un módulo en JavaScript que gestione un arreglo de objetos (inserción, filtrado con .filter(), transformación con .map(), cálculo de totales con .reduce() y exportación JSON).',
+            'Desarrolla y prueba en los snippets interactivos los 5 ejercicios cortos y 10 ejercicios de desarrollo de cada tópico del OVA 3 (45 ejercicios en total).',
           dueDate: '2026-12-04',
           deliverableFormat: 'Repositorio GitHub + archivo .js documentado',
         },
@@ -1220,12 +1496,12 @@ export const INITIAL_LEARNERS: Learner[] = [
             lessonId: 'les-js-101',
             activityId: 'act-js101',
             status: 'submitted',
-            submittedAt: '2026-11-24',
+            submittedAt: '2026-11-25',
             deliveryLinkOrNote: 'https://github.com/vrojas-sena/js-fundamentos-sena',
             score: 98,
           },
         },
-        lastAccessedAt: '2026-11-24 14:30',
+        lastAccessedAt: '2026-11-25 17:45',
       },
     },
   },
@@ -1295,9 +1571,9 @@ export const INITIAL_SENT_REMINDERS: SentReminderLog[] = [
     learnerName: 'Mateo Hernández Quiroga',
     fichaCode: '2874512',
     ovaTitle: 'JavaScript I: Generalidades, Sintaxis, Tipos de Variables y Tipos de Datos',
-    activityTitle: 'Taller Práctico Tema 1: Depuración de Sintaxis y Expresiones en JS',
+    activityTitle: 'Taller Práctico OVA 1: 15 Ejercicios Cortos y 30 de Desarrollo Ejecutados en Snippet',
     channel: 'whatsapp',
-    sentAt: '2026-11-24 09:15',
+    sentAt: '2026-11-25 09:15',
     messagePreview:
       'Hola Mateo Hernández Quiroga, te recuerdo que la evidencia GA7-220501096-JS1-EV01 vence el 2026-11-28...',
   },
