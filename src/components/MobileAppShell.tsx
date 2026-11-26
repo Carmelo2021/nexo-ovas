@@ -12,6 +12,7 @@ import {
   Lock,
   Maximize2,
   Monitor,
+  Orbit,
   Plus,
   Search,
   Send,
@@ -20,6 +21,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Learner, Lesson, OVA } from '../types/ova';
+import { KarpathyBrainStudio } from './KarpathyBrainStudio';
 import {
   LessonBlocksRenderer,
   NotionLessonBlockEditor,
@@ -42,7 +44,7 @@ interface MobileAppShellProps {
   onExitMobilePreview?: () => void;
 }
 
-type MobileTab = 'home' | 'reader' | 'announcements' | 'builder';
+type MobileTab = 'home' | 'reader' | 'brain' | 'announcements' | 'builder';
 
 export const MobileAppShell: React.FC<MobileAppShellProps> = ({
   ovas,
@@ -661,6 +663,17 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
             </div>
           )}
 
+          {/* TAB 2.5: BRAIN 3D — KARPATHY BRAIN STUDIO ADAPTED FOR ANDROID TOUCH */}
+          {activeTab === 'brain' && (
+            <div className="p-2.5 space-y-3 min-w-0 max-w-full overflow-x-hidden">
+              <KarpathyBrainStudio
+                ovas={ovas}
+                onUpdateOvas={onUpdateOvas}
+                compactMobile
+              />
+            </div>
+          )}
+
           {/* TAB 3: ANNOUNCEMENTS — SLIM MOBILE DEADLINES & RECENT PUBLICATIONS */}
           {activeTab === 'announcements' && (
             <div className="p-3.5 space-y-5 min-w-0 max-w-full overflow-x-hidden">
@@ -860,56 +873,69 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
         </div>
 
         {/* 3. NATIVE ANDROID BOTTOM TAB NAVIGATION BAR */}
-        <nav className="bg-white border-t border-stone-200 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] grid grid-cols-4 gap-1 shrink-0 z-20">
+        <nav className="bg-white border-t border-stone-200 px-1.5 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] grid grid-cols-5 gap-1 shrink-0 z-20">
           <button
             type="button"
             onClick={() => setActiveTab('home')}
-            className={`flex flex-col items-center justify-center py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${
+            className={`flex flex-col items-center justify-center py-1.5 rounded-xl text-[10px] font-semibold transition-colors truncate ${
               activeTab === 'home'
                 ? 'text-[#d94e34] bg-[#d94e34]/10'
                 : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            <Home className="w-4 h-4 mb-0.5" />
+            <Home className="w-4 h-4 mb-0.5 shrink-0" />
             <span>OVAs</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('reader')}
-            className={`flex flex-col items-center justify-center py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${
+            className={`flex flex-col items-center justify-center py-1.5 rounded-xl text-[10px] font-semibold transition-colors truncate ${
               activeTab === 'reader'
                 ? 'text-[#d94e34] bg-[#d94e34]/10'
                 : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            <BookOpen className="w-4 h-4 mb-0.5" />
+            <BookOpen className="w-4 h-4 mb-0.5 shrink-0" />
             <span>Lectura</span>
           </button>
 
           <button
             type="button"
+            onClick={() => setActiveTab('brain')}
+            className={`flex flex-col items-center justify-center py-1.5 rounded-xl text-[10px] font-semibold transition-colors truncate ${
+              activeTab === 'brain'
+                ? 'text-cyan-300 bg-slate-900 shadow-xs'
+                : 'text-stone-500 hover:text-stone-900'
+            }`}
+          >
+            <Orbit className="w-4 h-4 mb-0.5 shrink-0" />
+            <span>Brain 3D</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('announcements')}
-            className={`relative flex flex-col items-center justify-center py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${
+            className={`relative flex flex-col items-center justify-center py-1.5 rounded-xl text-[10px] font-semibold transition-colors truncate ${
               activeTab === 'announcements'
                 ? 'text-[#d94e34] bg-[#d94e34]/10'
                 : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            <Bell className="w-4 h-4 mb-0.5" />
+            <Bell className="w-4 h-4 mb-0.5 shrink-0" />
             <span>Anuncios</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('builder')}
-            className={`flex flex-col items-center justify-center py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${
+            className={`flex flex-col items-center justify-center py-1.5 rounded-xl text-[10px] font-semibold transition-colors truncate ${
               activeTab === 'builder'
                 ? 'text-[#d94e34] bg-[#d94e34]/10'
                 : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            <FileEdit className="w-4 h-4 mb-0.5" />
+            <FileEdit className="w-4 h-4 mb-0.5 shrink-0" />
             <span>Editar</span>
           </button>
         </nav>

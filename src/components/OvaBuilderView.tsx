@@ -31,6 +31,7 @@ interface OvaBuilderViewProps {
   onUpdateNodes?: React.Dispatch<React.SetStateAction<GraphNode[]>>;
   onOpenPrintGuide: (ovaId: string) => void;
   onNavigateToGraph?: () => void;
+  onNavigateToBrain?: () => void;
 }
 
 export const OvaBuilderView: React.FC<OvaBuilderViewProps> = ({
@@ -40,6 +41,7 @@ export const OvaBuilderView: React.FC<OvaBuilderViewProps> = ({
   onUpdateNodes,
   onOpenPrintGuide,
   onNavigateToGraph,
+  onNavigateToBrain,
 }) => {
   const [selectedOvaId, setSelectedOvaId] = useState<string>(ovas[0]?.id ?? '');
   const [selectedLessonId, setSelectedLessonId] = useState<string>(
@@ -419,6 +421,17 @@ ${
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {onNavigateToBrain && (
+            <button
+              type="button"
+              onClick={onNavigateToBrain}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-cyan-300 bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-sm"
+            >
+              <Layers className="w-4 h-4 text-cyan-400" />
+              Abrir en Brain Karpathy 2.5D/3D
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleCreateOva}

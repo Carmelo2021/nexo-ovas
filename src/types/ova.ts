@@ -203,3 +203,58 @@ export interface InstructorCredentials {
   regionalName: string;
   email: string;
 }
+
+export type KarpathyClusterType = 'index' | 'raw' | 'wiki' | 'labs' | 'practice';
+
+export type BrainLayerIconKind =
+  | 'index_hub'
+  | 'raw_vault'
+  | 'wiki_node'
+  | 'lab_model'
+  | 'lint_check';
+
+export type BrainMaterialIconKind =
+  | 'core'
+  | 'book'
+  | 'code'
+  | 'exercise'
+  | 'video'
+  | 'diagram'
+  | 'interactive'
+  | 'concept'
+  | 'link';
+
+export interface KarpathyBrainNode {
+  id: string;
+  ovaId: string;
+  lessonId?: string;
+  blockId?: string;
+  title: string;
+  cluster: KarpathyClusterType;
+  layerIcon: BrainLayerIconKind; // Icon 1: Clasificación de capa Karpathy
+  materialIcon: BrainMaterialIconKind; // Icon 2: Clasificación de tipo de material
+  x: number;
+  y: number;
+  zDepth: number; // Factor de profundidad 3D (0.75 a 1.25)
+  floatPhase?: number; // Desfase de microanimación 3D
+}
+
+export interface KarpathyBrainEdge {
+  id: string;
+  ovaId: string;
+  sourceId: string;
+  targetId: string;
+  cluster: KarpathyClusterType;
+}
+
+export interface KarpathyOrbitalZone {
+  id: string;
+  ovaId: string;
+  cluster: Exclude<KarpathyClusterType, 'index'>;
+  title: string;
+  subtitle: string;
+  x: number;
+  y: number;
+  radius: number;
+}
+

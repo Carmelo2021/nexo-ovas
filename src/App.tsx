@@ -9,6 +9,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { InstructorLoginModal } from './components/InstructorLoginModal';
+import { KarpathyBrainStudio } from './components/KarpathyBrainStudio';
 import { KnowledgeGraphCanvas } from './components/KnowledgeGraphCanvas';
 import { LearnerProgressAndReminders } from './components/LearnerProgressAndReminders';
 import { MinimalLandingPage } from './components/MinimalLandingPage';
@@ -41,7 +42,7 @@ import {
   SentReminderLog,
 } from './types/ova';
 
-type InstructorTab = 'graph' | 'ovas' | 'learners' | 'reminders';
+type InstructorTab = 'graph' | 'ovas' | 'brain' | 'learners' | 'reminders';
 type PublicSection = 'catalog' | 'evidences' | 'progress';
 
 const STORAGE_KEYS = {
@@ -563,6 +564,21 @@ export default function App() {
               Gestión de OVAs
             </a>
             <a
+              href="#brain-karpathy"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowLandingPage(false);
+                setInstructorTab('brain');
+              }}
+              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
+                !showLandingPage && instructorTab === 'brain'
+                  ? 'text-cyan-600 font-bold underline underline-offset-8 decoration-2'
+                  : ''
+              }`}
+            >
+              Brain Karpathy 3D
+            </a>
+            <a
               href="#aprendices-fichas"
               onClick={(e) => {
                 e.preventDefault();
@@ -762,12 +778,31 @@ export default function App() {
                     setWorkspaceMode('instructor');
                   }}
                   className={`px-2.5 py-1 text-xs font-semibold rounded transition-colors whitespace-nowrap ${
-                    !showLandingPage && workspaceMode === 'instructor'
+                    !showLandingPage &&
+                    workspaceMode === 'instructor' &&
+                    instructorTab !== 'brain'
                       ? 'bg-indigo-600 text-white'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Panel Instructor (Grafo y Autoría)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLandingPage(false);
+                    setWorkspaceMode('instructor');
+                    setInstructorTab('brain');
+                  }}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded transition-colors whitespace-nowrap ${
+                    !showLandingPage &&
+                    workspaceMode === 'instructor' &&
+                    instructorTab === 'brain'
+                      ? 'bg-slate-900 text-cyan-300'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Brain Karpathy 2.5D/3D
                 </button>
                 <button
                   type="button"
@@ -869,6 +904,20 @@ export default function App() {
               }`}
             >
               Gestión de OVAs
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowLandingPage(false);
+                setInstructorTab('brain');
+              }}
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
+                !showLandingPage && instructorTab === 'brain'
+                  ? 'bg-slate-900 text-cyan-300'
+                  : 'text-slate-600 bg-slate-100'
+              }`}
+            >
+              Brain Karpathy 3D
             </button>
             <button
               type="button"
@@ -1020,7 +1069,12 @@ export default function App() {
                 onUpdateNodes={setNodes}
                 onOpenPrintGuide={(id) => setPrintGuideOvaId(id)}
                 onNavigateToGraph={() => setInstructorTab('graph')}
+                onNavigateToBrain={() => setInstructorTab('brain')}
               />
+            )}
+
+            {instructorTab === 'brain' && (
+              <KarpathyBrainStudio ovas={ovas} onUpdateOvas={setOvas} />
             )}
 
             {(instructorTab === 'learners' ||
