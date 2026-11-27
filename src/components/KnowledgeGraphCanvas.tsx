@@ -1539,7 +1539,7 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({
                     }
                     className="w-full px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-600"
                   >
-                    <option value="markdown">Nota / Bloques Notion</option>
+                    <option value="markdown">Nota / Bloques de Estudio</option>
                     <option value="media">Enlace / Video con Preview</option>
                     <option value="code">Segmento de Código Fuente</option>
                     <option value="quiz">Cuestionario Interactivo</option>

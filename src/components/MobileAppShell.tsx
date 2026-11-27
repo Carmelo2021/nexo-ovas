@@ -57,7 +57,13 @@ export const MobileAppShell: React.FC<MobileAppShellProps> = ({
   onExitMobilePreview,
 }) => {
   const publishedOvas = useMemo(
-    () => ovas.filter((o) => o.status === 'published'),
+    () =>
+      ovas
+        .filter((o) => o.status === 'published')
+        .map((o) => ({
+          ...o,
+          lessons: o.lessons.filter((l) => !l.hiddenFromPublic),
+        })),
     [ovas]
   );
 

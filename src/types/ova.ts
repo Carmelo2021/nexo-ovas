@@ -110,7 +110,15 @@ export interface LessonBlock {
   exerciseStarterCode?: string; // Interactive starter code snippet for the learner to edit and execute in-place
   exerciseSolution?: string; // Step-by-step solved code & explanation for 'exercise' blocks
   sourceNodeId?: string; // Optional reference to a GraphNode for bidirectional Canvas <-> OVA sync
+  hiddenFromPublic?: boolean; // When true, hidden from the public learner view (visible only in Instructor Editor)
+  collapsedInEditor?: boolean; // When true, collapsed in the Instructor OVA Editor for compact organization
 }
+
+export type LessonMacroSectionId =
+  | 'blocks'
+  | 'linked_nodes'
+  | 'activity'
+  | 'quiz';
 
 export interface Lesson {
   id: string;
@@ -126,6 +134,9 @@ export interface Lesson {
   linkedNodeIds: string[];
   quiz: QuizQuestion[];
   activity?: LessonActivity;
+  hiddenFromPublic?: boolean; // Hide entire lesson from public learner view
+  sectionOrder?: LessonMacroSectionId[]; // Custom top-to-bottom order of macro sections in the lesson
+  hiddenSections?: LessonMacroSectionId[]; // Macro sections hidden from public learner view
 }
 
 export interface OVA {

@@ -5,7 +5,11 @@ import {
   BookOpen,
   Calendar,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Download,
+  Eye,
+  EyeOff,
   FileCode2,
   FileDown,
   FileText,
@@ -17,7 +21,14 @@ import {
   Trash2,
   Video,
 } from 'lucide-react';
-import { GraphNode, Lesson, LessonBlock, OVA, QuizQuestion } from '../types/ova';
+import {
+  GraphNode,
+  Lesson,
+  LessonBlock,
+  LessonMacroSectionId,
+  OVA,
+  QuizQuestion,
+} from '../types/ova';
 import {
   blocksToMarkdown,
   ensureLessonBlocks,
@@ -48,6 +59,15 @@ export const OvaBuilderView: React.FC<OvaBuilderViewProps> = ({
     ovas[0]?.lessons[0]?.id ?? ''
   );
   const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const [collapsedMacroSections, setCollapsedMacroSections] = useState<
+    Record<string, boolean>
+  >({});
+
+  const DEFAULT_MACRO_ORDER: LessonMacroSectionId[] = [
+    'blocks',
+    'activity',
+    'quiz',
+  ];
 
   const selectedOva = ovas.find((o) => o.id === selectedOvaId) ?? ovas[0];
   const selectedLesson =
@@ -565,6 +585,36 @@ ${
                       >
                         <button
                           type="button"
+                          onClick={() => {
+                            const updated = selectedOva.lessons.map((l) =>
+                              l.id === lesson.id
+                                ? {
+                                    ...l,
+                                    hiddenFromPublic: !l.hiddenFromPublic,
+                                  }
+                                : l
+                            );
+                            handleUpdateSelectedOva({ lessons: updated });
+                          }}
+                          className={`p-1 rounded transition-colors ${
+                            lesson.hiddenFromPublic
+                              ? 'bg-amber-400/20 text-amber-400 hover:bg-amber-400/30'
+                              : 'hover:bg-slate-700/30 opacity-80 hover:opacity-100'
+                          }`}
+                          title={
+                            lesson.hiddenFromPublic
+                              ? 'Lección oculta al público (clic para hacer pública)'
+                              : 'Lección visible al público (clic para ocultar al público)'
+                          }
+                        >
+                          {lesson.hiddenFromPublic ? (
+                            <EyeOff className="w-3.5 h-3.5" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleMoveLesson(idx, -1)}
                           disabled={idx === 0}
                           className="p-1 rounded hover:bg-slate-700/30 disabled:opacity-30"
@@ -594,8 +644,15 @@ ${
                       </div>
                     </div>
 
-                    <div className="text-xs font-semibold leading-snug">
-                      {lesson.title}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-xs font-semibold leading-snug">
+                        {lesson.title}
+                      </div>
+                      {lesson.hiddenFromPublic && (
+                        <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40 rounded shrink-0">
+                          Oculta al Público
+                        </span>
+                      )}
                     </div>
 
                     <div
@@ -745,389 +802,678 @@ ${
             </details>
           </div>
 
-          {/* Active Lesson Content, Linked Graph Nodes, Quiz & Activity Editor */}
-          {selectedLesson && (
-            <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-5">
-              {/* Unified In-Place Lesson Header (Title, Summary & Duration edited right where they display) */}
-              <div className="border-b border-slate-200 pb-4 space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs font-mono font-bold text-indigo-600 uppercase tracking-wider">
-                    Lección 0{selectedLesson.order} · Documento Interactivo Editable In-Situ
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-slate-500">
-                      Duración (min):
-                    </label>
-                    <input
-                      type="number"
-                      value={selectedLesson.durationMinutes}
-                      onChange={(e) =>
-                        handleUpdateSelectedLesson({
-                          durationMinutes: Math.max(10, Number(e.target.value)),
-                        })
-                      }
-                      className="w-20 px-2.5 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg"
-                    />
-                  </div>
-                </div>
+          {/* Active Lesson Content, Quiz & Activity Editor */}
+          {selectedLesson && (() => {
+            const orderedMacroSections: LessonMacroSectionId[] = (
+              selectedLesson.sectionOrder &&
+              selectedLesson.sectionOrder.length > 0
+                ? selectedLesson.sectionOrder
+                : DEFAULT_MACRO_ORDER
+            ).filter((secId) => secId !== 'linked_nodes');
 
-                <input
-                  type="text"
-                  value={selectedLesson.title}
-                  onChange={(e) =>
-                    handleUpdateSelectedLesson({ title: e.target.value })
-                  }
-                  placeholder="Escribe aquí el título de la lección..."
-                  className="w-full text-lg font-bold text-slate-900 bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-slate-50/60 rounded-lg px-2 py-1 -mx-2 focus:outline-none transition-colors"
-                />
+            const hiddenMacroSet = new Set<LessonMacroSectionId>(
+              selectedLesson.hiddenSections ?? []
+            );
 
-                <input
-                  type="text"
-                  value={selectedLesson.summary}
-                  onChange={(e) =>
-                    handleUpdateSelectedLesson({ summary: e.target.value })
-                  }
-                  placeholder="Escribe aquí el resumen u objetivo pedagógico de la lección..."
-                  className="w-full text-xs text-slate-600 bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-slate-50/60 rounded-lg px-2 py-1 -mx-2 focus:outline-none transition-colors"
-                />
-              </div>
+            const handleMoveMacroSection = (
+              secId: LessonMacroSectionId,
+              direction: -1 | 1
+            ) => {
+              const currOrder = [...orderedMacroSections];
+              const idx = currOrder.indexOf(secId);
+              if (idx === -1) return;
+              const targetIdx = idx + direction;
+              if (targetIdx < 0 || targetIdx >= currOrder.length) return;
+              const [moved] = currOrder.splice(idx, 1);
+              currOrder.splice(targetIdx, 0, moved);
+              handleUpdateSelectedLesson({ sectionOrder: currOrder });
+            };
 
-              {/* Linked Nodes from Obsidian Canvas (Bidirectional Sync) */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2.5">
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="font-semibold text-slate-800">
-                      Sincronización Bidireccional con el Lienzo en Grafo (
-                      {selectedLesson.linkedNodeIds.length} nodo(s) vinculado(s))
+            const handleToggleMacroSectionPublic = (
+              secId: LessonMacroSectionId
+            ) => {
+              const nextSet = new Set(hiddenMacroSet);
+              if (nextSet.has(secId)) {
+                nextSet.delete(secId);
+              } else {
+                nextSet.add(secId);
+              }
+              handleUpdateSelectedLesson({
+                hiddenSections: Array.from(nextSet),
+              });
+            };
+
+            const toggleMacroCollapsed = (secId: LessonMacroSectionId) => {
+              const key = `${selectedLesson.id}-${secId}`;
+              setCollapsedMacroSections((prev) => ({
+                ...prev,
+                [key]: !prev[key],
+              }));
+            };
+
+            const isMacroCollapsed = (secId: LessonMacroSectionId) =>
+              Boolean(collapsedMacroSections[`${selectedLesson.id}-${secId}`]);
+
+            const MACRO_LABELS: Record<
+              LessonMacroSectionId,
+              { title: string; badge: string }
+            > = {
+              blocks: {
+                title: 'Secciones y Bloques de Estudio',
+                badge: `${ensureLessonBlocks(selectedLesson).length} bloques`,
+              },
+              linked_nodes: {
+                title: 'Nodos Vinculados',
+                badge: '',
+              },
+              activity: {
+                title: 'Actividad Evaluable / Evidencia SENA',
+                badge: selectedLesson.activity ? 'Configurada' : 'Opcional',
+              },
+              quiz: {
+                title: 'Cuestionario Interactivo de Autoevaluación',
+                badge: `${selectedLesson.quiz.length} preguntas`,
+              },
+            };
+
+            const renderMacroSectionHeader = (
+              secId: LessonMacroSectionId,
+              secIdx: number
+            ) => {
+              const meta = MACRO_LABELS[secId];
+              const isHidden = hiddenMacroSet.has(secId);
+              const isCollapsed = isMacroCollapsed(secId);
+              return (
+                <div
+                  className={`flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-t-xl border-b transition-colors ${
+                    isHidden
+                      ? 'bg-amber-50/90 border-amber-300 text-amber-950'
+                      : 'bg-slate-100/90 border-slate-200 text-slate-900'
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-slate-900 text-white rounded">
+                      Sección #{secIdx + 1}
+                    </span>
+                    <span className="text-xs font-bold truncate">
+                      {meta.title}
+                    </span>
+                    <span className="px-2 py-0.5 text-[10px] font-mono bg-white border border-slate-200 text-slate-600 rounded">
+                      {meta.badge}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {onUpdateNodes && (
-                      <button
-                        type="button"
-                        onClick={handlePushLessonToGraphCanvas}
-                        className="px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors"
-                      >
-                        {selectedLesson.linkedNodeIds.length > 0
-                          ? '↻ Sincronizar Bloques con el Lienzo'
-                          : '+ Crear Nodo en el Lienzo desde esta Lección'}
-                      </button>
-                    )}
-                    {onNavigateToGraph && (
-                      <button
-                        type="button"
-                        onClick={onNavigateToGraph}
-                        className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-md transition-colors"
-                      >
-                        Abrir Lienzo en Grafo →
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {selectedLesson.linkedNodeIds.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 text-xs text-slate-700">
-                    {selectedLesson.linkedNodeIds.map((nodeId) => {
-                      const n = nodes.find((item) => item.id === nodeId);
-                      return (
-                        <div
-                          key={nodeId}
-                          className="px-2.5 py-1 bg-white border border-slate-200 rounded text-xs flex items-center gap-2"
-                        >
-                          <span className="font-medium">
-                            {n?.title ?? nodeId}
-                          </span>
-                          <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                            Sincronizado
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-500">
-                    Aún no hay nodos vinculados. Haz clic en &ldquo;+ Crear Nodo
-                    en el Lienzo desde esta Lección&rdquo; o promueve cualquier
-                    nodo desde la vista &ldquo;Lienzo en Grafo&rdquo;.
-                  </p>
-                )}
-              </div>
 
-              {/* Notion-Style Block Authoring Workspace (Text, Links with Hover Preview, Videos with Hover Preview, Source Code Segments) */}
-              <NotionLessonBlockEditor
-                lesson={selectedLesson}
-                onUpdateLesson={handleUpdateSelectedLesson}
-              />
-
-              {/* Optional Evaluative Elements Selector (Activity / Evidence & Self-Assessment Quiz are completely optional) */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-3">
-                <div className="text-xs text-slate-600">
-                  <strong className="text-slate-900">
-                    Elementos Evaluativos Opcionales:
-                  </strong>{' '}
-                  Agrega solo los componentes que necesites para esta lección.
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {!selectedLesson.activity && (
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={() =>
-                        handleUpdateSelectedLesson({
-                          activity: {
-                            id: `act-${Date.now()}`,
-                            title: '',
-                            evidenceCode: '',
-                            evidenceType: 'Producto',
-                            instructions: '',
-                            dueDate: '2026-11-15',
-                            deliverableFormat: '',
-                          },
-                        })
-                      }
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-lg transition-colors"
+                      onClick={() => handleToggleMacroSectionPublic(secId)}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${
+                        isHidden
+                          ? 'bg-amber-200/90 border-amber-400 text-amber-950'
+                          : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                      }`}
+                      title="Ocultar o mostrar esta sección completa en la vista pública de aprendices"
                     >
-                      <Plus className="w-3.5 h-3.5" />
-                      Agregar Actividad / Evidencia
+                      {isHidden ? (
+                        <>
+                          <EyeOff className="w-3.5 h-3.5" />
+                          <span>Oculta al Público</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Visible al Público</span>
+                        </>
+                      )}
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleAddQuizQuestion}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-white hover:bg-emerald-50 border border-emerald-200 rounded-lg transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Agregar Pregunta de Cuestionario
-                  </button>
-                </div>
-              </div>
 
-              {/* Optional SENA Activity / Evidence Configurator (Only shown if instructor added it) */}
-              {selectedLesson.activity && (
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-900">
-                      Actividad Evaluable / Evidencia
-                    </h4>
                     <button
                       type="button"
-                      onClick={() =>
-                        handleUpdateSelectedLesson({ activity: undefined })
-                      }
-                      className="text-xs text-red-600 hover:underline"
+                      disabled={secIdx === 0}
+                      onClick={() => handleMoveMacroSection(secId, -1)}
+                      className="p-1 rounded bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-30"
+                      title="Desplazar esta sección hacia arriba"
                     >
-                      Quitar evidencia
+                      <ArrowUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={secIdx === orderedMacroSections.length - 1}
+                      onClick={() => handleMoveMacroSection(secId, 1)}
+                      className="p-1 rounded bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-30"
+                      title="Desplazar esta sección hacia abajo"
+                    >
+                      <ArrowDown className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleMacroCollapsed(secId)}
+                      className="p-1 rounded bg-white border border-slate-200 hover:bg-slate-50"
+                      title={
+                        isCollapsed
+                          ? 'Expandir sección en el editor'
+                          : 'Contraer sección en el editor'
+                      }
+                    >
+                      {isCollapsed ? (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   </div>
+                </div>
+              );
+            };
 
-                  <div className="space-y-3 pt-2 border-t border-slate-200">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          Código Evidencia SENA
-                        </label>
-                        <input
-                          type="text"
-                          value={selectedLesson.activity.evidenceCode}
-                          onChange={(e) =>
-                            handleUpdateSelectedLesson({
-                              activity: {
-                                ...selectedLesson.activity!,
-                                evidenceCode: e.target.value,
-                              },
-                            })
-                          }
-                          placeholder="Ej. GA1-220501096-AA1-EV01"
-                          className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          Tipo de Evidencia
-                        </label>
-                        <select
-                          value={selectedLesson.activity.evidenceType}
-                          onChange={(e) =>
-                            handleUpdateSelectedLesson({
-                              activity: {
-                                ...selectedLesson.activity!,
-                                evidenceType: e.target.value as
-                                  | 'Conocimiento'
-                                  | 'Desempeño'
-                                  | 'Producto',
-                              },
-                            })
-                          }
-                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
-                        >
-                          <option value="Conocimiento">Conocimiento</option>
-                          <option value="Desempeño">Desempeño</option>
-                          <option value="Producto">Producto</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          Fecha Límite de Envío
-                        </label>
-                        <input
-                          type="date"
-                          value={selectedLesson.activity.dueDate}
-                          onChange={(e) =>
-                            handleUpdateSelectedLesson({
-                              activity: {
-                                ...selectedLesson.activity!,
-                                dueDate: e.target.value,
-                              },
-                            })
-                          }
-                          className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-200 rounded-lg"
-                        />
-                      </div>
+            return (
+              <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-5">
+                {/* Unified In-Place Lesson Header (Title, Summary, Duration & Public Visibility) */}
+                <div className="border-b border-slate-200 pb-4 space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-indigo-600 uppercase tracking-wider">
+                        Lección 0{selectedLesson.order} · Editor Modular de Contenidos
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleUpdateSelectedLesson({
+                            hiddenFromPublic: !selectedLesson.hiddenFromPublic,
+                          })
+                        }
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border transition-colors ${
+                          selectedLesson.hiddenFromPublic
+                            ? 'bg-amber-100 border-amber-400 text-amber-900'
+                            : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                        }`}
+                        title="Controla si esta lección completa es visible o está oculta en la vista pública de aprendices"
+                      >
+                        {selectedLesson.hiddenFromPublic ? (
+                          <>
+                            <EyeOff className="w-3 h-3" />
+                            <span>Lección Oculta al Público</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3 h-3" />
+                            <span>Lección Pública</span>
+                          </>
+                        )}
+                      </button>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Título de la Evidencia
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-slate-500">
+                        Duración (min):
                       </label>
                       <input
-                        type="text"
-                        value={selectedLesson.activity.title}
+                        type="number"
+                        value={selectedLesson.durationMinutes}
                         onChange={(e) =>
                           handleUpdateSelectedLesson({
-                            activity: {
-                              ...selectedLesson.activity!,
-                              title: e.target.value,
-                            },
+                            durationMinutes: Math.max(
+                              10,
+                              Number(e.target.value)
+                            ),
                           })
                         }
-                        placeholder="Título de la actividad o entregable..."
-                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Instrucciones Detalladas de Entrega
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={selectedLesson.activity.instructions}
-                        onChange={(e) =>
-                          handleUpdateSelectedLesson({
-                            activity: {
-                              ...selectedLesson.activity!,
-                              instructions: e.target.value,
-                            },
-                          })
-                        }
-                        placeholder="Describe los criterios de entrega..."
-                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
+                        className="w-20 px-2.5 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg"
                       />
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Optional Self-Assessment Quiz Questions Editor (Only shown if quiz questions exist) */}
-              {selectedLesson.quiz.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-900">
-                      Cuestionario de Autoevaluación (
-                      {selectedLesson.quiz.length})
-                    </h4>
+                  <input
+                    type="text"
+                    value={selectedLesson.title}
+                    onChange={(e) =>
+                      handleUpdateSelectedLesson({ title: e.target.value })
+                    }
+                    placeholder="Escribe aquí el título de la lección..."
+                    className="w-full text-lg font-bold text-slate-900 bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-slate-50/60 rounded-lg px-2 py-1 -mx-2 focus:outline-none transition-colors"
+                  />
+
+                  <input
+                    type="text"
+                    value={selectedLesson.summary}
+                    onChange={(e) =>
+                      handleUpdateSelectedLesson({ summary: e.target.value })
+                    }
+                    placeholder="Escribe aquí el resumen u objetivo pedagógico de la lección..."
+                    className="w-full text-xs text-slate-600 bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-slate-50/60 rounded-lg px-2 py-1 -mx-2 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                {/* QUICK ADD & MACRO-SECTIONS BAR */}
+                <div className="p-3.5 bg-slate-900 text-white rounded-xl flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                      <Layers className="w-4 h-4" />
+                      <span>
+                        Disposición de Secciones de la Lección (Desplazar ↑/↓ y
+                        Visibilidad Pública)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      Desplaza cualquier sección hacia arriba o abajo, agrega
+                      nuevas secciones de contenido u ocúltalas de la vista al
+                      público.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const stamp = Date.now();
+                        const currentBlocks = ensureLessonBlocks(selectedLesson);
+                        const nextBlocks: LessonBlock[] = [
+                          ...currentBlocks,
+                          {
+                            id: `blk-sec-h-${stamp}`,
+                            type: 'heading',
+                            title: 'Nueva Sección de Estudio',
+                            content: 'Nueva Sección de Estudio',
+                          },
+                          {
+                            id: `blk-sec-t-${stamp}`,
+                            type: 'text',
+                            content:
+                              'Desarrolla aquí el contenido de esta nueva sección.',
+                          },
+                        ];
+                        handleUpdateSelectedLesson({
+                          blocks: nextBlocks,
+                          contentMarkdown: blocksToMarkdown(nextBlocks),
+                        });
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Nueva Sección</span>
+                    </button>
+
+                    {!selectedLesson.activity && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleUpdateSelectedLesson({
+                            activity: {
+                              id: `act-${Date.now()}`,
+                              title: 'Nueva Evidencia Evaluable',
+                              evidenceCode: 'GA1-220501096-AA1-EV01',
+                              evidenceType: 'Producto',
+                              instructions:
+                                'Describe las instrucciones de entrega...',
+                              dueDate: '2026-11-30',
+                              deliverableFormat: 'Repositorio GitHub / PDF',
+                            },
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-cyan-200 border border-slate-700 rounded-lg transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>+ Sección Evidencia</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={handleAddQuizQuestion}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 rounded-lg transition-colors"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Añadir Pregunta
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Pregunta Quiz</span>
                     </button>
                   </div>
-
-                  {selectedLesson.quiz.map((q, qIdx) => (
-                    <div
-                      key={q.id}
-                      className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <input
-                          type="text"
-                          value={q.question}
-                          onChange={(e) => {
-                            const updatedQuiz = selectedLesson.quiz.map(
-                              (item, idx) =>
-                                idx === qIdx
-                                  ? { ...item, question: e.target.value }
-                                  : item
-                            );
-                            handleUpdateSelectedLesson({ quiz: updatedQuiz });
-                          }}
-                          className="flex-1 px-2.5 py-1.5 text-xs font-semibold bg-white border border-slate-200 rounded"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleUpdateSelectedLesson({
-                              quiz: selectedLesson.quiz.filter(
-                                (_, idx) => idx !== qIdx
-                              ),
-                            })
-                          }
-                          className="text-slate-400 hover:text-red-600 p-1"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {q.options.map((opt, optIdx) => (
-                          <div
-                            key={optIdx}
-                            className="flex items-center gap-1.5"
-                          >
-                            <input
-                              type="radio"
-                              name={`correct-${q.id}`}
-                              checked={q.correctIndex === optIdx}
-                              onChange={() => {
-                                const updatedQuiz = selectedLesson.quiz.map(
-                                  (item, idx) =>
-                                    idx === qIdx
-                                      ? { ...item, correctIndex: optIdx }
-                                      : item
-                                );
-                                handleUpdateSelectedLesson({
-                                  quiz: updatedQuiz,
-                                });
-                              }}
-                            />
-                            <input
-                              type="text"
-                              value={opt}
-                              onChange={(e) => {
-                                const newOpts = [...q.options];
-                                newOpts[optIdx] = e.target.value;
-                                const updatedQuiz = selectedLesson.quiz.map(
-                                  (item, idx) =>
-                                    idx === qIdx
-                                      ? { ...item, options: newOpts }
-                                      : item
-                                );
-                                handleUpdateSelectedLesson({
-                                  quiz: updatedQuiz,
-                                });
-                              }}
-                              className="flex-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
                 </div>
-              )}
-            </div>
-          )}
+
+                {/* DYNAMICALLY ORDERED MACRO-SECTIONS OF THE LESSON */}
+                <div className="space-y-5">
+                  {orderedMacroSections.map((secId, secIdx) => {
+                    const isHidden = hiddenMacroSet.has(secId);
+                    const isCollapsed = isMacroCollapsed(secId);
+
+                    if (secId === 'blocks') {
+                      return (
+                        <div
+                          key={secId}
+                          className={`rounded-xl border transition-all ${
+                            isHidden
+                              ? 'border-dashed border-amber-400 bg-amber-50/20'
+                              : 'border-slate-200 bg-white'
+                          }`}
+                        >
+                          {renderMacroSectionHeader(secId, secIdx)}
+                          {!isCollapsed && (
+                            <div className="p-3">
+                              <NotionLessonBlockEditor
+                                lesson={selectedLesson}
+                                onUpdateLesson={handleUpdateSelectedLesson}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (secId === 'activity') {
+                      return (
+                        <div
+                          key={secId}
+                          className={`rounded-xl border transition-all ${
+                            isHidden
+                              ? 'border-dashed border-amber-400 bg-amber-50/20'
+                              : 'border-slate-200 bg-slate-50/60'
+                          }`}
+                        >
+                          {renderMacroSectionHeader(secId, secIdx)}
+                          {!isCollapsed && (
+                            <div className="p-4 space-y-3">
+                              {!selectedLesson.activity ? (
+                                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                                  <span>
+                                    Esta sección de actividad/evidencia aún no
+                                    tiene datos configurados.
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleUpdateSelectedLesson({
+                                        activity: {
+                                          id: `act-${Date.now()}`,
+                                          title: '',
+                                          evidenceCode: '',
+                                          evidenceType: 'Producto',
+                                          instructions: '',
+                                          dueDate: '2026-11-15',
+                                          deliverableFormat: '',
+                                        },
+                                      })
+                                    }
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-lg"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Configurar Actividad / Evidencia
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                      Parámetros del Entregable SENA
+                                    </h4>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateSelectedLesson({
+                                          activity: undefined,
+                                        })
+                                      }
+                                      className="text-xs text-red-600 hover:underline"
+                                    >
+                                      Quitar evidencia
+                                    </button>
+                                  </div>
+
+                                  <div className="space-y-3 pt-2 border-t border-slate-200">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                      <div>
+                                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                          Código Evidencia SENA
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={
+                                            selectedLesson.activity.evidenceCode
+                                          }
+                                          onChange={(e) =>
+                                            handleUpdateSelectedLesson({
+                                              activity: {
+                                                ...selectedLesson.activity!,
+                                                evidenceCode: e.target.value,
+                                              },
+                                            })
+                                          }
+                                          placeholder="Ej. GA1-220501096-AA1-EV01"
+                                          className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-200 rounded-lg"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                          Tipo de Evidencia
+                                        </label>
+                                        <select
+                                          value={
+                                            selectedLesson.activity.evidenceType
+                                          }
+                                          onChange={(e) =>
+                                            handleUpdateSelectedLesson({
+                                              activity: {
+                                                ...selectedLesson.activity!,
+                                                evidenceType: e.target.value as
+                                                  | 'Conocimiento'
+                                                  | 'Desempeño'
+                                                  | 'Producto',
+                                              },
+                                            })
+                                          }
+                                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
+                                        >
+                                          <option value="Conocimiento">
+                                            Conocimiento
+                                          </option>
+                                          <option value="Desempeño">
+                                            Desempeño
+                                          </option>
+                                          <option value="Producto">
+                                            Producto
+                                          </option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                          Fecha Límite de Envío
+                                        </label>
+                                        <input
+                                          type="date"
+                                          value={selectedLesson.activity.dueDate}
+                                          onChange={(e) =>
+                                            handleUpdateSelectedLesson({
+                                              activity: {
+                                                ...selectedLesson.activity!,
+                                                dueDate: e.target.value,
+                                              },
+                                            })
+                                          }
+                                          className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-200 rounded-lg"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Título de la Evidencia
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={selectedLesson.activity.title}
+                                        onChange={(e) =>
+                                          handleUpdateSelectedLesson({
+                                            activity: {
+                                              ...selectedLesson.activity!,
+                                              title: e.target.value,
+                                            },
+                                          })
+                                        }
+                                        placeholder="Título de la actividad o entregable..."
+                                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Instrucciones Detalladas de Entrega
+                                      </label>
+                                      <textarea
+                                        rows={2}
+                                        value={
+                                          selectedLesson.activity.instructions
+                                        }
+                                        onChange={(e) =>
+                                          handleUpdateSelectedLesson({
+                                            activity: {
+                                              ...selectedLesson.activity!,
+                                              instructions: e.target.value,
+                                            },
+                                          })
+                                        }
+                                        placeholder="Describe los criterios de entrega..."
+                                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
+                                      />
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (secId === 'quiz') {
+                      return (
+                        <div
+                          key={secId}
+                          className={`rounded-xl border transition-all ${
+                            isHidden
+                              ? 'border-dashed border-amber-400 bg-amber-50/20'
+                              : 'border-slate-200 bg-slate-50/60'
+                          }`}
+                        >
+                          {renderMacroSectionHeader(secId, secIdx)}
+                          {!isCollapsed && (
+                            <div className="p-4 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-slate-600">
+                                  Preguntas de selección múltiple para
+                                  autoevaluación del aprendiz
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={handleAddQuizQuestion}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50"
+                                >
+                                  <Plus className="w-3.5 h-3.5" /> Añadir
+                                  Pregunta
+                                </button>
+                              </div>
+
+                              {selectedLesson.quiz.map((q, qIdx) => (
+                                <div
+                                  key={q.id}
+                                  className="p-3.5 bg-white border border-slate-200 rounded-lg space-y-2"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <input
+                                      type="text"
+                                      value={q.question}
+                                      onChange={(e) => {
+                                        const updatedQuiz =
+                                          selectedLesson.quiz.map((item, idx) =>
+                                            idx === qIdx
+                                              ? {
+                                                  ...item,
+                                                  question: e.target.value,
+                                                }
+                                              : item
+                                          );
+                                        handleUpdateSelectedLesson({
+                                          quiz: updatedQuiz,
+                                        });
+                                      }}
+                                      className="flex-1 px-2.5 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateSelectedLesson({
+                                          quiz: selectedLesson.quiz.filter(
+                                            (_, idx) => idx !== qIdx
+                                          ),
+                                        })
+                                      }
+                                      className="text-slate-400 hover:text-red-600 p-1"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {q.options.map((opt, optIdx) => (
+                                      <div
+                                        key={optIdx}
+                                        className="flex items-center gap-1.5"
+                                      >
+                                        <input
+                                          type="radio"
+                                          name={`correct-${q.id}`}
+                                          checked={q.correctIndex === optIdx}
+                                          onChange={() => {
+                                            const updatedQuiz =
+                                              selectedLesson.quiz.map(
+                                                (item, idx) =>
+                                                  idx === qIdx
+                                                    ? {
+                                                        ...item,
+                                                        correctIndex: optIdx,
+                                                      }
+                                                    : item
+                                              );
+                                            handleUpdateSelectedLesson({
+                                              quiz: updatedQuiz,
+                                            });
+                                          }}
+                                        />
+                                        <input
+                                          type="text"
+                                          value={opt}
+                                          onChange={(e) => {
+                                            const newOpts = [...q.options];
+                                            newOpts[optIdx] = e.target.value;
+                                            const updatedQuiz =
+                                              selectedLesson.quiz.map(
+                                                (item, idx) =>
+                                                  idx === qIdx
+                                                    ? {
+                                                        ...item,
+                                                        options: newOpts,
+                                                      }
+                                                    : item
+                                              );
+                                            handleUpdateSelectedLesson({
+                                              quiz: updatedQuiz,
+                                            });
+                                          }}
+                                          className="flex-1 px-2 py-1 text-xs bg-slate-50 border border-slate-200 rounded"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return null;
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
