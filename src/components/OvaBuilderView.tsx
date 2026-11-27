@@ -484,8 +484,8 @@ ${
             onClick={() => onOpenPrintGuide(selectedOva.id)}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
           >
-            <Printer className="w-4 h-4" />
-            Guía de Estudio PDF / Imprimir
+            <FileDown className="w-4 h-4" />
+            Generar Guía de Estudio PDF
           </button>
         </div>
       </div>

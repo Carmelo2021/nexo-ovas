@@ -2391,10 +2391,42 @@ function formatJsValueForConsole(val: unknown): string {
   }
 }
 
+/**
+ * Injects an automatic loop time-budget and iteration guard into user JavaScript loops
+ * (`while`, `for`, `do`) so an accidental `while (true) {}` or `for (;;)` aborts cleanly
+ * after 1,200 ms or 150,000 iterations instead of freezing the UI thread.
+ */
+function instrumentJavaScriptWithLoopGuard(rawCode: string): string {
+  return rawCode
+    .replace(/\b(while|for)\s*\(([^)]*)\)\s*\{/g, '$1 ($2) { __nexoLoopGuard();')
+    .replace(/\bdo\s*\{/g, 'do { __nexoLoopGuard();');
+}
+
 export function executeLiveJavaScriptSnippet(code: string): JsExecutionResult {
   const logs: JsExecutionLogEntry[] = [];
   const start =
     typeof performance !== 'undefined' ? performance.now() : Date.now();
+  let loopIterations = 0;
+  const maxExecutionMs = 1200;
+  const maxIterations = 150000;
+
+  const __nexoLoopGuard = () => {
+    loopIterations += 1;
+    if (loopIterations > maxIterations) {
+      throw new RangeError(
+        `Límite de seguridad superado (${maxIterations.toLocaleString()} iteraciones). Posible bucle infinito detectado.`
+      );
+    }
+    if ((loopIterations & 1023) === 0) {
+      const now =
+        typeof performance !== 'undefined' ? performance.now() : Date.now();
+      if (now - start > maxExecutionMs) {
+        throw new RangeError(
+          `Tiempo límite de ejecución excedido (${maxExecutionMs} ms). Verifica la condición de salida de tu bucle.`
+        );
+      }
+    }
+  };
 
   const customConsole = {
     log: (...args: unknown[]) => {
@@ -2430,8 +2462,13 @@ export function executeLiveJavaScriptSnippet(code: string): JsExecutionResult {
   };
 
   try {
-    const runner = new Function('console', `"use strict";\n${code}`);
-    const returnValue = runner(customConsole);
+    const safeCode = instrumentJavaScriptWithLoopGuard(code);
+    const runner = new Function(
+      'console',
+      '__nexoLoopGuard',
+      `"use strict";\n${safeCode}`
+    );
+    const returnValue = runner(customConsole, __nexoLoopGuard);
     if (returnValue !== undefined) {
       logs.push({
         level: 'result',
@@ -2460,15 +2497,14 @@ export function executeLiveJavaScriptSnippet(code: string): JsExecutionResult {
 
 /**
  * Separated Individual Exercise Block ('exercise') with Integrated Live JS Code Snippet Runner!
- * Allows the learner to read the exercise, write/modify their solution directly inside the
- * interactive code snippet editor, test its execution in real time, and compare with the reference solution.
+ * Wrapped in React.memo so editing or executing one exercise does not re-render the other 26 exercises in the lesson.
  */
 export const ExerciseBlockView: React.FC<{
   block: LessonBlock;
   exerciseNumber?: number;
   editable?: boolean;
   onUpdateBlock?: (patch: Partial<LessonBlock>) => void;
-}> = ({ block, exerciseNumber, editable = false, onUpdateBlock }) => {
+}> = React.memo(({ block, exerciseNumber, editable = false, onUpdateBlock }) => {
   const defaultStarter = useMemo(() => {
     if (block.exerciseStarterCode && block.exerciseStarterCode.trim()) {
       return block.exerciseStarterCode;
@@ -2881,7 +2917,7 @@ export const ExerciseBlockView: React.FC<{
       </div>
     </div>
   );
-};
+});
 
 export function renderRichTextWithInlinePreviews(text: string): React.ReactNode {
   if (!text) return null;

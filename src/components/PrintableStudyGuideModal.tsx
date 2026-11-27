@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import {
   CheckCircle2,
   Download,
+  FileDown,
   FileText,
-  Printer,
   X,
 } from 'lucide-react';
 import { GraphEdge, GraphNode, InstructorCredentials, OVA } from '../types/ova';
+import { generateAndDownloadOvaPdf } from '../utils/lightweightPdfGenerator';
 import { LessonBlocksRenderer } from './NotionLessonBlocks';
 
 interface PrintableStudyGuideModalProps {
@@ -34,7 +35,8 @@ export const PrintableStudyGuideModal: React.FC<
 }) => {
   const [includeQuizAnswers, setIncludeQuizAnswers] =
     useState<boolean>(isInstructorSession);
-  const [includeConceptMap, setIncludeConceptMap] = useState<boolean>(true);
+  const [includeConceptMap, setIncludeConceptMap] = useState<boolean>(false);
+  const [pdfGeneratedMsg, setPdfGeneratedMsg] = useState<string | null>(null);
 
   const ovaLinkedNodeIds = new Set<string>();
   ova.lessons.forEach((l) =>
@@ -49,8 +51,16 @@ export const PrintableStudyGuideModal: React.FC<
     (e) => ovaLinkedNodeIds.has(e.sourceId) || ovaLinkedNodeIds.has(e.targetId)
   );
 
-  const handlePrintPdf = () => {
-    window.print();
+  const handleGeneratePdfFile = () => {
+    const { fileName, pageCount } = generateAndDownloadOvaPdf({
+      ova,
+      instructor,
+      includeQuizAnswers,
+    });
+    setPdfGeneratedMsg(
+      `Archivo PDF generado y descargado directamente: ${fileName} (${pageCount} páginas A4).`
+    );
+    window.setTimeout(() => setPdfGeneratedMsg(null), 5000);
   };
 
   const handleDownloadPrintableDocument = () => {
@@ -163,16 +173,16 @@ export const PrintableStudyGuideModal: React.FC<
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors whitespace-nowrap"
             >
               <Download className="w-3.5 h-3.5" />
-              Descargar Guía Imprimible
+              Descargar HTML
             </button>
 
             <button
               type="button"
-              onClick={handlePrintPdf}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors whitespace-nowrap"
+              onClick={handleGeneratePdfFile}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors whitespace-nowrap shadow-sm cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5" />
-              Imprimir / Guardar PDF
+              <FileDown className="w-3.5 h-3.5" />
+              Generar y Descargar PDF (.pdf)
             </button>
 
             <button
@@ -212,9 +222,16 @@ export const PrintableStudyGuideModal: React.FC<
             )}
           </div>
           <span className="text-slate-500">
-            Tamaño de página A4 / Carta con saltos limpios
+            Motor MicroPDF Libre · Genera archivo .pdf nativo A4 sin diálogo de impresión
           </span>
         </div>
+
+        {pdfGeneratedMsg && (
+          <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2.5 text-xs font-semibold text-emerald-900 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{pdfGeneratedMsg}</span>
+          </div>
+        )}
 
         {/* Printable Study Guide Document Body */}
         <div className="p-8 sm:p-10 space-y-8 bg-white text-slate-900">

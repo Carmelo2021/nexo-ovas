@@ -533,36 +533,45 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        BRAIN_STORAGE_KEYS.ZONES,
-        JSON.stringify(brainZones)
-      );
-    } catch {
-      // ignore
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          BRAIN_STORAGE_KEYS.ZONES,
+          JSON.stringify(brainZones)
+        );
+      } catch {
+        // ignore
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
   }, [brainZones]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        BRAIN_STORAGE_KEYS.NODES,
-        JSON.stringify(brainNodes)
-      );
-    } catch {
-      // ignore
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          BRAIN_STORAGE_KEYS.NODES,
+          JSON.stringify(brainNodes)
+        );
+      } catch {
+        // ignore
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
   }, [brainNodes]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        BRAIN_STORAGE_KEYS.EDGES,
-        JSON.stringify(brainEdges)
-      );
-    } catch {
-      // ignore
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          BRAIN_STORAGE_KEYS.EDGES,
+          JSON.stringify(brainEdges)
+        );
+      } catch {
+        // ignore
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
   }, [brainEdges]);
 
   useEffect(() => {
@@ -674,7 +683,7 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
   const trayBlockRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const builderBlockRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Pointer Drag State (Pan, Multi-Node Drag, Zone Drag, Marquee, Live Wire)
+  // Pointer Drag State (Pan, Multi-Node Drag with 5px Slop Threshold, Zone Drag)
   const [dragState, setDragState] = useState<
     | {
         kind: 'pan';
@@ -688,6 +697,7 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
         primaryNodeId: string;
         startX: number;
         startY: number;
+        hasExceededThreshold: boolean;
         initialPositions: Record<string, { x: number; y: number }>;
       }
     | {
@@ -1796,6 +1806,7 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
         primaryNodeId: dupId,
         startX: e.clientX,
         startY: e.clientY,
+        hasExceededThreshold: true,
         initialPositions: {
           [dupId]: { x: dupNode.x, y: dupNode.y },
         },
@@ -1804,7 +1815,12 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
       return;
     }
 
-    // Figma Shift + Click multi-selection
+    // Ignore drag initiation if user clicked an internal interactive input/select/button inside the node
+    if ((e.target as HTMLElement).closest('input, select, button[data-nodrag="true"]')) {
+      return;
+    }
+
+    // Shift + Click multi-selection
     let nextSelectedIds: string[];
     if (e.shiftKey) {
       nextSelectedIds = selectedNodeIds.includes(node.id)
@@ -1829,6 +1845,7 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
       primaryNodeId: node.id,
       startX: e.clientX,
       startY: e.clientY,
+      hasExceededThreshold: false,
       initialPositions,
     });
   };
@@ -1940,6 +1957,20 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
         y: Math.round(dragState.initialPanY + dy),
       });
     } else if (dragState.kind === 'nodes') {
+      const pixelDist = Math.hypot(
+        e.clientX - dragState.startX,
+        e.clientY - dragState.startY
+      );
+      // 5px Drag Slop Threshold: prevents accidental micro-movements from swallowing clean clicks or double-clicks!
+      if (!dragState.hasExceededThreshold) {
+        if (pixelDist < 5) return;
+        setDragState((prev) =>
+          prev && prev.kind === 'nodes'
+            ? { ...prev, hasExceededThreshold: true }
+            : prev
+        );
+      }
+
       const rawDx = (e.clientX - dragState.startX) / zoom;
       const rawDy = (e.clientY - dragState.startY) / zoom;
 
@@ -3130,25 +3161,17 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
               </div>
             )}
 
-            {/* 2.5D / 3D PERSPECTIVE WORLD CONTAINER */}
-            <div className="w-full h-full brain-perspective-stage">
+            {/* 2D HIT-TESTING WORLD CONTAINER (z=0 affine plane so 100% of clicks are detected accurately) */}
+            <div className="w-full h-full">
               <div
                 className="w-[1700px] h-[1080px] relative transition-transform duration-75 ease-out"
                 style={{
                   transformOrigin: '0 0',
-                  transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
-                  transformStyle: 'preserve-3d',
+                  transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                 }}
               >
-                <div
-                  className="w-full h-full relative"
-                  style={{
-                    transformOrigin: `${CENTER_X}px ${CENTER_Y}px`,
-                    transform: `rotateX(${cameraTiltDeg}deg)`,
-                    transformStyle: 'preserve-3d',
-                  }}
-                >
-                  {/* LAYER 1: 4 KARPATHY ORBITAL CLUSTER ZONES (raw/, wiki/, labs/, lint/practice/) */}
+                <div className="w-full h-full relative">
+                  {/* LAYER 1: 4 KARPATHY ORBITAL CLUSTER ZONES (pointer-events-none on disc, pointer-events-auto only on title handle) */}
                   {activeZones.map((zone) => {
                     const meta = CLUSTER_META[zone.cluster];
                     const clusterNodeCount = activeNodes.filter(
@@ -3158,8 +3181,6 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                     return (
                       <div
                         key={zone.id}
-                        data-brain-interactive="true"
-                        onPointerDown={(e) => handleZonePointerDown(e, zone)}
                         style={{
                           left: zone.x - zone.radius,
                           top: zone.y - zone.radius,
@@ -3167,10 +3188,10 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                           height: zone.radius * 2,
                           background: `radial-gradient(circle, ${meta.glowHex} 0%, transparent 72%)`,
                         }}
-                        className={`absolute rounded-full border-2 border-dashed transition-shadow cursor-move flex flex-col items-center justify-start pt-4 ${
+                        className={`absolute rounded-full border-2 border-dashed pointer-events-none flex flex-col items-center justify-start pt-4 ${
                           isDark
-                            ? 'border-slate-700/80 hover:border-slate-500'
-                            : 'border-slate-300 hover:border-slate-400'
+                            ? 'border-slate-700/80'
+                            : 'border-slate-300'
                         }`}
                       >
                         <div
@@ -3179,7 +3200,10 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                         />
 
                         <div
-                          className={`px-3 py-1 rounded-full border text-[11px] font-mono font-bold flex items-center gap-1.5 shadow-sm backdrop-blur-md ${
+                          data-brain-interactive="true"
+                          onPointerDown={(e) => handleZonePointerDown(e, zone)}
+                          title="Arrastra este encabezado para mover toda la órbita del cluster con sus nodos"
+                          className={`pointer-events-auto cursor-move px-3 py-1 rounded-full border text-[11px] font-mono font-bold flex items-center gap-1.5 shadow-sm ${
                             isDark ? meta.darkBadge : meta.lightBadge
                           }`}
                         >
@@ -3190,7 +3214,7 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                           </span>
                         </div>
                         <span
-                          className={`text-[10px] mt-1 px-2 text-center max-w-[230px] ${
+                          className={`text-[10px] mt-1 px-2 text-center max-w-[230px] pointer-events-none ${
                             isDark ? 'text-slate-400' : 'text-slate-500'
                           }`}
                         >
@@ -3394,19 +3418,15 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                         style={{
                           left: node.x,
                           top: node.y,
-                          transform: `translate3d(-50%, -50%, ${
-                            isSelected || isHovered
-                              ? 28
-                              : Math.round((node.zDepth - 0.85) * 45)
-                          }px) scale(${
-                            isSelected || isSnappedTarget ? 1.07 : node.zDepth
+                          transform: `translate(-50%, -50%) scale(${
+                            isSelected || isSnappedTarget ? 1.06 : node.zDepth
                           })`,
                         }}
-                        className={`absolute z-20 brain-node-3d-card group transition-opacity duration-200 ${
+                        className={`absolute z-20 p-1.5 group transition-opacity duration-200 cursor-pointer ${
                           isDimmed ? 'opacity-45' : 'opacity-100'
                         }`}
                       >
-                        {/* 4 MAGNETIC SYNAPSE PORTS (Top, Right, Bottom, Left - like Figma FigJam / React Flow) */}
+                        {/* 4 MAGNETIC SYNAPSE PORTS (Top, Right, Bottom, Left) */}
                         {(isHovered || isSelected || toolMode === 'connect') &&
                           selectedNodeIds.length <= 1 && (
                             <>
@@ -3414,25 +3434,26 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                                 [
                                   {
                                     pos: 'top',
-                                    cls: '-top-2 left-1/2 -translate-x-1/2',
+                                    cls: '-top-1 left-1/2 -translate-x-1/2',
                                   },
                                   {
                                     pos: 'right',
-                                    cls: 'top-1/2 -right-2 -translate-y-1/2',
+                                    cls: 'top-1/2 -right-1 -translate-y-1/2',
                                   },
                                   {
                                     pos: 'bottom',
-                                    cls: '-bottom-2 left-1/2 -translate-x-1/2',
+                                    cls: '-bottom-1 left-1/2 -translate-x-1/2',
                                   },
                                   {
                                     pos: 'left',
-                                    cls: 'top-1/2 -left-2 -translate-y-1/2',
+                                    cls: 'top-1/2 -left-1 -translate-y-1/2',
                                   },
                                 ] as const
                               ).map((port) => (
                                 <button
                                   key={port.pos}
                                   type="button"
+                                  data-nodrag="true"
                                   onPointerDown={(e) =>
                                     handleStartLiveWire(e, node)
                                   }
@@ -3446,8 +3467,18 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                         <div
                           style={{
                             animationDelay: `${node.floatPhase ?? 0}s`,
+                            transform:
+                              cameraTiltDeg > 0 && !isHovered && !isSelected && !isEditing
+                                ? `perspective(650px) rotateX(${Math.round(
+                                    cameraTiltDeg * 0.55
+                                  )}deg)`
+                                : undefined,
                           }}
-                          className={`animate-brain-levitate rounded-2xl border backdrop-blur-xl transition-all ${
+                          className={`${
+                            isHovered || isSelected || isEditing
+                              ? ''
+                              : 'animate-brain-levitate'
+                          } rounded-2xl border transition-all ${
                             isCore
                               ? 'px-4 py-3 min-w-[210px] max-w-[280px] border-2'
                               : 'px-3 py-2 min-w-[165px] max-w-[235px]'

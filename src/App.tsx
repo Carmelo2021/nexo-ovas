@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import {
   Eye,
   Lock,
@@ -9,19 +9,48 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { InstructorLoginModal } from './components/InstructorLoginModal';
-import { KarpathyBrainStudio } from './components/KarpathyBrainStudio';
-import { KnowledgeGraphCanvas } from './components/KnowledgeGraphCanvas';
-import { LearnerProgressAndReminders } from './components/LearnerProgressAndReminders';
 import { MinimalLandingPage } from './components/MinimalLandingPage';
-import { MobileAppShell } from './components/MobileAppShell';
-import { OvaBuilderView } from './components/OvaBuilderView';
 import {
   blocksToMarkdown,
   ensureLessonBlocks,
   ensureNodeBlocks,
 } from './components/NotionLessonBlocks';
-import { PrintableStudyGuideModal } from './components/PrintableStudyGuideModal';
-import { PublicLearnerPortal } from './components/PublicLearnerPortal';
+
+const KarpathyBrainStudio = lazy(() =>
+  import('./components/KarpathyBrainStudio').then((m) => ({
+    default: m.KarpathyBrainStudio,
+  }))
+);
+const KnowledgeGraphCanvas = lazy(() =>
+  import('./components/KnowledgeGraphCanvas').then((m) => ({
+    default: m.KnowledgeGraphCanvas,
+  }))
+);
+const LearnerProgressAndReminders = lazy(() =>
+  import('./components/LearnerProgressAndReminders').then((m) => ({
+    default: m.LearnerProgressAndReminders,
+  }))
+);
+const MobileAppShell = lazy(() =>
+  import('./components/MobileAppShell').then((m) => ({
+    default: m.MobileAppShell,
+  }))
+);
+const OvaBuilderView = lazy(() =>
+  import('./components/OvaBuilderView').then((m) => ({
+    default: m.OvaBuilderView,
+  }))
+);
+const PrintableStudyGuideModal = lazy(() =>
+  import('./components/PrintableStudyGuideModal').then((m) => ({
+    default: m.PrintableStudyGuideModal,
+  }))
+);
+const PublicLearnerPortal = lazy(() =>
+  import('./components/PublicLearnerPortal').then((m) => ({
+    default: m.PublicLearnerPortal,
+  }))
+);
 import {
   DEFAULT_INSTRUCTOR,
   INITIAL_EDGES,
@@ -161,52 +190,71 @@ export default function App() {
   // Printable PDF Study Guide Modal state
   const [printGuideOvaId, setPrintGuideOvaId] = useState<string | null>(null);
 
+  // Debounced localStorage persistence (350ms) so 60fps canvas dragging and rich-text typing never block the main thread
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.NODES, JSON.stringify(nodes));
-    } catch {
-      // ignore storage quota errors
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEYS.NODES, JSON.stringify(nodes));
+      } catch {
+        // ignore storage quota errors
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
   }, [nodes]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.EDGES, JSON.stringify(edges));
-    } catch {
-      // ignore
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEYS.EDGES, JSON.stringify(edges));
+      } catch {
+        // ignore
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
   }, [edges]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.REGIONS, JSON.stringify(regions));
-    } catch {
-      // ignore
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEYS.REGIONS, JSON.stringify(regions));
+      } catch {
+        // ignore
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
   }, [regions]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.OVAS, JSON.stringify(ovas));
-    } catch {
-      // ignore
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEYS.OVAS, JSON.stringify(ovas));
+      } catch {
+        // ignore
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
   }, [ovas]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.LEARNERS, JSON.stringify(learners));
-    } catch {
-      // ignore
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEYS.LEARNERS, JSON.stringify(learners));
+      } catch {
+        // ignore
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
   }, [learners]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(sentLogs));
-    } catch {
-      // ignore
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(sentLogs));
+      } catch {
+        // ignore
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
   }, [sentLogs]);
 
   useEffect(() => {
@@ -1005,6 +1053,14 @@ export default function App() {
             : 'max-w-[1440px] px-4 sm:px-6 py-6'
         }`}
       >
+        <Suspense
+          fallback={
+            <div className="w-full py-16 flex flex-col items-center justify-center gap-2 text-slate-500 text-xs font-mono">
+              <div className="w-6 h-6 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
+              <span>Cargando módulo interactivo NexoOVA...</span>
+            </div>
+          }
+        >
         {isMobileAppMode ? (
           <MobileAppShell
             ovas={ovas}
@@ -1115,6 +1171,7 @@ export default function App() {
             initialLessonId={deepLinkLessonId}
           />
         )}
+        </Suspense>
       </main>
 
       {/* Quiet Footer (Hidden on native mobile when MobileAppShell is active) */}
@@ -1166,16 +1223,18 @@ export default function App() {
 
       {/* Printable Study Guide & PDF Export Modal */}
       {printGuideOvaId && printableOva && (
-        <PrintableStudyGuideModal
-          ova={printableOva}
-          ovas={ovas}
-          nodes={nodes}
-          edges={edges}
-          instructor={DEFAULT_INSTRUCTOR}
-          isInstructorSession={isInstructorAuth}
-          onSelectOva={(id) => setPrintGuideOvaId(id)}
-          onClose={() => setPrintGuideOvaId(null)}
-        />
+        <Suspense fallback={null}>
+          <PrintableStudyGuideModal
+            ova={printableOva}
+            ovas={ovas}
+            nodes={nodes}
+            edges={edges}
+            instructor={DEFAULT_INSTRUCTOR}
+            isInstructorSession={isInstructorAuth}
+            onSelectOva={(id) => setPrintGuideOvaId(id)}
+            onClose={() => setPrintGuideOvaId(null)}
+          />
+        </Suspense>
       )}
     </div>
   );
