@@ -224,6 +224,8 @@ export type BrainMaterialIconKind =
   | 'concept'
   | 'link';
 
+export type PortSide = 'top' | 'right' | 'bottom' | 'left';
+
 export interface KarpathyBrainNode {
   id: string;
   ovaId: string;
@@ -235,6 +237,10 @@ export interface KarpathyBrainNode {
   materialIcon: BrainMaterialIconKind; // Icon 2: Clasificación de tipo de material
   x: number;
   y: number;
+  width?: number;
+  height?: number;
+  expanded?: boolean;
+  noteContent?: string;
   zDepth: number; // Factor de profundidad 3D (0.75 a 1.25)
   floatPhase?: number; // Desfase de microanimación 3D
 }
@@ -245,6 +251,9 @@ export interface KarpathyBrainEdge {
   sourceId: string;
   targetId: string;
   cluster: KarpathyClusterType;
+  label?: string;
+  sourcePort?: PortSide;
+  targetPort?: PortSide;
 }
 
 export interface KarpathyOrbitalZone {

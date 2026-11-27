@@ -4,12 +4,16 @@ import {
   ArrowLeftRight,
   BookOpen,
   Brain,
+  Check,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   Code2,
   Cpu,
   Database,
   Edit3,
+  ExternalLink,
   Eye,
   FileText,
   FlaskConical,
@@ -49,12 +53,17 @@ import {
   LessonBlock,
   LessonBlockType,
   OVA,
+  PortSide,
 } from '../types/ova';
 import {
   blocksToMarkdown,
   ensureLessonBlocks,
   NotionLessonBlockEditor,
 } from './NotionLessonBlocks';
+import {
+  extractYouTubeEmbedUrl,
+  NodeMarkdownRenderer,
+} from './NodeMarkdownRenderer';
 
 interface KarpathyBrainStudioProps {
   ovas: OVA[];
@@ -444,6 +453,137 @@ function buildGeneratedBrainForOva(
   return { nodes: generatedNodes, edges: generatedEdges };
 }
 
+const EDGE_LABEL_PRESETS = [
+  'fundamenta',
+  'se aplica en',
+  'profundiza en',
+  'ejemplo práctico',
+  'verifica con',
+  'depende de',
+];
+
+const ALL_PORTS: PortSide[] = ['top', 'right', 'bottom', 'left'];
+
+function getOppositePort(port: PortSide): PortSide {
+  switch (port) {
+    case 'top':
+      return 'bottom';
+    case 'bottom':
+      return 'top';
+    case 'left':
+      return 'right';
+    case 'right':
+      return 'left';
+  }
+}
+
+function getNodeDims(
+  node: KarpathyBrainNode,
+  measured?: { w: number; h: number }
+): { w: number; h: number } {
+  const isCore = node.cluster === 'index';
+  const defaultW = node.expanded ? 336 : isCore ? 248 : 212;
+  const defaultH = node.expanded ? 240 : isCore ? 64 : 52;
+  return {
+    w: node.width ?? measured?.w ?? defaultW,
+    h: node.height ?? measured?.h ?? defaultH,
+  };
+}
+
+function getPortPoint(
+  node: KarpathyBrainNode,
+  port: PortSide,
+  dims: { w: number; h: number }
+): { x: number; y: number } {
+  switch (port) {
+    case 'top':
+      return { x: node.x, y: node.y - dims.h / 2 };
+    case 'right':
+      return { x: node.x + dims.w / 2, y: node.y };
+    case 'bottom':
+      return { x: node.x, y: node.y + dims.h / 2 };
+    case 'left':
+      return { x: node.x - dims.w / 2, y: node.y };
+  }
+}
+
+function inferAutoPorts(
+  source: KarpathyBrainNode,
+  target: KarpathyBrainNode
+): { sourcePort: PortSide; targetPort: PortSide } {
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return dx >= 0
+      ? { sourcePort: 'right', targetPort: 'left' }
+      : { sourcePort: 'left', targetPort: 'right' };
+  }
+  return dy >= 0
+    ? { sourcePort: 'bottom', targetPort: 'top' }
+    : { sourcePort: 'top', targetPort: 'bottom' };
+}
+
+function findNearestPortOnNode(
+  node: KarpathyBrainNode,
+  dims: { w: number; h: number },
+  px: number,
+  py: number
+): PortSide {
+  let bestPort: PortSide = 'left';
+  let bestDist = Infinity;
+  for (const side of ALL_PORTS) {
+    const pt = getPortPoint(node, side, dims);
+    const d = Math.hypot(px - pt.x, py - pt.y);
+    if (d < bestDist) {
+      bestDist = d;
+      bestPort = side;
+    }
+  }
+  return bestPort;
+}
+
+function buildPortBezier(
+  sx: number,
+  sy: number,
+  sPort: PortSide,
+  tx: number,
+  ty: number,
+  tPort?: PortSide
+): { pathD: string; midX: number; midY: number } {
+  const dist = Math.hypot(tx - sx, ty - sy);
+  const offset = Math.max(46, Math.min(150, dist * 0.36));
+
+  const dirVec = (p: PortSide) => {
+    switch (p) {
+      case 'top':
+        return { x: 0, y: -1 };
+      case 'right':
+        return { x: 1, y: 0 };
+      case 'bottom':
+        return { x: 0, y: 1 };
+      case 'left':
+        return { x: -1, y: 0 };
+    }
+  };
+
+  const sv = dirVec(sPort);
+  const tv = tPort ? dirVec(tPort) : { x: -sv.x, y: -sv.y };
+
+  const cx1 = Math.round(sx + sv.x * offset);
+  const cy1 = Math.round(sy + sv.y * offset);
+  const cx2 = Math.round(tx + tv.x * offset);
+  const cy2 = Math.round(ty + tv.y * offset);
+
+  const midX = Math.round(0.125 * sx + 0.375 * cx1 + 0.375 * cx2 + 0.125 * tx);
+  const midY = Math.round(0.125 * sy + 0.375 * cy1 + 0.375 * cy2 + 0.125 * ty);
+
+  return {
+    pathD: `M ${Math.round(sx)} ${Math.round(sy)} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${Math.round(tx)} ${Math.round(ty)}`,
+    midX,
+    midY,
+  };
+}
+
 export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
   ovas,
   onUpdateOvas,
@@ -625,10 +765,11 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
     }
   }, [subView, compactMobile]);
 
-  // 5. Bidirectional Sync & Editing States
+  // 5. Bidirectional Sync, Interactive Ports, Editable Edges & Inline Editing States
   const [selectedBrainNodeId, setSelectedBrainNodeId] = useState<string | null>(
     null
   );
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [highlightedBlockId, setHighlightedBlockId] = useState<string | null>(
     null
   );
@@ -641,16 +782,39 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
     Record<string, { rx: number; ry: number }>
   >({});
 
+  // Live rubber-band synaptic connection dragged from a magnetic port
+  const [draftConnection, setDraftConnection] = useState<{
+    sourceId: string;
+    sourcePort: PortSide;
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+    hoveredTargetId: string | null;
+    hoveredTargetPort: PortSide | null;
+  } | null>(null);
+
+  // Quick-spawn floating menu when dropping a dragged port wire onto empty canvas
+  const [quickSpawnMenu, setQuickSpawnMenu] = useState<{
+    sourceId: string;
+    sourcePort: PortSide;
+    x: number;
+    y: number;
+    title: string;
+    edgeLabel: string;
+  } | null>(null);
+
   // Parallax mouse tracking on canvas
   const [mouseParallax, setMouseParallax] = useState<{ x: number; y: number }>({
     x: 0,
     y: 0,
   });
 
-  // Canvas Dragging (Pan, Node drag, Zone drag)
+  // Canvas Dragging (Pan, Node drag, Node resize, Zone drag)
   const canvasViewportRef = useRef<HTMLDivElement | null>(null);
   const trayBlockRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const builderBlockRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const nodeCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [dragState, setDragState] = useState<
     | {
@@ -669,6 +833,14 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
         initialY: number;
       }
     | {
+        kind: 'node_resize';
+        nodeId: string;
+        startX: number;
+        startY: number;
+        initialW: number;
+        initialH: number;
+      }
+    | {
         kind: 'zone';
         zoneId: string;
         startX: number;
@@ -678,6 +850,21 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
       }
     | null
   >(null);
+
+  // Keyboard Escape handler to close quick-spawn, inline editor, or active edge popover
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setQuickSpawnMenu(null);
+        setDraftConnection(null);
+        setConnectingFromNodeId(null);
+        setSelectedEdgeId(null);
+        setEditingNodeId(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   // Quick add material state in builder/tray
   const [quickTitle, setQuickTitle] = useState<string>('');
@@ -1090,11 +1277,36 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
     }
   };
 
-  // --- CANVAS POINTER PAN & NODE/ZONE DRAG ---
+  // Helper to measure live DOM card dimensions for exact port & arrow anchoring
+  const getMeasuredDims = (node: KarpathyBrainNode) => {
+    const el = nodeCardRefs.current[node.id];
+    const measured =
+      el && el.offsetWidth > 0 && el.offsetHeight > 0
+        ? { w: el.offsetWidth, h: el.offsetHeight }
+        : undefined;
+    return getNodeDims(node, measured);
+  };
+
+  // Resolve the linked OVA lesson & block for a Brain node (for expanded view & bidirectional inline edit)
+  const resolveLinkedBlock = (
+    node: KarpathyBrainNode
+  ): { lesson: Lesson; block: LessonBlock } | null => {
+    if (!selectedOva || !node.lessonId || !node.blockId) return null;
+    const lesson = selectedOva.lessons.find((l) => l.id === node.lessonId);
+    if (!lesson) return null;
+    const block = ensureLessonBlocks(lesson).find((b) => b.id === node.blockId);
+    if (!block) return null;
+    return { lesson, block };
+  };
+
+  // --- CANVAS POINTER PAN, NODE DRAG, NODE RESIZE, PORT CONNECTION & ZONE DRAG ---
   const handleCanvasPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('[data-brain-interactive="true"]')) {
       return;
     }
+    setSelectedEdgeId(null);
+    setQuickSpawnMenu(null);
+    setEditingNodeId(null);
     setDragState({
       kind: 'pan',
       startX: e.clientX,
@@ -1104,14 +1316,59 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
     });
   };
 
+  const handleStartPortDrag = (
+    e: React.PointerEvent,
+    node: KarpathyBrainNode,
+    port: PortSide
+  ) => {
+    e.stopPropagation();
+    const dims = getMeasuredDims(node);
+    const pt = getPortPoint(node, port, dims);
+    setSelectedEdgeId(null);
+    setQuickSpawnMenu(null);
+    setConnectingFromNodeId(null);
+    setDraftConnection({
+      sourceId: node.id,
+      sourcePort: port,
+      startX: pt.x,
+      startY: pt.y,
+      currentX: pt.x,
+      currentY: pt.y,
+      hoveredTargetId: null,
+      hoveredTargetPort: null,
+    });
+  };
+
+  const handleStartNodeResize = (
+    e: React.PointerEvent,
+    node: KarpathyBrainNode
+  ) => {
+    e.stopPropagation();
+    const dims = getMeasuredDims(node);
+    setSelectedBrainNodeId(node.id);
+    setSelectedEdgeId(null);
+    setQuickSpawnMenu(null);
+    setDragState({
+      kind: 'node_resize',
+      nodeId: node.id,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialW: dims.w,
+      initialH: dims.h,
+    });
+  };
+
   const handleNodePointerDown = (
     e: React.PointerEvent,
     node: KarpathyBrainNode
   ) => {
     e.stopPropagation();
+    setQuickSpawnMenu(null);
+    setSelectedEdgeId(null);
 
-    // If user is in synaptic connection mode
+    // If user is in legacy click-to-connect synaptic mode
     if (connectingFromNodeId && connectingFromNodeId !== node.id) {
+      const sourceNode = activeNodes.find((n) => n.id === connectingFromNodeId);
       const exists = activeEdges.some(
         (edge) =>
           (edge.sourceId === connectingFromNodeId &&
@@ -1119,16 +1376,22 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
           (edge.sourceId === node.id &&
             edge.targetId === connectingFromNodeId)
       );
-      if (!exists && selectedOva) {
+      if (!exists && selectedOva && sourceNode) {
+        const ports = inferAutoPorts(sourceNode, node);
+        const newEdgeId = `brain-edge-custom-${Date.now()}`;
         const newEdge: KarpathyBrainEdge = {
-          id: `brain-edge-custom-${Date.now()}`,
+          id: newEdgeId,
           ovaId: selectedOva.id,
           sourceId: connectingFromNodeId,
           targetId: node.id,
           cluster: node.cluster === 'index' ? 'wiki' : node.cluster,
+          label: 'se conecta con',
+          sourcePort: ports.sourcePort,
+          targetPort: ports.targetPort,
         };
         setBrainEdges((prev) => [...prev, newEdge]);
-        showToast('Nueva conexión sináptica establecida entre nodos.');
+        setSelectedEdgeId(newEdgeId);
+        showToast('Sinapsis creada. Edita su etiqueta o invierte su dirección.');
       }
       setConnectingFromNodeId(null);
       return;
@@ -1150,6 +1413,8 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
       }, 90);
     }
 
+    if (editingNodeId === node.id) return;
+
     setDragState({
       kind: 'node',
       nodeId: node.id,
@@ -1165,6 +1430,8 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
     zone: KarpathyOrbitalZone
   ) => {
     e.stopPropagation();
+    setSelectedEdgeId(null);
+    setQuickSpawnMenu(null);
     setDragState({
       kind: 'zone',
       zoneId: zone.id,
@@ -1176,15 +1443,59 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
   };
 
   const handleViewportPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    // 1. Update subtle 3D parallax offset
-    if (canvasViewportRef.current) {
-      const rect = canvasViewportRef.current.getBoundingClientRect();
+    const rect = canvasViewportRef.current?.getBoundingClientRect();
+
+    // 1. Update subtle 3D parallax offset (paused while dragging wires or resizing for precision)
+    if (rect && !draftConnection && dragState?.kind !== 'node_resize') {
       const normX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
       const normY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
       setMouseParallax({ x: normX * 18, y: normY * 18 });
     }
 
-    // 2. Process active drag
+    // 2. Process live magnetic rubber-band connection wire
+    if (draftConnection && rect) {
+      const canvasX = (e.clientX - rect.left - pan.x) / zoom;
+      const canvasY = (e.clientY - rect.top - pan.y) / zoom;
+
+      let hoveredTargetId: string | null = null;
+      let hoveredTargetPort: PortSide | null = null;
+
+      for (const candidate of activeNodes) {
+        if (candidate.id === draftConnection.sourceId) continue;
+        const dims = getMeasuredDims(candidate);
+        const halo = 26;
+        if (
+          canvasX >= candidate.x - dims.w / 2 - halo &&
+          canvasX <= candidate.x + dims.w / 2 + halo &&
+          canvasY >= candidate.y - dims.h / 2 - halo &&
+          canvasY <= candidate.y + dims.h / 2 + halo
+        ) {
+          hoveredTargetId = candidate.id;
+          hoveredTargetPort = findNearestPortOnNode(
+            candidate,
+            dims,
+            canvasX,
+            canvasY
+          );
+          break;
+        }
+      }
+
+      setDraftConnection((prev) =>
+        prev
+          ? {
+              ...prev,
+              currentX: Math.round(canvasX),
+              currentY: Math.round(canvasY),
+              hoveredTargetId,
+              hoveredTargetPort,
+            }
+          : null
+      );
+      return;
+    }
+
+    // 3. Process active drag / resize
     if (!dragState) return;
 
     if (dragState.kind === 'pan') {
@@ -1208,6 +1519,23 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
             : n
         )
       );
+    } else if (dragState.kind === 'node_resize') {
+      const dx = (e.clientX - dragState.startX) / zoom;
+      const dy = (e.clientY - dragState.startY) / zoom;
+      const nextW = Math.min(560, Math.max(190, Math.round(dragState.initialW + dx)));
+      const nextH = Math.min(520, Math.max(64, Math.round(dragState.initialH + dy)));
+      setBrainNodes((prev) =>
+        prev.map((n) =>
+          n.id === dragState.nodeId
+            ? {
+                ...n,
+                width: nextW,
+                height: nextH,
+                expanded: nextH >= 130 ? true : n.expanded,
+              }
+            : n
+        )
+      );
     } else if (dragState.kind === 'zone') {
       const dx = (e.clientX - dragState.startX) / zoom;
       const dy = (e.clientY - dragState.startY) / zoom;
@@ -1226,10 +1554,200 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
   };
 
   const handleViewportPointerUp = () => {
+    // Complete or quick-spawn a dragged port wire
+    if (draftConnection && selectedOva) {
+      const {
+        sourceId,
+        sourcePort,
+        startX,
+        startY,
+        currentX,
+        currentY,
+        hoveredTargetId,
+        hoveredTargetPort,
+      } = draftConnection;
+
+      if (hoveredTargetId && hoveredTargetId !== sourceId) {
+        const targetNode = activeNodes.find((n) => n.id === hoveredTargetId);
+        const existingEdge = activeEdges.find(
+          (e) => e.sourceId === sourceId && e.targetId === hoveredTargetId
+        );
+        if (existingEdge) {
+          setBrainEdges((prev) =>
+            prev.map((e) =>
+              e.id === existingEdge.id
+                ? {
+                    ...e,
+                    sourcePort,
+                    targetPort: hoveredTargetPort ?? e.targetPort,
+                  }
+                : e
+            )
+          );
+          setSelectedEdgeId(existingEdge.id);
+          showToast('Puertos de la conexión actualizados.');
+        } else if (targetNode) {
+          const newEdgeId = `brain-edge-port-${Date.now()}`;
+          const newEdge: KarpathyBrainEdge = {
+            id: newEdgeId,
+            ovaId: selectedOva.id,
+            sourceId,
+            targetId: hoveredTargetId,
+            cluster: targetNode.cluster === 'index' ? 'wiki' : targetNode.cluster,
+            label: 'se conecta con',
+            sourcePort,
+            targetPort: hoveredTargetPort ?? getOppositePort(sourcePort),
+          };
+          setBrainEdges((prev) => [...prev, newEdge]);
+          setSelectedBrainNodeId(null);
+          setSelectedEdgeId(newEdgeId);
+          showToast(
+            'Conexión sináptica creada. Puedes nombrar la relación o invertirla ahora.'
+          );
+        }
+      } else {
+        const draggedDist = Math.hypot(currentX - startX, currentY - startY);
+        if (draggedDist > 30) {
+          setQuickSpawnMenu({
+            sourceId,
+            sourcePort,
+            x: Math.max(90, Math.min(1600, currentX)),
+            y: Math.max(70, Math.min(1010, currentY)),
+            title: '',
+            edgeLabel: 'se relaciona con',
+          });
+        }
+      }
+      setDraftConnection(null);
+    }
+
     setDragState(null);
   };
 
-  // --- NODE IN-PLACE UPDATE & BIDIRECTIONAL TITLE SYNC ---
+  // --- QUICK-SPAWN NEW CONNECTED NODE FROM DROPPED PORT WIRE ---
+  const handleQuickSpawnNodeFromWire = (blockType: LessonBlockType) => {
+    if (!quickSpawnMenu || !selectedOva) return;
+    const defaultLabels: Record<LessonBlockType, string> = {
+      quote: 'Nueva Fuente / Cita',
+      video: 'Nuevo Video / Recurso',
+      link: 'Nueva Documentación Web',
+      text: 'Nuevo Concepto Compilado',
+      code: 'Nuevo Snippet de Código',
+      diagram: 'Nuevo Diagrama Visual',
+      interactive: 'Nuevo Laboratorio',
+      exercise: 'Nuevo Ejercicio JS',
+      heading: 'Nuevo Concepto',
+      callout: 'Nota Clave',
+    };
+
+    const title = quickSpawnMenu.title.trim() || defaultLabels[blockType];
+    const blockId = `blk-spawn-${Date.now()}`;
+    const newBlock: LessonBlock = {
+      id: blockId,
+      type: blockType,
+      title,
+      content:
+        blockType === 'code'
+          ? '// Escribe tu código de ejemplo aquí\nconsole.log("Hola Karpathy Brain");'
+          : blockType === 'exercise'
+          ? `Reto práctico sobre "${title}".`
+          : `### ${title}\n- [ ] Investigar y completar síntesis conceptual\n- [ ] Validar ejemplo práctico en la OVA`,
+      ...(blockType === 'quote' ? { quoteAuthor: 'Referencia SENA / Bibliografía' } : {}),
+      ...(blockType === 'code' ? { codeLanguage: 'javascript' } : {}),
+      ...(blockType === 'video' || blockType === 'link'
+        ? { url: 'https://developer.mozilla.org/es/' }
+        : {}),
+      ...(blockType === 'diagram' ? { diagramKind: 'if_else_flow' } : {}),
+      ...(blockType === 'interactive' ? { interactiveKind: 'array_lab' } : {}),
+      ...(blockType === 'exercise'
+        ? {
+            exerciseDifficulty: 'Básico',
+            exerciseCategory: 'corto',
+            exerciseStarterCode: `// Ejercicio rápido: ${title}\nconsole.log("Verificación sináptica activa");`,
+          }
+        : {}),
+    };
+
+    const targetLesson = selectedLesson ?? selectedOva.lessons[0];
+    if (targetLesson) {
+      const currentBlocks = ensureLessonBlocks(targetLesson);
+      handleUpdateLessonBlocks(targetLesson.id, [newBlock, ...currentBlocks]);
+    }
+
+    const classified = classifyBlockToKarpathy(newBlock);
+    const newNodeId = `brain-node-${selectedOva.id}-${blockId}`;
+    const newNode: KarpathyBrainNode = {
+      id: newNodeId,
+      ovaId: selectedOva.id,
+      lessonId: targetLesson?.id,
+      blockId: targetLesson ? blockId : undefined,
+      title,
+      cluster: classified.cluster,
+      layerIcon: classified.layerIcon,
+      materialIcon: classified.materialIcon,
+      x: quickSpawnMenu.x,
+      y: quickSpawnMenu.y,
+      expanded: true,
+      noteContent: newBlock.content,
+      zDepth: 1.0,
+      floatPhase: (activeNodes.length * 0.5) % 4,
+    };
+
+    const newEdgeId = `brain-edge-spawn-${Date.now()}`;
+    const newEdge: KarpathyBrainEdge = {
+      id: newEdgeId,
+      ovaId: selectedOva.id,
+      sourceId: quickSpawnMenu.sourceId,
+      targetId: newNodeId,
+      cluster: classified.cluster,
+      label: quickSpawnMenu.edgeLabel.trim() || 'deriva en',
+      sourcePort: quickSpawnMenu.sourcePort,
+      targetPort: getOppositePort(quickSpawnMenu.sourcePort),
+    };
+
+    setBrainNodes((prev) => [...prev, newNode]);
+    setBrainEdges((prev) => [...prev, newEdge]);
+    setQuickSpawnMenu(null);
+    setSelectedBrainNodeId(newNodeId);
+    setHighlightedBlockId(blockId);
+    setEditingNodeId(newNodeId);
+    showToast(`Nodo "${title}" creado, conectado y sincronizado con tu OVA.`);
+  };
+
+  // --- EDITABLE EDGES HELPERS ---
+  const handleUpdateBrainEdge = (
+    edgeId: string,
+    patch: Partial<KarpathyBrainEdge>
+  ) => {
+    setBrainEdges((prev) =>
+      prev.map((e) => (e.id === edgeId ? { ...e, ...patch } : e))
+    );
+  };
+
+  const handleReverseBrainEdge = (edgeId: string) => {
+    setBrainEdges((prev) =>
+      prev.map((e) =>
+        e.id === edgeId
+          ? {
+              ...e,
+              sourceId: e.targetId,
+              targetId: e.sourceId,
+              sourcePort: e.targetPort,
+              targetPort: e.sourcePort,
+            }
+          : e
+      )
+    );
+    showToast('Dirección de la flecha sináptica invertida.');
+  };
+
+  const handleDeleteBrainEdge = (edgeId: string) => {
+    setBrainEdges((prev) => prev.filter((e) => e.id !== edgeId));
+    if (selectedEdgeId === edgeId) setSelectedEdgeId(null);
+    showToast('Conexión sináptica eliminada.');
+  };
+
+  // --- NODE IN-PLACE UPDATE & BIDIRECTIONAL TITLE + CONTENT SYNC ---
   const handleUpdateBrainNode = (
     nodeId: string,
     patch: Partial<KarpathyBrainNode>
@@ -1239,7 +1757,7 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
       prev.map((n) => (n.id === nodeId ? { ...n, ...patch } : n))
     );
 
-    // If title was edited and node is linked to a LessonBlock, sync the title back to the OVA block
+    // Sync title back to linked LessonBlock in OVA
     if (
       patch.title !== undefined &&
       targetNode?.lessonId &&
@@ -1256,6 +1774,66 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
         handleUpdateLessonBlocks(lesson.id, updatedBlocks);
       }
     }
+  };
+
+  const handleUpdateNodeContentBidirectional = (
+    node: KarpathyBrainNode,
+    nextContent: string,
+    nextUrl?: string
+  ) => {
+    setBrainNodes((prev) =>
+      prev.map((n) =>
+        n.id === node.id ? { ...n, noteContent: nextContent } : n
+      )
+    );
+
+    if (node.lessonId && node.blockId && selectedOva) {
+      const lesson = selectedOva.lessons.find((l) => l.id === node.lessonId);
+      if (lesson) {
+        const updatedBlocks = ensureLessonBlocks(lesson).map((b) =>
+          b.id === node.blockId
+            ? {
+                ...b,
+                content: nextContent,
+                ...(nextUrl !== undefined ? { url: nextUrl } : {}),
+              }
+            : b
+        );
+        handleUpdateLessonBlocks(lesson.id, updatedBlocks);
+      }
+    }
+  };
+
+  const handleToggleNodeCheckbox = (
+    node: KarpathyBrainNode,
+    currentText: string,
+    lineIndex: number
+  ) => {
+    const lines = currentText.split('\n');
+    const line = lines[lineIndex];
+    if (line === undefined) return;
+    if (/^(\s*-\s*)\[ \]/.test(line)) {
+      lines[lineIndex] = line.replace(/^(\s*-\s*)\[ \]/, '$1[x]');
+    } else if (/^(\s*-\s*)\[[xX]\]/.test(line)) {
+      lines[lineIndex] = line.replace(/^(\s*-\s*)\[[xX]\]/, '$1[ ]');
+    }
+    handleUpdateNodeContentBidirectional(node, lines.join('\n'));
+  };
+
+  const handleToggleNodeExpanded = (node: KarpathyBrainNode) => {
+    const nextExpanded = !node.expanded;
+    setBrainNodes((prev) =>
+      prev.map((n) =>
+        n.id === node.id
+          ? {
+              ...n,
+              expanded: nextExpanded,
+              // Reset manual height on collapse so compact card hugs its title cleanly
+              height: nextExpanded ? n.height : undefined,
+            }
+          : n
+      )
+    );
   };
 
   const handleDeleteBrainNode = (nodeId: string) => {
@@ -1287,6 +1865,11 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
   const selectedBrainNode = useMemo(
     () => activeNodes.find((n) => n.id === selectedBrainNodeId) ?? null,
     [activeNodes, selectedBrainNodeId]
+  );
+
+  const selectedBrainEdge = useMemo(
+    () => activeEdges.find((e) => e.id === selectedEdgeId) ?? null,
+    [activeEdges, selectedEdgeId]
   );
 
   // Count materials in OVA vs nodes in Brain
@@ -2339,11 +2922,44 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                   );
                 })}
 
-                {/* LAYER 2: SYNAPTIC SVG CONNECTIONS WITH ANIMATED 3D PULSES */}
+                {/* LAYER 2: SYNAPTIC SVG CONNECTIONS WITH DIRECTIONAL ARROWS, PORT ANCHORS & LIVE RUBBER-BAND WIRE */}
                 <svg
                   className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
                   xmlns="http://www.w3.org/2000/svg"
                 >
+                  <defs>
+                    {(['index', 'raw', 'wiki', 'labs', 'practice'] as const).map(
+                      (cKey) => (
+                        <marker
+                          key={`marker-${cKey}`}
+                          id={`brain-arrow-${cKey}`}
+                          viewBox="0 0 10 10"
+                          refX="8.5"
+                          refY="5"
+                          markerWidth="6.5"
+                          markerHeight="6.5"
+                          orient="auto"
+                        >
+                          <path
+                            d="M 0 1 L 10 5 L 0 9 z"
+                            fill={CLUSTER_META[cKey].strokeColor}
+                          />
+                        </marker>
+                      )
+                    )}
+                    <marker
+                      id="brain-arrow-active"
+                      viewBox="0 0 10 10"
+                      refX="8.5"
+                      refY="5"
+                      markerWidth="7"
+                      markerHeight="7"
+                      orient="auto"
+                    >
+                      <path d="M 0 1 L 10 5 L 0 9 z" fill="#22d3ee" />
+                    </marker>
+                  </defs>
+
                   {/* Orbital guide lines from index.md core to each of the 4 cluster centers */}
                   {activeZones.map((zone) => {
                     const core = activeNodes.find((n) => n.cluster === 'index');
@@ -2357,14 +2973,14 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                         x2={zone.x}
                         y2={zone.y}
                         stroke={meta.strokeColor}
-                        strokeOpacity={isDark ? 0.16 : 0.22}
+                        strokeOpacity={isDark ? 0.14 : 0.2}
                         strokeWidth={1.5}
                         strokeDasharray="4 8"
                       />
                     );
                   })}
 
-                  {/* Synaptic Bezier Edges between Brain Nodes */}
+                  {/* Synaptic Bezier Edges between Brain Nodes (Anchored to exact Ports) */}
                   {activeEdges.map((edge) => {
                     const source = activeNodes.find(
                       (n) => n.id === edge.sourceId
@@ -2375,78 +2991,496 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                     if (!source || !target) return null;
 
                     const meta = CLUSTER_META[edge.cluster] ?? CLUSTER_META.wiki;
-                    const dx = target.x - source.x;
-                    const dy = target.y - source.y;
-                    const cx1 = Math.round(source.x + dx * 0.45 - dy * 0.12);
-                    const cy1 = Math.round(source.y + dy * 0.18 + dx * 0.08);
-                    const cx2 = Math.round(source.x + dx * 0.65 - dy * 0.08);
-                    const cy2 = Math.round(source.y + dy * 0.82 + dx * 0.05);
-                    const pathD = `M ${source.x} ${source.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${target.x} ${target.y}`;
+                    const sDims = getMeasuredDims(source);
+                    const tDims = getMeasuredDims(target);
+                    const autoPorts = inferAutoPorts(source, target);
+                    const sPort = edge.sourcePort ?? autoPorts.sourcePort;
+                    const tPort = edge.targetPort ?? autoPorts.targetPort;
+                    const sp = getPortPoint(source, sPort, sDims);
+                    const tp = getPortPoint(target, tPort, tDims);
 
+                    const { pathD, midX, midY } = buildPortBezier(
+                      sp.x,
+                      sp.y,
+                      sPort,
+                      tp.x,
+                      tp.y,
+                      tPort
+                    );
+
+                    const isSelectedEdge = selectedEdgeId === edge.id;
                     const isHighlightedEdge =
+                      isSelectedEdge ||
                       selectedBrainNodeId === source.id ||
                       selectedBrainNodeId === target.id ||
                       hoveredNodeId === source.id ||
                       hoveredNodeId === target.id;
+
+                    const labelText = edge.label?.trim();
+                    const pillWidth = labelText
+                      ? Math.max(82, Math.min(180, labelText.length * 6.8 + 22))
+                      : 0;
 
                     return (
                       <g
                         key={edge.id}
                         data-brain-interactive="true"
                         className="pointer-events-auto cursor-pointer group"
+                        onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setBrainEdges((prev) =>
-                            prev.filter((item) => item.id !== edge.id)
-                          );
-                          showToast('Conexión sináptica eliminada.');
+                          setSelectedEdgeId(edge.id);
+                          setSelectedBrainNodeId(null);
+                          setQuickSpawnMenu(null);
                         }}
                       >
-                        <title>Clic para desconectar esta sinapsis</title>
-                        {/* Invisible wider hit area for easy edge clicking */}
+                        <title>
+                          Clic para editar etiqueta, invertir dirección o eliminar sinapsis
+                        </title>
+                        {/* Invisible wider hit area for effortless edge selection */}
                         <path
                           d={pathD}
                           fill="none"
                           stroke="transparent"
-                          strokeWidth={14}
+                          strokeWidth={16}
                         />
-                        {/* Base neural fiber */}
+                        {/* Selection glow halo */}
+                        {isSelectedEdge && (
+                          <path
+                            d={pathD}
+                            fill="none"
+                            stroke="#22d3ee"
+                            strokeOpacity={0.35}
+                            strokeWidth={8}
+                          />
+                        )}
+                        {/* Base neural fiber with directional arrowhead */}
                         <path
                           d={pathD}
                           fill="none"
-                          stroke={meta.strokeColor}
+                          stroke={isSelectedEdge ? '#22d3ee' : meta.strokeColor}
                           strokeOpacity={
-                            isHighlightedEdge ? 0.85 : isDark ? 0.32 : 0.38
+                            isHighlightedEdge ? 0.92 : isDark ? 0.4 : 0.45
                           }
-                          strokeWidth={isHighlightedEdge ? 2.6 : 1.6}
+                          strokeWidth={isSelectedEdge ? 3.2 : isHighlightedEdge ? 2.6 : 1.8}
+                          markerEnd={
+                            isSelectedEdge
+                              ? 'url(#brain-arrow-active)'
+                              : `url(#brain-arrow-${edge.cluster})`
+                          }
                         />
                         {/* Animated synaptic action potential pulse */}
                         <path
                           d={pathD}
                           fill="none"
-                          stroke={meta.pulseColor}
-                          strokeOpacity={isHighlightedEdge ? 1 : 0.75}
-                          strokeWidth={isHighlightedEdge ? 3 : 2}
+                          stroke={isSelectedEdge ? '#a5f3fc' : meta.pulseColor}
+                          strokeOpacity={isHighlightedEdge ? 1 : 0.72}
+                          strokeWidth={isHighlightedEdge ? 2.6 : 1.8}
                           className="animate-synapse-flow"
                         />
+
+                        {/* Semantic Relation Label Plate directly on Curve Midpoint */}
+                        {labelText && !isSelectedEdge && (
+                          <g>
+                            <rect
+                              x={midX - pillWidth / 2}
+                              y={midY - 11}
+                              width={pillWidth}
+                              height={22}
+                              rx={7}
+                              fill={isDark ? '#0f172a' : '#ffffff'}
+                              fillOpacity={0.94}
+                              stroke={
+                                isHighlightedEdge
+                                  ? meta.strokeColor
+                                  : isDark
+                                  ? '#334155'
+                                  : '#cbd5e1'
+                              }
+                              strokeWidth={1.2}
+                            />
+                            <text
+                              x={midX}
+                              y={midY + 3.5}
+                              textAnchor="middle"
+                              fill={isDark ? '#e2e8f0' : '#334155'}
+                              fontSize="10"
+                              fontWeight="600"
+                              className="select-none"
+                            >
+                              {labelText.length > 24
+                                ? `${labelText.slice(0, 23)}…`
+                                : labelText}
+                            </text>
+                          </g>
+                        )}
                       </g>
                     );
                   })}
+
+                  {/* LIVE RUBBER-BAND SYNAPTIC WIRE (Dragged from a Magnetic Port) */}
+                  {draftConnection && (() => {
+                    const targetNode = draftConnection.hoveredTargetId
+                      ? activeNodes.find(
+                          (n) => n.id === draftConnection.hoveredTargetId
+                        )
+                      : null;
+                    let endX = draftConnection.currentX;
+                    let endY = draftConnection.currentY;
+                    let targetPort: PortSide | undefined = undefined;
+
+                    if (targetNode && draftConnection.hoveredTargetPort) {
+                      const tDims = getMeasuredDims(targetNode);
+                      const pt = getPortPoint(
+                        targetNode,
+                        draftConnection.hoveredTargetPort,
+                        tDims
+                      );
+                      endX = pt.x;
+                      endY = pt.y;
+                      targetPort = draftConnection.hoveredTargetPort;
+                    }
+
+                    const { pathD } = buildPortBezier(
+                      draftConnection.startX,
+                      draftConnection.startY,
+                      draftConnection.sourcePort,
+                      endX,
+                      endY,
+                      targetPort
+                    );
+
+                    return (
+                      <g className="pointer-events-none">
+                        <path
+                          d={pathD}
+                          fill="none"
+                          stroke="#22d3ee"
+                          strokeOpacity={0.28}
+                          strokeWidth={8}
+                        />
+                        <path
+                          d={pathD}
+                          fill="none"
+                          stroke="#22d3ee"
+                          strokeWidth={2.8}
+                          strokeDasharray={targetNode ? undefined : '7 5'}
+                          markerEnd="url(#brain-arrow-active)"
+                        />
+                        <circle
+                          cx={endX}
+                          cy={endY}
+                          r={targetNode ? 7 : 5}
+                          fill="#22d3ee"
+                          fillOpacity={0.9}
+                        />
+                      </g>
+                    );
+                  })()}
                 </svg>
 
-                {/* LAYER 3: MINIMALIST 3D-TILT BRAIN NODES (Title + 2 Classification Icons, Editable & Draggable) */}
+                {/* LAYER 2.5: INLINE FLOATING EDGE EDITOR POPOVER (For Selected Synaptic Arrow) */}
+                {selectedBrainEdge && (() => {
+                  const source = activeNodes.find(
+                    (n) => n.id === selectedBrainEdge.sourceId
+                  );
+                  const target = activeNodes.find(
+                    (n) => n.id === selectedBrainEdge.targetId
+                  );
+                  if (!source || !target) return null;
+
+                  const sDims = getMeasuredDims(source);
+                  const tDims = getMeasuredDims(target);
+                  const autoPorts = inferAutoPorts(source, target);
+                  const sPort =
+                    selectedBrainEdge.sourcePort ?? autoPorts.sourcePort;
+                  const tPort =
+                    selectedBrainEdge.targetPort ?? autoPorts.targetPort;
+                  const sp = getPortPoint(source, sPort, sDims);
+                  const tp = getPortPoint(target, tPort, tDims);
+                  const { midX, midY } = buildPortBezier(
+                    sp.x,
+                    sp.y,
+                    sPort,
+                    tp.x,
+                    tp.y,
+                    tPort
+                  );
+
+                  return (
+                    <div
+                      data-brain-interactive="true"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      style={{
+                        left: midX,
+                        top: midY,
+                        transform: 'translate(-50%, -50%) translateZ(60px)',
+                      }}
+                      className={`absolute z-40 w-[290px] rounded-xl border p-3 shadow-2xl backdrop-blur-xl space-y-2.5 ${
+                        isDark
+                          ? 'bg-slate-900/95 border-cyan-500/60 text-slate-100'
+                          : 'bg-white/95 border-indigo-400 text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 text-[11px]">
+                        <span className="font-mono font-bold text-cyan-400 truncate">
+                          Editar Sinapsis Dirigida
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedEdgeId(null)}
+                          className="p-0.5 text-slate-400 hover:text-white rounded"
+                          title="Cerrar editor de flecha"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="text-[10px] opacity-75 truncate">
+                        {source.title} → {target.title}
+                      </div>
+
+                      <input
+                        type="text"
+                        autoFocus
+                        value={selectedBrainEdge.label ?? ''}
+                        onChange={(e) =>
+                          handleUpdateBrainEdge(selectedBrainEdge.id, {
+                            label: e.target.value,
+                          })
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') setSelectedEdgeId(null);
+                        }}
+                        placeholder="Ej: fundamenta, se aplica en..."
+                        className={`w-full px-2.5 py-1.5 text-xs rounded-lg border focus:outline-none ${
+                          isDark
+                            ? 'bg-slate-950 border-slate-700 text-white focus:border-cyan-400'
+                            : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-indigo-500'
+                        }`}
+                      />
+
+                      {/* Quick Semantic Presets */}
+                      <div className="flex flex-wrap gap-1">
+                        {EDGE_LABEL_PRESETS.map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() =>
+                              handleUpdateBrainEdge(selectedBrainEdge.id, {
+                                label: preset,
+                              })
+                            }
+                            className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-colors ${
+                              selectedBrainEdge.label === preset
+                                ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold'
+                                : isDark
+                                ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                                : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-700/40">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleReverseBrainEdge(selectedBrainEdge.id)
+                          }
+                          className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                            isDark
+                              ? 'bg-slate-800 hover:bg-slate-700 text-cyan-300'
+                              : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'
+                          }`}
+                        >
+                          <ArrowLeftRight className="w-3.5 h-3.5" />
+                          Invertir Dirección
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteBrainEdge(selectedBrainEdge.id)
+                          }
+                          className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-red-500/15 hover:bg-red-500/25 text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Borrar
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* LAYER 2.6: QUICK-SPAWN FLOATING MENU (On dropping port wire in empty space) */}
+                {quickSpawnMenu && (
+                  <div
+                    data-brain-interactive="true"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    style={{
+                      left: quickSpawnMenu.x,
+                      top: quickSpawnMenu.y,
+                      transform: 'translate(-20%, -20%) translateZ(70px)',
+                    }}
+                    className={`absolute z-50 w-[300px] rounded-2xl border p-3.5 shadow-2xl backdrop-blur-xl space-y-2.5 ${
+                      isDark
+                        ? 'bg-slate-900/95 border-cyan-400/70 text-slate-100'
+                        : 'bg-white/95 border-indigo-400 text-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Crear y Conectar Nodo Rápido
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setQuickSpawnMenu(null)}
+                        className="p-0.5 text-slate-400 hover:text-white rounded"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={quickSpawnMenu.title}
+                        onChange={(e) =>
+                          setQuickSpawnMenu((prev) =>
+                            prev ? { ...prev, title: e.target.value } : null
+                          )
+                        }
+                        placeholder="Título del nuevo nodo (opcional)..."
+                        className={`w-full px-2.5 py-1.5 text-xs rounded-lg border focus:outline-none ${
+                          isDark
+                            ? 'bg-slate-950 border-slate-700 text-white focus:border-cyan-400'
+                            : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-indigo-500'
+                        }`}
+                      />
+                      <input
+                        type="text"
+                        value={quickSpawnMenu.edgeLabel}
+                        onChange={(e) =>
+                          setQuickSpawnMenu((prev) =>
+                            prev ? { ...prev, edgeLabel: e.target.value } : null
+                          )
+                        }
+                        placeholder="Etiqueta de la relación (ej. deriva en)..."
+                        className={`w-full px-2.5 py-1 text-[11px] rounded-lg border focus:outline-none ${
+                          isDark
+                            ? 'bg-slate-950 border-slate-800 text-cyan-200 focus:border-cyan-400'
+                            : 'bg-slate-50 border-slate-200 text-indigo-800 focus:border-indigo-500'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="text-[10px] opacity-70">
+                      Elige el tipo de material (se sincroniza con la lección activa):
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {(
+                        [
+                          {
+                            type: 'text' as LessonBlockType,
+                            label: 'wiki/ Concepto',
+                            icon: <FileText className="w-3.5 h-3.5 text-indigo-400" />,
+                          },
+                          {
+                            type: 'code' as LessonBlockType,
+                            label: 'wiki/ Código',
+                            icon: <Code2 className="w-3.5 h-3.5 text-indigo-300" />,
+                          },
+                          {
+                            type: 'quote' as LessonBlockType,
+                            label: 'raw/ Cita · Libro',
+                            icon: <Quote className="w-3.5 h-3.5 text-amber-400" />,
+                          },
+                          {
+                            type: 'video' as LessonBlockType,
+                            label: 'raw/ Video · Web',
+                            icon: <Video className="w-3.5 h-3.5 text-amber-300" />,
+                          },
+                          {
+                            type: 'diagram' as LessonBlockType,
+                            label: 'labs/ Diagrama',
+                            icon: <GitBranch className="w-3.5 h-3.5 text-fuchsia-400" />,
+                          },
+                          {
+                            type: 'exercise' as LessonBlockType,
+                            label: 'lint/ Ejercicio',
+                            icon: <Terminal className="w-3.5 h-3.5 text-emerald-400" />,
+                          },
+                        ] as const
+                      ).map((opt) => (
+                        <button
+                          key={opt.type}
+                          type="button"
+                          onClick={() => handleQuickSpawnNodeFromWire(opt.type)}
+                          className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-[11px] font-semibold transition-colors text-left ${
+                            isDark
+                              ? 'bg-slate-800/90 border-slate-700 hover:border-cyan-400 hover:bg-slate-800 text-slate-100'
+                              : 'bg-slate-50 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-800'
+                          }`}
+                        >
+                          {opt.icon}
+                          <span className="truncate">{opt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* LAYER 3: INTERACTIVE, RESIZABLE, EXPANDABLE & INLINE-EDITABLE 3D BRAIN NODES WITH MAGNETIC PORTS */}
                 {activeNodes.map((node) => {
                   const meta = CLUSTER_META[node.cluster];
                   const isCore = node.cluster === 'index';
                   const isSelected = selectedBrainNodeId === node.id;
                   const isEditing = editingNodeId === node.id;
-                  const tilt = nodeTiltMap[node.id] ?? { rx: 0, ry: 0 };
+                  const isExpanded = Boolean(node.expanded) || isEditing;
+                  const isMagneticTarget =
+                    draftConnection?.hoveredTargetId === node.id;
+                  const isResizingThis =
+                    dragState?.kind === 'node_resize' &&
+                    dragState.nodeId === node.id;
 
-                  // 3D depth parallax offset per node
+                  // Disable jarring 3D hover tilt while expanded, editing, or resizing for smooth reading/typing
+                  const tilt =
+                    isExpanded || isEditing || isResizingThis || draftConnection
+                      ? { rx: 0, ry: 0 }
+                      : nodeTiltMap[node.id] ?? { rx: 0, ry: 0 };
+
                   const parallaxX =
-                    mouseParallax.x * (node.zDepth - 0.95) * 1.4;
+                    isExpanded || isEditing || isResizingThis
+                      ? 0
+                      : mouseParallax.x * (node.zDepth - 0.95) * 1.4;
                   const parallaxY =
-                    mouseParallax.y * (node.zDepth - 0.95) * 1.4;
+                    isExpanded || isEditing || isResizingThis
+                      ? 0
+                      : mouseParallax.y * (node.zDepth - 0.95) * 1.4;
+
+                  const linked = resolveLinkedBlock(node);
+                  const resolvedContent =
+                    linked?.block.content ??
+                    node.noteContent ??
+                    (isCore
+                      ? `${selectedOva.description}\n\n- **Ficha SENA:** ${selectedOva.fichaCode}\n- **RAP:** ${selectedOva.learningOutcome}`
+                      : 'Doble clic para agregar notas Markdown, listas de verificación o apuntes de investigación...');
+                  const resolvedUrl = linked?.block.url;
+                  const youtubeEmbed = extractYouTubeEmbedUrl(resolvedUrl);
+
+                  const cardWidth =
+                    node.width ?? (isExpanded ? 344 : isCore ? 248 : 216);
+                  const cardHeight = node.height;
+
+                  const showPorts =
+                    isSelected ||
+                    hoveredNodeId === node.id ||
+                    Boolean(draftConnection);
 
                   return (
                     <div
@@ -2455,10 +3489,22 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                       onPointerDown={(e) => handleNodePointerDown(e, node)}
                       onDoubleClick={(e) => {
                         e.stopPropagation();
+                        setSelectedBrainNodeId(node.id);
                         setEditingNodeId(node.id);
+                        if (!node.expanded) {
+                          handleUpdateBrainNode(node.id, { expanded: true });
+                        }
                       }}
                       onPointerEnter={() => setHoveredNodeId(node.id)}
                       onPointerMove={(e) => {
+                        if (
+                          isExpanded ||
+                          isEditing ||
+                          isResizingThis ||
+                          draftConnection
+                        ) {
+                          return;
+                        }
                         const rect = e.currentTarget.getBoundingClientRect();
                         const relX =
                           (e.clientX - rect.left) / Math.max(rect.width, 1) -
@@ -2469,8 +3515,8 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                         setNodeTiltMap((prev) => ({
                           ...prev,
                           [node.id]: {
-                            rx: Number((-relY * 22).toFixed(1)),
-                            ry: Number((relX * 22).toFixed(1)),
+                            rx: Number((-relY * 18).toFixed(1)),
+                            ry: Number((relX * 18).toFixed(1)),
                           },
                         }));
                       }}
@@ -2488,33 +3534,97 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                       style={{
                         left: node.x,
                         top: node.y,
+                        zIndex: isEditing
+                          ? 45
+                          : isSelected || isMagneticTarget
+                          ? 35
+                          : isExpanded
+                          ? 26
+                          : 20,
                         transform: `translate3d(calc(-50% + ${parallaxX}px), calc(-50% + ${parallaxY}px), ${
-                          isSelected ? 28 : Math.round((node.zDepth - 0.85) * 45)
+                          isSelected || isEditing
+                            ? 28
+                            : Math.round((node.zDepth - 0.85) * 40)
                         }px) rotateX(${tilt.rx}deg) rotateY(${
                           tilt.ry
-                        }deg) scale(${isSelected ? 1.07 : node.zDepth})`,
+                        }deg) scale(${
+                          isExpanded || isEditing
+                            ? 1
+                            : isSelected
+                            ? 1.04
+                            : node.zDepth
+                        })`,
                       }}
-                      className="absolute z-20 brain-node-3d-card"
+                      className="absolute brain-node-3d-card"
                     >
                       <div
+                        ref={(el) => {
+                          nodeCardRefs.current[node.id] = el;
+                        }}
                         style={{
+                          width: `${cardWidth}px`,
+                          height: cardHeight ? `${cardHeight}px` : undefined,
                           animationDelay: `${node.floatPhase ?? 0}s`,
                         }}
-                        className={`animate-brain-levitate rounded-2xl border backdrop-blur-xl transition-all ${
-                          isCore
-                            ? 'px-4 py-3 min-w-[210px] max-w-[280px] border-2'
-                            : 'px-3 py-2 min-w-[165px] max-w-[235px]'
+                        className={`relative flex flex-col rounded-2xl border backdrop-blur-xl transition-shadow ${
+                          isExpanded || isEditing || isResizingThis
+                            ? ''
+                            : 'animate-brain-levitate'
+                        } ${isCore ? 'border-2' : ''} ${
+                          isExpanded ? 'px-3.5 py-3' : isCore ? 'px-3.5 py-2.5' : 'px-3 py-2'
                         } ${isDark ? meta.darkCard : meta.lightCard} ${
-                          isSelected
+                          isMagneticTarget
+                            ? 'ring-2 ring-cyan-300 shadow-[0_0_40px_rgba(34,211,238,0.65)]'
+                            : isSelected
                             ? 'ring-2 ring-cyan-400 shadow-[0_0_35px_rgba(34,211,238,0.45)]'
                             : ''
                         }`}
                       >
-                        {/* MINIMALIST NODE CONTENT: ONLY THE PAIR OF CLASSIFICATION ICONS + THE TITLE */}
-                        <div className="flex items-center gap-2.5">
-                          {/* Pair of Classification Icons (Icon 1: Karpathy Layer + Icon 2: Material Type) */}
+                        {/* 4 MAGNETIC DRAGGABLE CONNECTION PORTS (top, right, bottom, left) */}
+                        {ALL_PORTS.map((portSide) => {
+                          const posClass =
+                            portSide === 'top'
+                              ? '-top-2 left-1/2 -translate-x-1/2'
+                              : portSide === 'right'
+                              ? '-right-2 top-1/2 -translate-y-1/2'
+                              : portSide === 'bottom'
+                              ? '-bottom-2 left-1/2 -translate-x-1/2'
+                              : '-left-2 top-1/2 -translate-y-1/2';
+
+                          const isSnappedPort =
+                            isMagneticTarget &&
+                            draftConnection?.hoveredTargetPort === portSide;
+
+                          return (
+                            <button
+                              key={portSide}
+                              type="button"
+                              aria-label={`Puerto de conexión ${portSide}`}
+                              title="Arrastra hacia otro nodo para conectar, o suelta en espacio vacío para crear un nodo rápido"
+                              onPointerDown={(e) =>
+                                handleStartPortDrag(e, node, portSide)
+                              }
+                              className={`absolute ${posClass} z-30 w-4 h-4 rounded-full flex items-center justify-center transition-all cursor-crosshair ${
+                                isSnappedPort
+                                  ? 'scale-125 opacity-100 bg-cyan-400 ring-4 ring-cyan-400/40'
+                                  : showPorts
+                                  ? 'opacity-95 hover:scale-125 bg-slate-950/90 border-2 border-cyan-400'
+                                  : 'opacity-0 pointer-events-none'
+                              }`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  isSnappedPort ? 'bg-slate-950' : 'bg-cyan-300'
+                                }`}
+                              />
+                            </button>
+                          );
+                        })}
+
+                        {/* NODE HEADER: Pair of Classification Icons + Title + Expand/Collapse Button */}
+                        <div className="flex items-center gap-2 shrink-0">
                           <div
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl border shrink-0 ${
+                            className={`inline-flex items-center gap-1 px-1.5 py-1 rounded-xl border shrink-0 ${
                               isDark ? meta.darkBadge : meta.lightBadge
                             }`}
                             title={`${LAYER_ICON_LABELS[node.layerIcon]} · ${MATERIAL_ICON_LABELS[node.materialIcon]}`}
@@ -2526,7 +3636,7 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                             )}
                           </div>
 
-                          {/* Node Title (Inline Editable on Double-Click or Edit Mode) */}
+                          {/* Node Title (Inline Editable) */}
                           <div className="min-w-0 flex-1">
                             {isEditing ? (
                               <input
@@ -2538,14 +3648,13 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                                     title: e.target.value,
                                   })
                                 }
-                                onBlur={() => setEditingNodeId(null)}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === 'Escape') {
+                                  if (e.key === 'Escape') {
                                     setEditingNodeId(null);
                                   }
                                 }}
                                 onPointerDown={(e) => e.stopPropagation()}
-                                className={`w-full text-xs font-bold px-1.5 py-0.5 rounded border focus:outline-none ${
+                                className={`w-full text-xs font-bold px-2 py-1 rounded-lg border focus:outline-none ${
                                   isDark
                                     ? 'bg-slate-950 text-white border-cyan-400'
                                     : 'bg-slate-50 text-slate-900 border-indigo-500'
@@ -2553,22 +3662,228 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                               />
                             ) : (
                               <div
-                                className={`font-bold leading-snug truncate ${
-                                  isCore ? 'text-xs' : 'text-[11px]'
+                                className={`font-bold leading-snug ${
+                                  isExpanded ? 'text-xs' : 'truncate text-[11px]'
                                 }`}
-                                title={`${node.title} (Doble clic para editar)`}
+                                title={`${node.title} (Doble clic para editar inline)`}
                               >
                                 {node.title}
                               </div>
                             )}
                           </div>
+
+                          {/* 1-Click Expand / Collapse Content Toggle */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isEditing) {
+                                setEditingNodeId(null);
+                              } else {
+                                handleToggleNodeExpanded(node);
+                              }
+                            }}
+                            title={
+                              isEditing
+                                ? 'Guardar edición inline'
+                                : isExpanded
+                                ? 'Contraer tarjeta'
+                                : 'Expandir vista previa interactiva'
+                            }
+                            className={`p-1 rounded-lg transition-colors shrink-0 ${
+                              isEditing
+                                ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+                                : isDark
+                                ? 'hover:bg-slate-800 text-slate-400 hover:text-cyan-300'
+                                : 'hover:bg-slate-100 text-slate-500 hover:text-indigo-700'
+                            }`}
+                          >
+                            {isEditing ? (
+                              <Check className="w-3.5 h-3.5" />
+                            ) : isExpanded ? (
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            )}
+                          </button>
                         </div>
+
+                        {/* EXPANDED VIEW / INLINE CONTENT EDITOR BODY */}
+                        {isExpanded && (
+                          <div
+                            onPointerDown={(e) => e.stopPropagation()}
+                            className={`mt-2.5 pt-2.5 border-t flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-2 select-text cursor-auto ${
+                              isDark
+                                ? 'border-slate-700/70'
+                                : 'border-slate-200'
+                            }`}
+                            style={{
+                              maxHeight: cardHeight ? undefined : '260px',
+                            }}
+                          >
+                            {isEditing ? (
+                              <div className="space-y-2">
+                                <label className="block text-[10px] font-mono uppercase tracking-wider opacity-70">
+                                  Edición Inline de Contenido (Sincroniza con OVA)
+                                </label>
+                                <textarea
+                                  rows={5}
+                                  value={resolvedContent}
+                                  onChange={(e) =>
+                                    handleUpdateNodeContentBidirectional(
+                                      node,
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="Escribe apuntes Markdown, - [ ] checklists o código..."
+                                  className={`w-full px-2.5 py-2 text-xs font-mono leading-relaxed rounded-lg border focus:outline-none resize-y ${
+                                    isDark
+                                      ? 'bg-slate-950 border-slate-700 text-slate-100 focus:border-cyan-400'
+                                      : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-indigo-500'
+                                  }`}
+                                />
+                                {(linked?.block.type === 'video' ||
+                                  linked?.block.type === 'link') && (
+                                  <input
+                                    type="url"
+                                    value={resolvedUrl ?? ''}
+                                    onChange={(e) =>
+                                      handleUpdateNodeContentBidirectional(
+                                        node,
+                                        resolvedContent,
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="https://youtube.com/... o URL de documentación"
+                                    className={`w-full px-2.5 py-1.5 text-[11px] font-mono rounded-lg border focus:outline-none ${
+                                      isDark
+                                        ? 'bg-slate-950 border-slate-700 text-cyan-200 focus:border-cyan-400'
+                                        : 'bg-slate-50 border-slate-300 text-indigo-800 focus:border-indigo-500'
+                                    }`}
+                                  />
+                                )}
+                                <div className="flex items-center justify-between pt-0.5">
+                                  <span className="text-[10px] opacity-65">
+                                    Esc para cerrar
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingNodeId(null)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950"
+                                  >
+                                    <Check className="w-3 h-3" />
+                                    Listo
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              /* Rich Interactive Expanded Preview */
+                              <div className="space-y-2">
+                                {/* Quote attribution if Quote block */}
+                                {linked?.block.type === 'quote' ? (
+                                  <blockquote
+                                    className={`text-xs italic leading-relaxed px-2.5 py-2 rounded-lg border ${
+                                      isDark
+                                        ? 'bg-slate-950/70 border-amber-500/30 text-amber-100'
+                                        : 'bg-amber-50/70 border-amber-200 text-slate-800'
+                                    }`}
+                                  >
+                                    “{resolvedContent}”
+                                    {linked.block.quoteAuthor && (
+                                      <footer className="not-italic text-[10px] font-mono mt-1.5 opacity-75">
+                                        — {linked.block.quoteAuthor}
+                                      </footer>
+                                    )}
+                                  </blockquote>
+                                ) : linked?.block.type === 'code' ? (
+                                  <div className="space-y-1.5">
+                                    <div className="flex items-center justify-between text-[10px] font-mono opacity-70">
+                                      <span>
+                                        {linked.block.codeLanguage ?? 'code'}
+                                      </span>
+                                      <span>Snippet wiki/</span>
+                                    </div>
+                                    <pre className="p-2.5 rounded-lg bg-slate-950 text-emerald-300 font-mono text-[11px] overflow-x-auto border border-slate-800 leading-relaxed">
+                                      <code>{resolvedContent}</code>
+                                    </pre>
+                                  </div>
+                                ) : linked?.block.type === 'exercise' ? (
+                                  <div className="space-y-2">
+                                    <NodeMarkdownRenderer
+                                      content={resolvedContent}
+                                      dark={isDark}
+                                      onToggleCheckbox={(lineIdx) =>
+                                        handleToggleNodeCheckbox(
+                                          node,
+                                          resolvedContent,
+                                          lineIdx
+                                        )
+                                      }
+                                    />
+                                    {linked.block.exerciseStarterCode && (
+                                      <pre className="p-2 rounded-lg bg-slate-950 text-cyan-300 font-mono text-[10px] overflow-x-auto border border-emerald-500/30">
+                                        <code>
+                                          {linked.block.exerciseStarterCode}
+                                        </code>
+                                      </pre>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <NodeMarkdownRenderer
+                                    content={resolvedContent}
+                                    dark={isDark}
+                                    onToggleCheckbox={(lineIdx) =>
+                                      handleToggleNodeCheckbox(
+                                        node,
+                                        resolvedContent,
+                                        lineIdx
+                                      )
+                                    }
+                                  />
+                                )}
+
+                                {/* Embedded YouTube preview or clickable Resource Link */}
+                                {youtubeEmbed && (
+                                  <div className="rounded-lg overflow-hidden border border-slate-700/60 aspect-video bg-black">
+                                    <iframe
+                                      src={youtubeEmbed}
+                                      title={node.title}
+                                      className="w-full h-full"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                    />
+                                  </div>
+                                )}
+
+                                {resolvedUrl && (
+                                  <a
+                                    href={resolvedUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors ${
+                                      isDark
+                                        ? 'bg-slate-950/80 border-slate-700 text-cyan-300 hover:border-cyan-400'
+                                        : 'bg-slate-50 border-slate-200 text-indigo-700 hover:border-indigo-400'
+                                    }`}
+                                  >
+                                    <ExternalLink className="w-3 h-3 shrink-0" />
+                                    <span className="truncate max-w-[220px]">
+                                      {linked?.block.domainOrSource ||
+                                        resolvedUrl}
+                                    </span>
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {/* Quick Micro-Toolbar ONLY visible when the node is selected */}
                         {isSelected && (
                           <div
                             onPointerDown={(e) => e.stopPropagation()}
-                            className={`mt-2 pt-2 border-t flex items-center justify-between gap-1 text-[10px] ${
+                            className={`mt-2 pt-2 border-t flex items-center justify-between gap-1 text-[10px] shrink-0 ${
                               isDark ? 'border-slate-700/80' : 'border-slate-200'
                             }`}
                           >
@@ -2635,9 +3950,20 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
 
                             <button
                               type="button"
-                              onClick={() => setEditingNodeId(node.id)}
-                              className="p-1 rounded hover:bg-cyan-500/20 text-cyan-400"
-                              title="Editar título del nodo"
+                              onClick={() => {
+                                setEditingNodeId(isEditing ? null : node.id);
+                                if (!isEditing && !node.expanded) {
+                                  handleUpdateBrainNode(node.id, {
+                                    expanded: true,
+                                  });
+                                }
+                              }}
+                              className={`p-1 rounded transition-colors ${
+                                isEditing
+                                  ? 'bg-cyan-500/25 text-cyan-300'
+                                  : 'hover:bg-cyan-500/20 text-cyan-400'
+                              }`}
+                              title="Editar título y contenido inline"
                             >
                               <Edit3 className="w-3 h-3" />
                             </button>
@@ -2646,7 +3972,7 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                               type="button"
                               onClick={() => setConnectingFromNodeId(node.id)}
                               className="p-1 rounded hover:bg-indigo-500/20 text-indigo-400"
-                              title="Conectar sinapsis con otro nodo"
+                              title="Conectar sinapsis con otro nodo (o arrastra cualquier puerto)"
                             >
                               <Link2 className="w-3 h-3" />
                             </button>
@@ -2663,6 +3989,38 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                             )}
                           </div>
                         )}
+
+                        {/* BOTTOM-RIGHT RESIZE HANDLE (Drag to resize · Double-click to reset size) */}
+                        <div
+                          onPointerDown={(e) => handleStartNodeResize(e, node)}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateBrainNode(node.id, {
+                              width: undefined,
+                              height: undefined,
+                            });
+                            showToast('Tamaño del nodo restaurado al valor automático.');
+                          }}
+                          title="Arrastra para redimensionar · Doble clic para restablecer tamaño"
+                          className={`absolute right-1 bottom-1 w-4 h-4 rounded-br-xl flex items-end justify-end p-0.5 cursor-nwse-resize transition-opacity ${
+                            isSelected || hoveredNodeId === node.id || isResizingThis
+                              ? 'opacity-90'
+                              : 'opacity-0'
+                          }`}
+                        >
+                          <svg
+                            viewBox="0 0 10 10"
+                            className={`w-2.5 h-2.5 ${
+                              isDark ? 'text-cyan-400/80' : 'text-indigo-500/80'
+                            }`}
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                          >
+                            <path d="M 9 3 L 3 9 M 9 6.5 L 6.5 9" />
+                          </svg>
+                        </div>
                       </div>
                     </div>
                   );
@@ -2671,7 +4029,7 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
               </div>
             </div>
 
-            {/* BOTTOM LEGEND & SELECTED NODE INSPECTOR BAR */}
+            {/* BOTTOM LEGEND & SELECTED NODE / EDGE INSPECTOR BAR */}
             <div
               data-brain-interactive="true"
               className={`absolute bottom-3 left-3 right-3 z-30 px-3.5 py-2 rounded-xl border backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-[11px] pointer-events-auto ${
@@ -2708,9 +4066,20 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
 
               {selectedBrainNode ? (
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold truncate max-w-[220px]">
+                  <span className="font-semibold truncate max-w-[200px]">
                     Activo: {selectedBrainNode.title}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleNodeExpanded(selectedBrainNode)}
+                    className={`px-2 py-1 rounded-lg font-semibold border transition-colors ${
+                      isDark
+                        ? 'bg-slate-800 border-slate-700 text-cyan-300 hover:bg-slate-700'
+                        : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
+                    }`}
+                  >
+                    {selectedBrainNode.expanded ? 'Contraer' : 'Expandir Vista'}
+                  </button>
                   {selectedBrainNode.blockId && (
                     <button
                       type="button"
@@ -2726,10 +4095,22 @@ export const KarpathyBrainStudio: React.FC<KarpathyBrainStudioProps> = ({
                     </button>
                   )}
                 </div>
+              ) : selectedBrainEdge ? (
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-cyan-400 font-semibold">
+                    Sinapsis seleccionada: {selectedBrainEdge.label || 'sin etiqueta'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleReverseBrainEdge(selectedBrainEdge.id)}
+                    className="px-2 py-1 rounded-lg bg-slate-800 text-cyan-300 hover:bg-slate-700 font-semibold"
+                  >
+                    Invertir ↔
+                  </button>
+                </div>
               ) : (
-                <span className="opacity-75">
-                  Tip: Arrastra bloques desde la bandeja izquierda · Doble clic
-                  en cualquier nodo para editar su título e iconos
+                <span className="opacity-80">
+                  Tip: Arrastra desde un puerto circular para conectar o soltar en vacío (crear nodo) · Clic en una flecha para editarla · Doble clic en un nodo para editar inline
                 </span>
               )}
             </div>
